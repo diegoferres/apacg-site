@@ -23,8 +23,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { ArrowLeft, Lock, Mail, Eye, EyeOff } from 'lucide-react';
-import logoImage from '/lovable-uploads/12783fe6-2c65-4ec3-8910-9ab84189c032.png';
+import { ArrowLeft, Lock, Mail, Eye, EyeOff, School } from 'lucide-react';
 
 const formSchema = z.object({
   email: z.string().email({ message: "Ingrese un correo electrónico válido" }),
@@ -67,11 +66,10 @@ const Login = () => {
       <div className="w-full max-w-md animate-scale-in">
         <div className="text-center mb-6">
           <Link to="/">
-            <img 
-              src={logoImage} 
-              alt="A.P.A.C. GOETHE" 
-              className="h-24 w-auto mx-auto object-contain"
-            />
+            <div className="flex items-center justify-center gap-2 text-primary">
+              <School className="h-10 w-10" />
+              <span className="font-bold text-2xl">A.P.A.C. GOETHE</span>
+            </div>
           </Link>
         </div>
         

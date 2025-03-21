@@ -2,8 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { UserCircle, Menu, X } from 'lucide-react';
-import logoImage from '/lovable-uploads/12783fe6-2c65-4ec3-8910-9ab84189c032.png';
+import { UserCircle, Menu, X, School } from 'lucide-react';
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -34,11 +33,10 @@ const Navbar = () => {
       <div className="container mx-auto px-4 md:px-6">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-2 animate-fade-in">
-            <img 
-              src={logoImage} 
-              alt="A.P.A.C. GOETHE" 
-              className="h-14 w-auto object-contain"
-            />
+            <div className="flex items-center gap-2 text-primary">
+              <School className="h-8 w-8" />
+              <span className="font-bold text-xl hidden sm:inline">A.P.A.C. GOETHE</span>
+            </div>
           </Link>
 
           {/* Desktop menu */}
