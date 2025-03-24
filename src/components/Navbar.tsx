@@ -1,12 +1,15 @@
 
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { UserCircle, Menu, X, School } from 'lucide-react';
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  // This would come from your authentication context in a real app
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -59,12 +62,21 @@ const Navbar = () => {
             >
               Comercios
             </Link>
-            <Button asChild variant="ghost" className="gap-1">
-              <Link to="/login">
-                <UserCircle className="h-5 w-5 mr-1" />
-                Iniciar Sesión
-              </Link>
-            </Button>
+            {isLoggedIn ? (
+              <Button asChild variant="ghost" className="gap-1">
+                <Link to="/perfil">
+                  <UserCircle className="h-5 w-5 mr-1" />
+                  Mi Perfil
+                </Link>
+              </Button>
+            ) : (
+              <Button asChild variant="ghost" className="gap-1">
+                <Link to="/login">
+                  <UserCircle className="h-5 w-5 mr-1" />
+                  Iniciar Sesión
+                </Link>
+              </Button>
+            )}
           </nav>
 
           {/* Mobile menu button */}
@@ -104,12 +116,21 @@ const Navbar = () => {
               >
                 Comercios
               </Link>
-              <Button asChild variant="default" className="w-full">
-                <Link to="/login" onClick={() => setIsMenuOpen(false)}>
-                  <UserCircle className="h-5 w-5 mr-2" />
-                  Iniciar Sesión
-                </Link>
-              </Button>
+              {isLoggedIn ? (
+                <Button asChild variant="default" className="w-full">
+                  <Link to="/perfil" onClick={() => setIsMenuOpen(false)}>
+                    <UserCircle className="h-5 w-5 mr-2" />
+                    Mi Perfil
+                  </Link>
+                </Button>
+              ) : (
+                <Button asChild variant="default" className="w-full">
+                  <Link to="/login" onClick={() => setIsMenuOpen(false)}>
+                    <UserCircle className="h-5 w-5 mr-2" />
+                    Iniciar Sesión
+                  </Link>
+                </Button>
+              )}
             </nav>
           </div>
         </div>
