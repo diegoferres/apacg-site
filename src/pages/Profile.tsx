@@ -6,7 +6,8 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbP
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { QrCode, LogOut, User, CreditCard, Gift, Edit, Mail, Phone, Calendar, CheckCircle, XCircle } from "lucide-react";
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { QrCode, LogOut, User, CreditCard, Gift, Edit, Mail, Phone, Calendar, CheckCircle, XCircle, Receipt } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
@@ -24,16 +25,43 @@ const userData = {
     amount: "150.000 Gs.",
     status: "inactive" // active, inactive, expired
   },
-  claimedBenefits: []
+  paymentHistory: [
+    { id: "pay-001", date: "2024-05-21", amount: "150.000 Gs.", status: "Completado" },
+    { id: "pay-002", date: "2024-04-20", amount: "150.000 Gs.", status: "Completado" },
+    { id: "pay-003", date: "2024-03-22", amount: "150.000 Gs.", status: "Completado" },
+    { id: "pay-004", date: "2024-02-20", amount: "150.000 Gs.", status: "Completado" }
+  ],
+  claimedBenefits: [
+    { 
+      id: "ben-001", 
+      name: "50% de descuento en Libros", 
+      business: "Librería Santa Teresa",
+      usedDate: "2024-05-15",
+      code: "LIBRO-50-2024"
+    },
+    { 
+      id: "ben-002", 
+      name: "Entrada gratuita a Seminario", 
+      business: "Centro Cultural Goethe",
+      usedDate: "2024-04-10",
+      code: "SEM-GOETHE-2024"
+    }
+  ]
 };
 
 const Profile = () => {
   const [activeTab, setActiveTab] = useState("membership");
+  const [showEmptyBenefits, setShowEmptyBenefits] = useState(false);
   const navigate = useNavigate();
   
   const handleLogout = () => {
     // In a real app, this would call an authentication logout function
     navigate("/login");
+  };
+
+  // Toggle function to demo empty/filled benefits view
+  const toggleBenefitsView = () => {
+    setShowEmptyBenefits(!showEmptyBenefits);
   };
 
   return (
@@ -138,50 +166,89 @@ const Profile = () => {
           <div className="md:col-span-2">
             {/* Membership Section */}
             {activeTab === "membership" && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <CreditCard className="mr-2 h-5 w-5" />
-                    Detalles de Membresía
-                  </CardTitle>
-                  <CardDescription>
-                    Información sobre el estado de tu membresía
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-5 w-5 text-muted-foreground" />
-                        <span className="font-medium">Fecha de pago:</span>
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <CreditCard className="mr-2 h-5 w-5" />
+                      Detalles de Membresía
+                    </CardTitle>
+                    <CardDescription>
+                      Información sobre el estado de tu membresía
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-5 w-5 text-muted-foreground" />
+                          <span className="font-medium">Fecha de pago:</span>
+                        </div>
+                        <span>{userData.membership.paymentDate}</span>
                       </div>
-                      <span>{userData.membership.paymentDate}</span>
-                    </div>
-                    
-                    <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <CreditCard className="h-5 w-5 text-muted-foreground" />
-                        <span className="font-medium">Monto pagado:</span>
+                      
+                      <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <CreditCard className="h-5 w-5 text-muted-foreground" />
+                          <span className="font-medium">Monto pagado:</span>
+                        </div>
+                        <span>{userData.membership.amount}</span>
                       </div>
-                      <span>{userData.membership.amount}</span>
-                    </div>
-                    
-                    <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <User className="h-5 w-5 text-muted-foreground" />
-                        <span className="font-medium">Estado:</span>
+                      
+                      <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <User className="h-5 w-5 text-muted-foreground" />
+                          <span className="font-medium">Estado:</span>
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          userData.membership.status === "active" 
+                            ? "bg-green-100 text-green-800" 
+                            : "bg-red-100 text-red-800"
+                        }`}>
+                          {userData.membership.status === "active" ? "Activa" : "Inactiva"}
+                        </span>
                       </div>
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        userData.membership.status === "active" 
-                          ? "bg-green-100 text-green-800" 
-                          : "bg-red-100 text-red-800"
-                      }`}>
-                        {userData.membership.status === "active" ? "Activa" : "Inactiva"}
-                      </span>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+                
+                {/* Payment History Section */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Receipt className="mr-2 h-5 w-5" />
+                      Historial de Pagos
+                    </CardTitle>
+                    <CardDescription>
+                      Registro de los pagos de membresía realizados
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Fecha</TableHead>
+                          <TableHead>Monto</TableHead>
+                          <TableHead>Estado</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {userData.paymentHistory.map((payment) => (
+                          <TableRow key={payment.id}>
+                            <TableCell>{payment.date}</TableCell>
+                            <TableCell>{payment.amount}</TableCell>
+                            <TableCell>
+                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                {payment.status}
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              </div>
             )}
             
             {/* Benefits Section */}
@@ -192,17 +259,35 @@ const Profile = () => {
                     <Gift className="mr-2 h-5 w-5" />
                     Beneficios Reclamados
                   </CardTitle>
-                  <CardDescription>
-                    Listado de beneficios que has utilizado
+                  <CardDescription className="flex justify-between items-center">
+                    <span>Listado de beneficios que has utilizado</span>
+                    {/* Toggle button for demo purposes */}
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={toggleBenefitsView}
+                      className="ml-auto text-xs"
+                    >
+                      Demo: {showEmptyBenefits ? "Mostrar con datos" : "Mostrar vacío"}
+                    </Button>
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {userData.claimedBenefits.length > 0 ? (
+                  {!showEmptyBenefits && userData.claimedBenefits.length > 0 ? (
                     <div className="space-y-4">
-                      {userData.claimedBenefits.map((benefit, index) => (
-                        <div key={index} className="p-4 border rounded-lg">
-                          {/* Benefit details would go here */}
-                          <p>Beneficio reclamado {index + 1}</p>
+                      {userData.claimedBenefits.map((benefit) => (
+                        <div key={benefit.id} className="p-4 border rounded-lg">
+                          <div className="flex justify-between mb-2">
+                            <h3 className="font-medium">{benefit.name}</h3>
+                            <span className="text-sm text-muted-foreground">{benefit.usedDate}</span>
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-2">
+                            Comercio: {benefit.business}
+                          </p>
+                          <div className="flex items-center gap-2 text-sm">
+                            <span className="font-medium">Código utilizado:</span>
+                            <code className="bg-muted px-2 py-1 rounded text-xs">{benefit.code}</code>
+                          </div>
                         </div>
                       ))}
                     </div>
