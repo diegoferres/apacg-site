@@ -9,6 +9,7 @@ import BenefitDetail from "./pages/BenefitDetail";
 import Login from "./pages/Login";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import PaymentPage from "./pages/PaymentPage";
 
 const queryClient = new QueryClient();
 
@@ -23,6 +24,7 @@ const App = () => (
           <Route path="/beneficio/:id" element={<BenefitDetail />} />
           <Route path="/login" element={<Login />} />
           <Route path="/perfil" element={<Profile />} />
+          <Route path="/pago-membresia" element={<PaymentPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

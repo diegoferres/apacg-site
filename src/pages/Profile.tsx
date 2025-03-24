@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { QrCode, LogOut, User, CreditCard, Gift, Edit, Mail, Phone, Calendar, CheckCircle, XCircle, Receipt } from "lucide-react";
+import { QrCode, LogOut, User, CreditCard, Gift, Edit, Mail, Phone, Calendar, CheckCircle, XCircle, Receipt, ExternalLink } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
@@ -57,6 +57,10 @@ const Profile = () => {
   const handleLogout = () => {
     // In a real app, this would call an authentication logout function
     navigate("/login");
+  };
+
+  const handlePayMembership = () => {
+    navigate("/pago-membresia");
   };
 
   // Toggle function to demo empty/filled benefits view
@@ -208,6 +212,16 @@ const Profile = () => {
                           {userData.membership.status === "active" ? "Activa" : "Inactiva"}
                         </span>
                       </div>
+                      
+                      {userData.membership.status !== "active" && (
+                        <Button 
+                          className="w-full mt-4"
+                          onClick={handlePayMembership}
+                        >
+                          <CreditCard className="mr-2 h-4 w-4" />
+                          Realizar pago de membresía
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
