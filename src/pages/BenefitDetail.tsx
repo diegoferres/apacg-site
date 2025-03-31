@@ -94,7 +94,6 @@ const BenefitDetail = () => {
   const [benefit, setBenefit] = useState(mockBenefitDetails);
   const [isLoading, setIsLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
-  const [imageLoaded, setImageLoaded] = useState(false);
 
   useEffect(() => {
     // Simulate loading data
@@ -121,10 +120,6 @@ const BenefitDetail = () => {
 
   const handleImageError = () => {
     setImageError(true);
-  };
-
-  const handleImageLoad = () => {
-    setImageLoaded(true);
   };
 
   if (isLoading) {
@@ -161,68 +156,52 @@ const BenefitDetail = () => {
               </Link>
             </Button>
             
-            {/* Redesigned header section with responsive layout */}
-            <div className="flex flex-col md:flex-row gap-6 mb-8">
-              <div className="md:w-1/2 order-2 md:order-1">
-                <div className="flex items-center flex-wrap gap-2 mb-3">
-                  <Badge variant="outline" className="bg-primary/5">
-                    {benefit.category}
-                  </Badge>
-                  {isBenefitActive() ? (
-                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                      <CheckCircle className="h-3 w-3 mr-1" /> Activo
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-                      <AlertCircle className="h-3 w-3 mr-1" /> Finalizado
-                    </Badge>
-                  )}
-                </div>
-                
-                <h1 className="text-2xl md:text-3xl font-bold mb-4">
-                  {benefit.title}
-                </h1>
-                
-                <div className="flex flex-wrap gap-y-3 gap-x-6 text-sm text-muted-foreground">
-                  <div className="flex items-center">
-                    <Store className="h-4 w-4 mr-2 flex-shrink-0" />
-                    <span>{benefit.store}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Calendar className="h-4 w-4 mr-2 flex-shrink-0" />
-                    <span>Válido: {formatDate(benefit.validFrom)} - {formatDate(benefit.validTo)}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Users className="h-4 w-4 mr-2 flex-shrink-0" />
-                    <span>{benefit.usageCount} personas usaron este beneficio</span>
-                  </div>
-                </div>
+            <div className="flex items-center flex-wrap gap-2 mb-3">
+              <Badge variant="outline" className="bg-primary/5">
+                {benefit.category}
+              </Badge>
+              {isBenefitActive() ? (
+                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                  <CheckCircle className="h-3 w-3 mr-1" /> Activo
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                  <AlertCircle className="h-3 w-3 mr-1" /> Finalizado
+                </Badge>
+              )}
+            </div>
+            
+            {benefit.image && !imageError ? (
+              <div className="w-full h-64 md:h-80 mb-6 rounded-lg overflow-hidden">
+                <img
+                  src={benefit.image}
+                  alt={benefit.title}
+                  className="w-full h-full object-cover"
+                  onError={handleImageError}
+                />
               </div>
-              
-              <div className="md:w-1/2 order-1 md:order-2">
-                {benefit.image && !imageError ? (
-                  <div className={`relative w-full h-60 md:h-[250px] rounded-lg overflow-hidden ${!imageLoaded ? 'bg-muted/30' : ''}`}>
-                    <img
-                      src={benefit.image}
-                      alt={benefit.title}
-                      className="w-full h-full object-contain"
-                      onError={handleImageError}
-                      onLoad={handleImageLoad}
-                      style={{ objectPosition: 'center' }}
-                    />
-                    {!imageLoaded && (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="animate-pulse">
-                          <Image className="h-12 w-12 text-muted-foreground/60" />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="w-full h-60 md:h-[250px] rounded-lg bg-muted/30 flex items-center justify-center">
-                    <Image className="h-16 w-16 text-muted-foreground/60" />
-                  </div>
-                )}
+            ) : (
+              <div className="w-full h-64 md:h-80 mb-6 rounded-lg bg-muted/30 flex items-center justify-center">
+                <Image className="h-16 w-16 text-muted-foreground/60" />
+              </div>
+            )}
+            
+            <h1 className="text-3xl md:text-4xl font-bold mb-4">
+              {benefit.title}
+            </h1>
+            
+            <div className="flex flex-wrap gap-y-3 gap-x-6 text-sm text-muted-foreground mb-8">
+              <div className="flex items-center">
+                <Store className="h-4 w-4 mr-2 flex-shrink-0" />
+                <span>{benefit.store}</span>
+              </div>
+              <div className="flex items-center">
+                <Calendar className="h-4 w-4 mr-2 flex-shrink-0" />
+                <span>Válido: {formatDate(benefit.validFrom)} - {formatDate(benefit.validTo)}</span>
+              </div>
+              <div className="flex items-center">
+                <Users className="h-4 w-4 mr-2 flex-shrink-0" />
+                <span>{benefit.usageCount} personas usaron este beneficio</span>
               </div>
             </div>
           </div>
