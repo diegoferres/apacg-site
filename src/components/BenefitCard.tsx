@@ -27,6 +27,7 @@ interface BenefitCardProps {
 const BenefitCard = ({ benefit, delay = 0 }: BenefitCardProps) => {
   const [isVisible, setIsVisible] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -45,26 +46,41 @@ const BenefitCard = ({ benefit, delay = 0 }: BenefitCardProps) => {
     setImageError(true);
   };
 
+  const handleImageLoad = () => {
+    setImageLoaded(true);
+  };
+
   return (
     <Card 
       className={`overflow-hidden transition-all duration-500 transform hover:shadow-md hover:-translate-y-1 ${
         isVisible ? 'opacity-100' : 'opacity-0 translate-y-4'
       }`}
     >
-      {benefit.image && !imageError ? (
-        <div className="relative w-full h-48 overflow-hidden">
-          <img
-            src={benefit.image}
-            alt={benefit.title}
-            className="w-full h-full object-cover"
-            onError={handleImageError}
-          />
-        </div>
-      ) : (
-        <div className="bg-muted/30 w-full h-48 flex items-center justify-center">
-          <Image className="h-12 w-12 text-muted-foreground/60" />
-        </div>
-      )}
+      <div className="relative w-full h-48 overflow-hidden bg-muted/30">
+        {benefit.image && !imageError ? (
+          <>
+            <img
+              src={benefit.image}
+              alt={benefit.title}
+              className={`w-full h-full object-contain ${!imageLoaded ? 'opacity-0' : 'opacity-100'}`}
+              onError={handleImageError}
+              onLoad={handleImageLoad}
+              style={{ transition: 'opacity 0.3s ease' }}
+            />
+            {!imageLoaded && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="animate-pulse">
+                  <Image className="h-10 w-10 text-muted-foreground/60" />
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Image className="h-12 w-12 text-muted-foreground/60" />
+          </div>
+        )}
+      </div>
       <CardHeader className="p-4 pb-2">
         <div className="flex justify-between items-start">
           <Badge variant="outline" className="mb-2 bg-primary/5 text-xs font-medium">
