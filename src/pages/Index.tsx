@@ -19,7 +19,8 @@ const mockBenefits: Benefit[] = [
     category: 'Restaurantes',
     validFrom: '2023-09-01',
     validTo: '2023-12-31',
-    usageCount: 128
+    usageCount: 128,
+    image: 'https://images.unsplash.com/photo-1581092795360-fd1ca04f0952'
   },
   {
     id: '2',
@@ -29,7 +30,8 @@ const mockBenefits: Benefit[] = [
     category: 'Educación',
     validFrom: '2023-10-01',
     validTo: '2024-03-31',
-    usageCount: 87
+    usageCount: 87,
+    image: 'https://images.unsplash.com/photo-1486718448742-163732cd1544'
   },
   {
     id: '3',
@@ -39,7 +41,8 @@ const mockBenefits: Benefit[] = [
     category: 'Entretenimiento',
     validFrom: '2023-08-15',
     validTo: '2023-11-30',
-    usageCount: 215
+    usageCount: 215,
+    image: 'https://images.unsplash.com/photo-1582562124811-c09040d0a901'
   },
   {
     id: '4',
@@ -49,7 +52,8 @@ const mockBenefits: Benefit[] = [
     category: 'Salud',
     validFrom: '2023-07-01',
     validTo: '2024-06-30',
-    usageCount: 56
+    usageCount: 56,
+    image: 'https://images.unsplash.com/photo-1433086966358-54859d0ed716'
   },
   {
     id: '5',
@@ -59,7 +63,8 @@ const mockBenefits: Benefit[] = [
     category: 'Educación',
     validFrom: '2023-11-01',
     validTo: '2024-02-28',
-    usageCount: 41
+    usageCount: 41,
+    image: 'https://images.unsplash.com/photo-1500375592092-40eb2168fd21'
   },
   {
     id: '6',

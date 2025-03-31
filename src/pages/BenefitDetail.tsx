@@ -9,7 +9,8 @@ import {
   CheckCircle, 
   AlertCircle, 
   ArrowLeft,
-  Users 
+  Users,
+  Image 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -47,7 +48,8 @@ const mockBenefitDetails = {
     'Máximo reintegro mensual: $5000',
     'No acumulable con otras promociones',
     'No válido para eventos especiales o feriados'
-  ]
+  ],
+  image: 'https://images.unsplash.com/photo-1581092795360-fd1ca04f0952'
 };
 
 // Similar benefits mock data
@@ -60,7 +62,8 @@ const similarBenefits: Benefit[] = [
     category: 'Entretenimiento',
     validFrom: '2023-08-15',
     validTo: '2023-11-30',
-    usageCount: 215
+    usageCount: 215,
+    image: 'https://images.unsplash.com/photo-1582562124811-c09040d0a901'
   },
   {
     id: '4',
@@ -70,7 +73,8 @@ const similarBenefits: Benefit[] = [
     category: 'Salud',
     validFrom: '2023-07-01',
     validTo: '2024-06-30',
-    usageCount: 56
+    usageCount: 56,
+    image: 'https://images.unsplash.com/photo-1433086966358-54859d0ed716'
   },
   {
     id: '5',
@@ -80,7 +84,8 @@ const similarBenefits: Benefit[] = [
     category: 'Educación',
     validFrom: '2023-11-01',
     validTo: '2024-02-28',
-    usageCount: 41
+    usageCount: 41,
+    image: 'https://images.unsplash.com/photo-1500375592092-40eb2168fd21'
   }
 ];
 
@@ -88,6 +93,7 @@ const BenefitDetail = () => {
   const { id } = useParams<{ id: string }>();
   const [benefit, setBenefit] = useState(mockBenefitDetails);
   const [isLoading, setIsLoading] = useState(true);
+  const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
     // Simulate loading data
@@ -110,6 +116,10 @@ const BenefitDetail = () => {
     const from = new Date(benefit.validFrom);
     const to = new Date(benefit.validTo);
     return now >= from && now <= to;
+  };
+
+  const handleImageError = () => {
+    setImageError(true);
   };
 
   if (isLoading) {
@@ -160,6 +170,21 @@ const BenefitDetail = () => {
                 </Badge>
               )}
             </div>
+            
+            {benefit.image && !imageError ? (
+              <div className="w-full h-64 md:h-80 mb-6 rounded-lg overflow-hidden">
+                <img
+                  src={benefit.image}
+                  alt={benefit.title}
+                  className="w-full h-full object-cover"
+                  onError={handleImageError}
+                />
+              </div>
+            ) : (
+              <div className="w-full h-64 md:h-80 mb-6 rounded-lg bg-muted/30 flex items-center justify-center">
+                <Image className="h-16 w-16 text-muted-foreground/60" />
+              </div>
+            )}
             
             <h1 className="text-3xl md:text-4xl font-bold mb-4">
               {benefit.title}
