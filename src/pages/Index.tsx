@@ -8,70 +8,73 @@ import Footer from '@/components/Footer';
 import SearchBar from '@/components/SearchBar';
 import BenefitCard, { Benefit } from '@/components/BenefitCard';
 import { Store, Tag, ArrowRight } from 'lucide-react';
+import { api } from '@/services/api'; // Adjust the import path as necessary
 
 // Mock data for benefits
-const mockBenefits: Benefit[] = [
-  {
-    id: '1',
-    title: 'Reintegro 20% en restaurantes y cafeterías los fines de semana',
-    store: 'Café Milano',
-    description: 'Obtén un reintegro del 20% en todas tus compras durante los fines de semana pagando con tarjeta de crédito asociada.',
-    category: 'Restaurantes',
-    validFrom: '2023-09-01',
-    validTo: '2023-12-31',
-    usageCount: 128
-  },
-  {
-    id: '2',
-    title: 'Descuento del 15% en libros y materiales educativos',
-    store: 'Librería Central',
-    description: 'Descuento especial para miembros en todos los libros y materiales educativos presentando credencial.',
-    category: 'Educación',
-    validFrom: '2023-10-01',
-    validTo: '2024-03-31',
-    usageCount: 87
-  },
-  {
-    id: '3',
-    title: '2x1 en entradas para funciones de teatro y cine',
-    store: 'Teatro Municipal',
-    description: 'Dos entradas por el precio de una para cualquier función de lunes a jueves presentando identificación.',
-    category: 'Entretenimiento',
-    validFrom: '2023-08-15',
-    validTo: '2023-11-30',
-    usageCount: 215
-  },
-  {
-    id: '4',
-    title: 'Consulta médica gratuita para socios',
-    store: 'Centro Médico Salud',
-    description: 'Una consulta médica general gratuita por mes para socios activos. Reserva previa obligatoria.',
-    category: 'Salud',
-    validFrom: '2023-07-01',
-    validTo: '2024-06-30',
-    usageCount: 56
-  },
-  {
-    id: '5',
-    title: 'Descuento del 30% en cursos de idiomas',
-    store: 'Instituto de Idiomas Global',
-    description: 'Importante descuento en la inscripción a cursos regulares de cualquier idioma.',
-    category: 'Educación',
-    validFrom: '2023-11-01',
-    validTo: '2024-02-28',
-    usageCount: 41
-  },
-  {
-    id: '6',
-    title: 'Descuento del 10% en todos los productos',
-    store: 'Tienda Deportiva Runner',
-    description: 'Descuento especial en toda la tienda para miembros de la asociación. No acumulable con otras promociones.',
-    category: 'Tiendas',
-    validFrom: '2023-09-15',
-    validTo: '2024-01-15',
-    usageCount: 103
-  }
-];
+// const mockBenefits: Benefit[] = [
+//   {
+//     id: '1',
+//     title: 'Reintegro 20% en restaurantes y cafeterías los fines de semana',
+//     store: 'Café Milano',
+//     description: 'Obtén un reintegro del 20% en todas tus compras durante los fines de semana pagando con tarjeta de crédito asociada.',
+//     category: 'Restaurantes',
+//     validFrom: '2023-09-01',
+//     validTo: '2023-12-31',
+//     usageCount: 128
+//   },
+//   {
+//     id: '2',
+//     title: 'Descuento del 15% en libros y materiales educativos',
+//     store: 'Librería Central',
+//     description: 'Descuento especial para miembros en todos los libros y materiales educativos presentando credencial.',
+//     category: 'Educación',
+//     validFrom: '2023-10-01',
+//     validTo: '2024-03-31',
+//     usageCount: 87
+//   },
+//   {
+//     id: '3',
+//     title: '2x1 en entradas para funciones de teatro y cine',
+//     store: 'Teatro Municipal',
+//     description: 'Dos entradas por el precio de una para cualquier función de lunes a jueves presentando identificación.',
+//     category: 'Entretenimiento',
+//     validFrom: '2023-08-15',
+//     validTo: '2023-11-30',
+//     usageCount: 215
+//   },
+//   {
+//     id: '4',
+//     title: 'Consulta médica gratuita para socios',
+//     store: 'Centro Médico Salud',
+//     description: 'Una consulta médica general gratuita por mes para socios activos. Reserva previa obligatoria.',
+//     category: 'Salud',
+//     validFrom: '2023-07-01',
+//     validTo: '2024-06-30',
+//     usageCount: 56
+//   },
+//   {
+//     id: '5',
+//     title: 'Descuento del 30% en cursos de idiomas',
+//     store: 'Instituto de Idiomas Global',
+//     description: 'Importante descuento en la inscripción a cursos regulares de cualquier idioma.',
+//     category: 'Educación',
+//     validFrom: '2023-11-01',
+//     validTo: '2024-02-28',
+//     usageCount: 41
+//   },
+//   {
+//     id: '6',
+//     title: 'Descuento del 10% en todos los productos',
+//     store: 'Tienda Deportiva Runner',
+//     description: 'Descuento especial en toda la tienda para miembros de la asociación. No acumulable con otras promociones.',
+//     category: 'Tiendas',
+//     validFrom: '2023-09-15',
+//     validTo: '2024-01-15',
+//     usageCount: 103
+//   }
+// ];
+
+
 
 // Mock data for featured stores
 const featuredStores = [
@@ -82,33 +85,46 @@ const featuredStores = [
 ];
 
 const Index = () => {
-  const [filteredBenefits, setFilteredBenefits] = useState<Benefit[]>(mockBenefits);
+  const [filteredBenefits, setFilteredBenefits] = useState<Benefit[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     // Simulate loading
-    const timer = setTimeout(() => {
-      setIsLoaded(true);
-    }, 300);
+    // const timer = setTimeout(() => {
+    //   setIsLoaded(true);
+    // }, 300);
 
-    return () => clearTimeout(timer);
+    // return () => clearTimeout(timer);
+
+    const fetchBenefits = async () => {
+      try {
+        const response = await api.get('client/benefits/list');
+
+        setFilteredBenefits(response.data.data.data);
+        setIsLoaded(true);
+      } catch (error) {
+        console.error('Error fetching benefits:', error);
+      }
+    }
+
+    fetchBenefits();
   }, []);
 
-  const handleSearch = (term: string, categories: string[]) => {
-    const results = mockBenefits.filter(benefit => {
-      const matchesSearch = term === '' || 
-        benefit.title.toLowerCase().includes(term.toLowerCase()) ||
-        benefit.store.toLowerCase().includes(term.toLowerCase()) ||
-        benefit.description.toLowerCase().includes(term.toLowerCase());
+  // const handleSearch = (term: string, categories: string[]) => {
+  //   const results = mockBenefits.filter(benefit => {
+  //     const matchesSearch = term === '' || 
+  //       benefit.title.toLowerCase().includes(term.toLowerCase()) ||
+  //       benefit.store.toLowerCase().includes(term.toLowerCase()) ||
+  //       benefit.description.toLowerCase().includes(term.toLowerCase());
       
-      const matchesCategory = categories.length === 0 || 
-        categories.includes(benefit.category);
+  //     const matchesCategory = categories.length === 0 || 
+  //       categories.includes(benefit.category);
       
-      return matchesSearch && matchesCategory;
-    });
+  //     return matchesSearch && matchesCategory;
+  //   });
     
-    setFilteredBenefits(results);
-  };
+  //   setFilteredBenefits(results);
+  // };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -128,7 +144,7 @@ const Index = () => {
               Accedé a descuentos exclusivos y promociones especiales en diferentes comercios y servicios como miembro de A.P.A.C. GOETHE.
             </p>
             
-            <SearchBar onSearch={handleSearch} />
+            {/* <SearchBar onSearch={handleSearch} /> */}
           </div>
         </div>
       </section>
@@ -148,7 +164,7 @@ const Index = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredBenefits.slice(0, 6).map((benefit, index) => (
+            {filteredBenefits.map((benefit, index) => (
               <BenefitCard 
                 key={benefit.id} 
                 benefit={benefit} 
@@ -157,7 +173,7 @@ const Index = () => {
             ))}
           </div>
           
-          {filteredBenefits.length === 0 && (
+          {/* {filteredBenefits.length === 0 && (
             <div className="text-center py-12 animate-fade-up">
               <p className="text-muted-foreground">No se encontraron beneficios con los criterios seleccionados.</p>
               <Button 
@@ -168,7 +184,7 @@ const Index = () => {
                 Restablecer búsqueda
               </Button>
             </div>
-          )}
+          )} */}
         </div>
       </section>
       

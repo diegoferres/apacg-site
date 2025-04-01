@@ -9,18 +9,28 @@ import { Button } from '@/components/ui/button';
 export interface Benefit {
   id: string;
   title: string;
-  store: string;
+  commerce: {
+    name: string; // Extraído de la relación con Commerce
+  };
   description: string;
-  category: string;
-  validFrom: string;
-  validTo: string;
-  usageCount?: number;
+  termsAndConditions: string;
+  category: {
+    name: string; // Extraído de la relación con Category
+  };
+  start_date: string;
+  end_date: string;
+  claim_count?: number; // Cambiado de usageCount a claimCount
 }
 
 interface BenefitCardProps {
   benefit: Benefit;
   delay?: number;
 }
+
+const removeHTMLTags = (text: string) => {
+  const doc = new DOMParser().parseFromString(text, 'text/html');
+  return doc.body.textContent || "";
+};
 
 const BenefitCard = ({ benefit, delay = 0 }: BenefitCardProps) => {
   const [isVisible, setIsVisible] = useState(false);
@@ -47,7 +57,7 @@ const BenefitCard = ({ benefit, delay = 0 }: BenefitCardProps) => {
       <CardHeader className="p-4 pb-2">
         <div className="flex justify-between items-start">
           <Badge variant="outline" className="mb-2 bg-primary/5 text-xs font-medium">
-            {benefit.category}
+            {benefit.category?.name}
           </Badge>
         </div>
         <h3 className="text-lg font-semibold line-clamp-2">{benefit.title}</h3>
@@ -55,18 +65,18 @@ const BenefitCard = ({ benefit, delay = 0 }: BenefitCardProps) => {
       <CardContent className="p-4 pt-2">
         <div className="flex items-center text-sm text-muted-foreground mb-3">
           <Store className="h-4 w-4 mr-2 flex-shrink-0" />
-          <span>{benefit.store}</span>
+          <span>{benefit.commerce?.name}</span>
         </div>
         <div className="flex items-center text-sm text-muted-foreground mb-3">
           <Calendar className="h-4 w-4 mr-2 flex-shrink-0" />
-          <span>Válido: {formatDate(benefit.validFrom)} - {formatDate(benefit.validTo)}</span>
+          <span>Válido: {formatDate(benefit.start_date)} - {formatDate(benefit.end_date)}</span>
         </div>
-        <p className="text-sm line-clamp-2 mt-2">{benefit.description}</p>
+        <p className="text-sm line-clamp-2 mt-2">{removeHTMLTags(benefit.description)}</p>
       </CardContent>
       <CardFooter className="p-4 pt-2 flex justify-between items-center border-t border-border/40">
-        {benefit.usageCount !== undefined && (
+        {benefit.claim_count !== undefined && (
           <span className="text-xs text-muted-foreground">
-            {benefit.usageCount} personas usaron este beneficio
+            {benefit.claim_count} personas usaron este beneficio
           </span>
         )}
         <Button asChild variant="ghost" size="sm" className="ml-auto">
