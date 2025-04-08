@@ -10,50 +10,63 @@ import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, Tabl
 import { QrCode, LogOut, User, CreditCard, Gift, Edit, Mail, Phone, Calendar, CheckCircle, XCircle, Receipt, ExternalLink } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-
-// Mock user data - in a real app this would come from an API or context
-const userData = {
-  id: "12345",
-  name: "Usuario Socio",
-  email: "usuario_socio@apacgoethe.com",
-  phone: "0981 123 456",
-  memberCode: "APAC-2024-12345",
-  status: "inactive", // active or inactive
-  avatar: "",
-  membership: {
-    paymentDate: "2024-05-21",
-    amount: "150.000 Gs.",
-    status: "inactive" // active, inactive, expired
-  },
-  paymentHistory: [
-    { id: "pay-001", date: "2024-05-21", amount: "150.000 Gs.", status: "Completado" },
-    { id: "pay-002", date: "2024-04-20", amount: "150.000 Gs.", status: "Completado" },
-    { id: "pay-003", date: "2024-03-22", amount: "150.000 Gs.", status: "Completado" },
-    { id: "pay-004", date: "2024-02-20", amount: "150.000 Gs.", status: "Completado" }
-  ],
-  claimedBenefits: [
-    { 
-      id: "ben-001", 
-      name: "50% de descuento en Libros", 
-      business: "Librería Santa Teresa",
-      usedDate: "2024-05-15",
-      code: "LIBRO-50-2024"
-    },
-    { 
-      id: "ben-002", 
-      name: "Entrada gratuita a Seminario", 
-      business: "Centro Cultural Goethe",
-      usedDate: "2024-04-10",
-      code: "SEM-GOETHE-2024"
-    }
-  ]
-};
+import { useStore } from "@/stores/store";
+import { FaUserAlt } from 'react-icons/fa'; // Ajusta el ícono según tus necesidades
+import { api } from "@/services/api";
 
 const Profile = () => {
   const [activeTab, setActiveTab] = useState("membership");
   const [showEmptyBenefits, setShowEmptyBenefits] = useState(false);
+  const user = useStore((state) => state.user);
+  const setUser = useStore((state) => state.setUser);
+  const [payments, setPayments] = useState([]);
+  const [benefits, setBenefits] = useState([]);
   const navigate = useNavigate();
+
+  const isPending = user?.member?.status === "En Mora";
+
+    useEffect(() => {
+      const fetchUser = async () => {
+        try {
+          const response = await api.get('api/user');
+          setUser(response.data);
+          console.log(user);
+        } catch (error) {
+          console.error('Error fetching user:', error);
+        }
+      }
+
+      fetchUser();
+    }, []);
+
+    useEffect(() => {
+      const fetchPayments = async () => {
+        if (user?.member?.id) { // Verifica que `user` esté disponible
+          try {
+            const response = await api.get(`api/client/memberships/${user.id}`);
+            console.log(response.data);
+            setPayments(response.data.data.data);
+          } catch (error) {
+            console.error('Error fetching payments:', error);
+          }
+        }
+      };
+
+      const fetchBenefits = async () => {
+        try {
+          const response = await api.get(`api/client/benefits/member/${user?.member?.id}`);
+          console.log(response.data);
+
+          setBenefits(response.data.data);
+        } catch (error) {
+          console.error('Error fetching benefits:', error);
+        }
+      }
   
+      fetchPayments(); // Se ejecuta solo cuando `user` está disponible
+      fetchBenefits(); // Se ejecuta solo cuando `user` está disponible
+    }, [user]);
+
   const handleLogout = () => {
     // In a real app, this would call an authentication logout function
     navigate("/login");
@@ -93,13 +106,16 @@ const Profile = () => {
               <CardHeader className="text-center">
                 <div className="flex justify-center mb-4">
                   <Avatar className="h-24 w-24">
-                    <AvatarImage src={userData.avatar} alt={userData.name} />
-                    <AvatarFallback className="text-2xl">{userData.name.charAt(0)}</AvatarFallback>
+                    {user?.avatar ? (
+                      <AvatarImage src={user?.avatar} alt={user?.name} />
+                    ) : (
+                      <AvatarFallback className="text-2xl">{user?.name.charAt(0)}</AvatarFallback>
+                    )}
                   </Avatar>
                 </div>
                 <CardTitle className="flex items-center justify-center gap-2">
-                  {userData.name}
-                  {userData.status === "active" ? (
+                  {user?.name}
+                  {user?.member?.status === "Activo" ? (
                     <CheckCircle className="h-5 w-5 text-green-500" />
                   ) : (
                     <XCircle className="h-5 w-5 text-red-500" />
@@ -108,20 +124,26 @@ const Profile = () => {
                 <CardDescription>
                   <div className="flex items-center justify-center gap-2 mt-1">
                     <Mail className="h-4 w-4" />
-                    <span>{userData.email}</span>
+                    <span>{user?.email}</span>
                   </div>
                   <div className="flex items-center justify-center gap-2 mt-1">
                     <Phone className="h-4 w-4" />
-                    <span>{userData.phone}</span>
+                    <span>{user?.member?.phone}</span>
                   </div>
                 </CardDescription>
               </CardHeader>
               
               <CardContent className="flex flex-col items-center">
                 <div className="mb-4 p-2 bg-white rounded-lg">
-                  <QrCode className="h-32 w-32" />
+                  {/* <QrCode className="h-32 w-32" />
+                   */}
+                 <img 
+                  src={user?.member?.image?.storage_path_full} 
+                  alt="QR Code" 
+                  className="h-32 w-32" 
+                />
                 </div>
-                <p className="text-sm font-medium mb-4">Código de Socio: {userData.memberCode}</p>
+                <p className="text-sm font-medium mb-4">Código de Socio: {user?.member?.member_number}</p>
                 <Button 
                   variant="destructive" 
                   className="w-full"
@@ -188,7 +210,7 @@ const Profile = () => {
                           <Calendar className="h-5 w-5 text-muted-foreground" />
                           <span className="font-medium">Fecha de pago:</span>
                         </div>
-                        <span>{userData.membership.paymentDate}</span>
+                        <span>{user?.member?.payment_date}</span>
                       </div>
                       
                       <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
@@ -196,7 +218,7 @@ const Profile = () => {
                           <CreditCard className="h-5 w-5 text-muted-foreground" />
                           <span className="font-medium">Monto pagado:</span>
                         </div>
-                        <span>{userData.membership.amount}</span>
+                        <span>90.000 Gs.</span>
                       </div>
                       
                       <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
@@ -205,15 +227,15 @@ const Profile = () => {
                           <span className="font-medium">Estado:</span>
                         </div>
                         <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          userData.membership.status === "active" 
+                          !isPending 
                             ? "bg-green-100 text-green-800" 
                             : "bg-red-100 text-red-800"
                         }`}>
-                          {userData.membership.status === "active" ? "Activa" : "Inactiva"}
+                          {!isPending ? "Activa" : "Inactiva"}
                         </span>
                       </div>
                       
-                      {userData.membership.status !== "active" && (
+                      {isPending && (
                         <Button 
                           className="w-full mt-4"
                           onClick={handlePayMembership}
@@ -247,9 +269,9 @@ const Profile = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {userData.paymentHistory.map((payment) => (
+                        {payments?.map((payment) => (
                           <TableRow key={payment.id}>
-                            <TableCell>{payment.date}</TableCell>
+                            <TableCell>{payment.payment_date}</TableCell>
                             <TableCell>{payment.amount}</TableCell>
                             <TableCell>
                               <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -276,32 +298,32 @@ const Profile = () => {
                   <CardDescription className="flex justify-between items-center">
                     <span>Listado de beneficios que has utilizado</span>
                     {/* Toggle button for demo purposes */}
-                    <Button 
+                    {/* <Button 
                       variant="outline" 
                       size="sm" 
                       onClick={toggleBenefitsView}
                       className="ml-auto text-xs"
                     >
                       Demo: {showEmptyBenefits ? "Mostrar con datos" : "Mostrar vacío"}
-                    </Button>
+                    </Button> */}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {!showEmptyBenefits && userData.claimedBenefits.length > 0 ? (
+                  {benefits.length > 0 ? (
                     <div className="space-y-4">
-                      {userData.claimedBenefits.map((benefit) => (
+                      {benefits.map((benefit) => (
                         <div key={benefit.id} className="p-4 border rounded-lg">
                           <div className="flex justify-between mb-2">
-                            <h3 className="font-medium">{benefit.name}</h3>
-                            <span className="text-sm text-muted-foreground">{benefit.usedDate}</span>
+                            <h3 className="font-medium">{benefit.title}</h3>
+                            {/* <span className="text-sm text-muted-foreground">{benefit.}</span> */}
                           </div>
                           <p className="text-sm text-muted-foreground mb-2">
-                            Comercio: {benefit.business}
+                            Comercio: {benefit.commerce?.name}
                           </p>
-                          <div className="flex items-center gap-2 text-sm">
+                          {/* <div className="flex items-center gap-2 text-sm">
                             <span className="font-medium">Código utilizado:</span>
                             <code className="bg-muted px-2 py-1 rounded text-xs">{benefit.code}</code>
-                          </div>
+                          </div> */}
                         </div>
                       ))}
                     </div>
@@ -340,7 +362,7 @@ const Profile = () => {
                       <input 
                         id="name"
                         type="text" 
-                        defaultValue={userData.name}
+                        defaultValue={user?.name}
                         className="w-full p-2 border rounded-md"
                       />
                     </div>
@@ -350,7 +372,7 @@ const Profile = () => {
                       <input 
                         id="email"
                         type="email" 
-                        defaultValue={userData.email}
+                        defaultValue={user?.email}
                         className="w-full p-2 border rounded-md"
                       />
                     </div>
@@ -360,7 +382,7 @@ const Profile = () => {
                       <input 
                         id="phone"
                         type="tel" 
-                        defaultValue={userData.phone}
+                        defaultValue={user?.member?.phone}
                         className="w-full p-2 border rounded-md"
                       />
                     </div>

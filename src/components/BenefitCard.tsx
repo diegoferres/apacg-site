@@ -1,10 +1,11 @@
 
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, Store, Tag, ChevronRight } from 'lucide-react';
+import { Calendar, Store, Tag, ChevronRight, Image } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 export interface Benefit {
   id: string;
@@ -13,13 +14,15 @@ export interface Benefit {
     name: string; // Extraído de la relación con Commerce
   };
   description: string;
-  termsAndConditions: string;
   category: {
     name: string; // Extraído de la relación con Category
   };
   start_date: string;
   end_date: string;
-  claim_count?: number; // Cambiado de usageCount a claimCount
+  claim_count?: number;
+  cover?: {
+    storage_path_full: string;
+  }; // Added image property
 }
 
 interface BenefitCardProps {
@@ -34,6 +37,7 @@ const removeHTMLTags = (text: string) => {
 
 const BenefitCard = ({ benefit, delay = 0 }: BenefitCardProps) => {
   const [isVisible, setIsVisible] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -48,12 +52,30 @@ const BenefitCard = ({ benefit, delay = 0 }: BenefitCardProps) => {
     return date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
 
+  const handleImageError = () => {
+    setImageError(true);
+  };
+
   return (
     <Card 
       className={`overflow-hidden transition-all duration-500 transform hover:shadow-md hover:-translate-y-1 ${
         isVisible ? 'opacity-100' : 'opacity-0 translate-y-4'
       }`}
     >
+      {benefit.cover && !imageError ? (
+        <div className="relative w-full h-48 overflow-hidden">
+          <img
+            src={benefit.cover?.storage_path_full}
+            alt={benefit.title}
+            className="w-full h-full object-cover"
+            onError={handleImageError}
+          />
+        </div>
+      ) : (
+        <div className="bg-muted/30 w-full h-48 flex items-center justify-center">
+          <Image className="h-12 w-12 text-muted-foreground/60" />
+        </div>
+      )}
       <CardHeader className="p-4 pb-2">
         <div className="flex justify-between items-start">
           <Badge variant="outline" className="mb-2 bg-primary/5 text-xs font-medium">

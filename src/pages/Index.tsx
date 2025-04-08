@@ -9,84 +9,16 @@ import SearchBar from '@/components/SearchBar';
 import BenefitCard, { Benefit } from '@/components/BenefitCard';
 import { Store, Tag, ArrowRight } from 'lucide-react';
 import { api } from '@/services/api'; // Adjust the import path as necessary
+import CommerceCard from '@/components/CommerceCard';
+import { useStore } from '@/stores/store';
 
-// Mock data for benefits
-// const mockBenefits: Benefit[] = [
-//   {
-//     id: '1',
-//     title: 'Reintegro 20% en restaurantes y cafeterías los fines de semana',
-//     store: 'Café Milano',
-//     description: 'Obtén un reintegro del 20% en todas tus compras durante los fines de semana pagando con tarjeta de crédito asociada.',
-//     category: 'Restaurantes',
-//     validFrom: '2023-09-01',
-//     validTo: '2023-12-31',
-//     usageCount: 128
-//   },
-//   {
-//     id: '2',
-//     title: 'Descuento del 15% en libros y materiales educativos',
-//     store: 'Librería Central',
-//     description: 'Descuento especial para miembros en todos los libros y materiales educativos presentando credencial.',
-//     category: 'Educación',
-//     validFrom: '2023-10-01',
-//     validTo: '2024-03-31',
-//     usageCount: 87
-//   },
-//   {
-//     id: '3',
-//     title: '2x1 en entradas para funciones de teatro y cine',
-//     store: 'Teatro Municipal',
-//     description: 'Dos entradas por el precio de una para cualquier función de lunes a jueves presentando identificación.',
-//     category: 'Entretenimiento',
-//     validFrom: '2023-08-15',
-//     validTo: '2023-11-30',
-//     usageCount: 215
-//   },
-//   {
-//     id: '4',
-//     title: 'Consulta médica gratuita para socios',
-//     store: 'Centro Médico Salud',
-//     description: 'Una consulta médica general gratuita por mes para socios activos. Reserva previa obligatoria.',
-//     category: 'Salud',
-//     validFrom: '2023-07-01',
-//     validTo: '2024-06-30',
-//     usageCount: 56
-//   },
-//   {
-//     id: '5',
-//     title: 'Descuento del 30% en cursos de idiomas',
-//     store: 'Instituto de Idiomas Global',
-//     description: 'Importante descuento en la inscripción a cursos regulares de cualquier idioma.',
-//     category: 'Educación',
-//     validFrom: '2023-11-01',
-//     validTo: '2024-02-28',
-//     usageCount: 41
-//   },
-//   {
-//     id: '6',
-//     title: 'Descuento del 10% en todos los productos',
-//     store: 'Tienda Deportiva Runner',
-//     description: 'Descuento especial en toda la tienda para miembros de la asociación. No acumulable con otras promociones.',
-//     category: 'Tiendas',
-//     validFrom: '2023-09-15',
-//     validTo: '2024-01-15',
-//     usageCount: 103
-//   }
-// ];
-
-
-
-// Mock data for featured stores
-const featuredStores = [
-  { id: 's1', name: 'Café Milano', category: 'Restaurantes', benefitCount: 3 },
-  { id: 's2', name: 'Librería Central', category: 'Educación', benefitCount: 2 },
-  { id: 's3', name: 'Teatro Municipal', category: 'Entretenimiento', benefitCount: 4 },
-  { id: 's4', name: 'Centro Médico Salud', category: 'Salud', benefitCount: 1 }
-];
 
 const Index = () => {
   const [filteredBenefits, setFilteredBenefits] = useState<Benefit[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [featuredCommerces, setFeaturedCommerces] = useState<[]>([]); // Adjust type as necessary
+  const user = useStore((state) => state.user);
+  const setUser = useStore((state) => state.setUser);
 
   useEffect(() => {
     // Simulate loading
@@ -95,10 +27,19 @@ const Index = () => {
     // }, 300);
 
     // return () => clearTimeout(timer);
+    const fetchUser = async () => {
+      try {
+        const response = await api.get('api/user');
+        setUser(response.data);
+        console.log(user);
+      } catch (error) {
+        console.error('Error fetching user:', error);
+      }
+    }
 
     const fetchBenefits = async () => {
       try {
-        const response = await api.get('client/benefits/list');
+        const response = await api.get('api/client/benefits/list');
 
         setFilteredBenefits(response.data.data.data);
         setIsLoaded(true);
@@ -107,7 +48,22 @@ const Index = () => {
       }
     }
 
+    const fetchCommerces = async () => {
+      try {
+        const response = await api.get('api/client/commerces/list');
+
+        // Assuming the response contains a list of featured stores
+        // setFeaturedStores(response.data.data.data);
+        setFeaturedCommerces(response.data.data.data);
+        setIsLoaded(true);  
+      } catch (error) {
+        console.error('Error fetching commerces:', error);
+      }
+    }
+
+    fetchUser();
     fetchBenefits();
+    fetchCommerces();
   }, []);
 
   // const handleSearch = (term: string, categories: string[]) => {
@@ -196,26 +152,11 @@ const Index = () => {
           </h2>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {featuredStores.map((store, index) => (
-              <Link 
-                key={store.id} 
-                to={`/comercio/${store.id}`}
-                className={`block p-6 bg-background rounded-lg border border-border/40 transition-all duration-300 hover:shadow-md hover:-translate-y-1 transform ${
-                  isLoaded ? 'opacity-100' : 'opacity-0 translate-y-4'
-                }`}
-                style={{ transitionDelay: `${index * 100}ms` }}
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold">{store.name}</h3>
-                  <Badge variant="secondary" className="text-xs">
-                    {store.category}
-                  </Badge>
-                </div>
-                
-                <div className="text-sm text-muted-foreground">
-                  {store.benefitCount} {store.benefitCount === 1 ? 'beneficio' : 'beneficios'} disponibles
-                </div>
-              </Link>
+            {featuredCommerces.map((commerce, index) => (            
+                <CommerceCard
+                  commerce={commerce} 
+                  delay={100 + index * 50}
+                />
             ))}
           </div>
         </div>

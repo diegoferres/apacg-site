@@ -9,7 +9,8 @@ import {
   CheckCircle, 
   AlertCircle, 
   ArrowLeft,
-  Users 
+  Users,
+  Image 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +19,7 @@ import { Separator } from '@/components/ui/separator';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import BenefitCard, { Benefit } from '@/components/BenefitCard';
+import { api } from '@/services/api';
 
 // Mock data for single benefit details
 const mockBenefitDetails = {
@@ -47,7 +49,8 @@ const mockBenefitDetails = {
     'Máximo reintegro mensual: $5000',
     'No acumulable con otras promociones',
     'No válido para eventos especiales o feriados'
-  ]
+  ],
+  image: 'https://images.unsplash.com/photo-1581092795360-fd1ca04f0952'
 };
 
 // Similar benefits mock data
@@ -60,7 +63,8 @@ const similarBenefits: Benefit[] = [
     category: 'Entretenimiento',
     validFrom: '2023-08-15',
     validTo: '2023-11-30',
-    usageCount: 215
+    usageCount: 215,
+    image: 'https://images.unsplash.com/photo-1582562124811-c09040d0a901'
   },
   {
     id: '4',
@@ -70,7 +74,8 @@ const similarBenefits: Benefit[] = [
     category: 'Salud',
     validFrom: '2023-07-01',
     validTo: '2024-06-30',
-    usageCount: 56
+    usageCount: 56,
+    image: 'https://images.unsplash.com/photo-1433086966358-54859d0ed716'
   },
   {
     id: '5',
@@ -80,25 +85,62 @@ const similarBenefits: Benefit[] = [
     category: 'Educación',
     validFrom: '2023-11-01',
     validTo: '2024-02-28',
-    usageCount: 41
+    usageCount: 41,
+    image: 'https://images.unsplash.com/photo-1500375592092-40eb2168fd21'
   }
 ];
 
 const BenefitDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const [benefit, setBenefit] = useState(mockBenefitDetails);
+  const [benefit, setBenefit] = useState([]);
+  const [similarBenefits, setSimilarBenefits] = useState<Benefit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
     // Simulate loading data
-    const timer = setTimeout(() => {
-      setIsLoading(false);
+    // const timer = setTimeout(() => {
+      setIsLoading(true);
       // In a real app, we would fetch the benefit by id
-      // For now, we'll just use the mock data
-    }, 800);
+      // For example:
+      const fetchBenefit = async (id: string) => {
+        try {
+          const response = await api.get(`api/client/benefits/${id}`);
+          const data = response.data.data;
+          setBenefit(data);
+        } catch (error) {
+          console.error('Error fetching benefit:', error);
+        } finally {
+          setIsLoading(false);
+        }
+      };
 
-    return () => clearTimeout(timer);
+      fetchBenefit(id);
+      // For now, we'll just use the mock data
+    // }, 800);
+
+    // return () => clearTimeout(timer);
   }, [id]);
+
+  useEffect(() => {
+    const fetchMoreBenefits = async () => {
+      try {
+        const response = await api.get(`api/client/benefits/more/${benefit?.commerce?.id}`, {
+          params: {
+            id: benefit.id,
+          }
+        });
+        const data = response.data.data;
+        setSimilarBenefits(data);
+      } catch (error) {
+        console.error('Error fetching more benefits:', error);
+      }
+    };
+
+    if (benefit?.commerce?.id) {
+      fetchMoreBenefits();
+    }
+  }, [benefit?.commerce?.id, benefit.id]);
 
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
@@ -107,9 +149,13 @@ const BenefitDetail = () => {
 
   const isBenefitActive = (): boolean => {
     const now = new Date();
-    const from = new Date(benefit.validFrom);
-    const to = new Date(benefit.validTo);
+    const from = new Date(benefit?.start_date);
+    const to = new Date(benefit?.end_date);
     return now >= from && now <= to;
+  };
+
+  const handleImageError = () => {
+    setImageError(true);
   };
 
   if (isLoading) {
@@ -148,7 +194,7 @@ const BenefitDetail = () => {
             
             <div className="flex items-center flex-wrap gap-2 mb-3">
               <Badge variant="outline" className="bg-primary/5">
-                {benefit.category}
+                {benefit?.category?.name}
               </Badge>
               {isBenefitActive() ? (
                 <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
@@ -161,22 +207,37 @@ const BenefitDetail = () => {
               )}
             </div>
             
+            {benefit.cover && !imageError ? (
+              <div className="w-full h-64 md:h-80 mb-6 rounded-lg overflow-hidden">
+                <img
+                  src={benefit?.cover?.storage_path_full}
+                  alt={benefit?.title}
+                  className="w-full h-full object-cover"
+                  onError={handleImageError}
+                />
+              </div>
+            ) : (
+              <div className="w-full h-64 md:h-80 mb-6 rounded-lg bg-muted/30 flex items-center justify-center">
+                <Image className="h-16 w-16 text-muted-foreground/60" />
+              </div>
+            )}
+            
             <h1 className="text-3xl md:text-4xl font-bold mb-4">
-              {benefit.title}
+              {benefit?.title}
             </h1>
             
             <div className="flex flex-wrap gap-y-3 gap-x-6 text-sm text-muted-foreground mb-8">
               <div className="flex items-center">
                 <Store className="h-4 w-4 mr-2 flex-shrink-0" />
-                <span>{benefit.store}</span>
+                <span>{benefit?.commerce?.name}</span>
               </div>
               <div className="flex items-center">
                 <Calendar className="h-4 w-4 mr-2 flex-shrink-0" />
-                <span>Válido: {formatDate(benefit.validFrom)} - {formatDate(benefit.validTo)}</span>
+                <span>Válido: {formatDate(benefit.start_date)} - {formatDate(benefit?.end_date)}</span>
               </div>
               <div className="flex items-center">
                 <Users className="h-4 w-4 mr-2 flex-shrink-0" />
-                <span>{benefit.usageCount} personas usaron este beneficio</span>
+                <span>{benefit?.claim_count} personas usaron este beneficio</span>
               </div>
             </div>
           </div>
@@ -186,30 +247,33 @@ const BenefitDetail = () => {
               <Card className="p-6 mb-8">
                 <h2 className="text-xl font-semibold mb-4">Descripción</h2>
                 <p className="text-muted-foreground whitespace-pre-line mb-4">
-                  {benefit.fullDescription}
+                  {benefit?.description}
                 </p>
                 
                 <Separator className="my-6" />
                 
-                <h3 className="text-lg font-medium mb-3">Requisitos</h3>
+                {/* <h3 className="text-lg font-medium mb-3">Requisitos</h3>
                 <ul className="space-y-2 mb-6">
-                  {benefit.requirements.map((req, index) => (
+                  {benefit?.terms_and_conditions?.map((req, index) => (
                     <li key={index} className="flex items-start">
                       <CheckCircle className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
                       <span>{req}</span>
                     </li>
                   ))}
-                </ul>
+                </ul> */}
                 
-                <h3 className="text-lg font-medium mb-3">Términos y Condiciones</h3>
-                <ul className="space-y-2">
-                  {benefit.terms.map((term, index) => (
+                <h3 className="text-lg font-medium">Términos y Condiciones</h3>
+                <p className="text-muted-foreground whitespace-pre-line mb-4">
+                  {benefit?.terms_and_conditions}
+                </p>
+                {/* <ul className="space-y-2">
+                  {benefit.terms_and_conditions?.map((term, index) => (
                     <li key={index} className="flex items-start">
                       <AlertCircle className="h-5 w-5 text-amber-500 mr-2 flex-shrink-0 mt-0.5" />
                       <span>{term}</span>
                     </li>
                   ))}
-                </ul>
+                </ul> */}
               </Card>
             </div>
             
@@ -219,17 +283,17 @@ const BenefitDetail = () => {
                 <div className="space-y-4">
                   <div>
                     <h3 className="font-medium mb-1">Ubicación</h3>
-                    <p className="text-sm text-muted-foreground">{benefit.location}</p>
+                    <p className="text-sm text-muted-foreground">{benefit?.commerce?.address}</p>
                   </div>
-                  <div>
+                  {/* <div>
                     <h3 className="font-medium mb-1">Horario</h3>
                     <p className="text-sm text-muted-foreground">Lun - Vie: 9:00 - 20:00</p>
                     <p className="text-sm text-muted-foreground">Sáb - Dom: 10:00 - 22:00</p>
-                  </div>
+                  </div> */}
                   <div>
                     <h3 className="font-medium mb-1">Contacto</h3>
-                    <p className="text-sm text-muted-foreground">Tel: (011) 4567-8900</p>
-                    <p className="text-sm text-muted-foreground">Email: info@cafemilano.com</p>
+                    <p className="text-sm text-muted-foreground">Tel: {benefit?.commerce?.phone}</p>
+                    <p className="text-sm text-muted-foreground">Email: {benefit?.commerce?.email}</p>
                   </div>
                 </div>
               </Card>

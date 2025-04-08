@@ -3,13 +3,17 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { UserCircle, Menu, X, School } from 'lucide-react';
+import { useStore } from '@/stores/store';
+import { api } from '@/services/api';
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   // This would come from your authentication context in a real app
-  const [isLoggedIn, setIsLoggedIn] = useState(true); // Setting to true for demo
+  const [isLoggedIn, setIsLoggedIn] = useState(false); // Setting to true for demo
+  const [isLoading, setIsLoading] = useState(true); // Loading state for user data
   const navigate = useNavigate();
+  const user = useStore((state) => state.user);
   const location = useLocation();
 
   useEffect(() => {
@@ -24,6 +28,8 @@ const Navbar = () => {
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
+    
+    // fetchUser();
   }, [scrolled]);
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
@@ -63,7 +69,7 @@ const Navbar = () => {
             >
               Comercios
             </Link>
-            {isLoggedIn ? (
+            {user &&user.id ? (
               <Button 
                 asChild 
                 variant={location.pathname === "/perfil" ? "default" : "ghost"} 

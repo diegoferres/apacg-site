@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useForm } from "react-hook-form";
@@ -7,6 +6,7 @@ import { z } from "zod";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import axios from 'axios';
 import { 
   Card, 
   CardHeader, 
@@ -24,41 +24,82 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { ArrowLeft, Lock, Mail, Eye, EyeOff, School } from 'lucide-react';
+import { api } from '@/services/api';
 
 const formSchema = z.object({
-  email: z.string().email({ message: "Ingrese un correo electrónico válido" }),
-  password: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres" }),
+  email: z.string(),
+  cedula: z.string(),
+  password: z.string(),
 });
 
 const Login = () => {
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isEmail, setIsEmail] = useState(true); // Estado para alternar entre email y cédula
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: "",
+      cedula: "",
       password: "",
     },
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
+  
+    try {
+      // Primero, obtenemos el CSRF token necesario para las solicitudes
+      await api.get('sanctum/csrf-cookie');
+  
+      // Preparamos el payload con los valores adecuados
+      const payload = isEmail
+        ? { email: values.email, password: values.password }
+        : { cedula: values.cedula, password: values.password };
+  
+      // Realizamos la solicitud de login
+      try {
+        const response = await api.post('api/login', payload);
+        console.log(response.data); // solo si todo va bien
+        // Manejar la respuesta de login
+      const { message, redirect_to, user } = response.data;
+  
+      // Mostrar un mensaje de éxito con el toast
       toast({
-        title: "Inicio de sesión exitoso",
-        description: "Bienvenido a A.P.A.C. GOETHE",
+        title: message, // Ejemplo: "Inicio de sesión exitoso"
+        description: `Redirigiendo a ${redirect_to}`,
       });
-      // In a real app, would redirect to dashboard or home
-    }, 1500);
+
+      console.log('redirect_to', redirect_to);
+
+      window.location.href = redirect_to; // Redirigir a la URL proporcionada en la respuesta
+      } catch (error) {
+        console.log('Error capturado');
+        console.log(error.response?.data); // Aquí aparece el contenido del dd()
+      }
+  
+        // Redirige a la URL proporcionada en la respuesta
+    } catch (error) {
+      // Manejo de error en caso de que las credenciales sean incorrectas o haya un problema
+      toast({
+        title: "Error al iniciar sesión",
+        description: "Correo o contraseña incorrectos",
+        variant: "destructive", // Puedes personalizar el estilo del error
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
+  
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
+  };
+
+  const toggleForm = () => {
+    setIsEmail(!isEmail); // Cambiar entre email y cédula
   };
 
   return (
@@ -83,27 +124,50 @@ const Login = () => {
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Correo Electrónico</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                          <Input 
-                            placeholder="tu@email.com" 
-                            className="pl-10" 
-                            {...field} 
-                          />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
+                {isEmail ? (
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Correo Electrónico</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                            <Input 
+                              placeholder="tu@email.com" 
+                              className="pl-10" 
+                              {...field} 
+                            />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                ) : (
+                  <FormField
+                    control={form.control}
+                    name="cedula"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Cédula</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                            <Input 
+                              placeholder="Tu cédula" 
+                              className="pl-10" 
+                              {...field} 
+                            />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
                 <FormField
                   control={form.control}
                   name="password"
@@ -166,6 +230,14 @@ const Login = () => {
             </Button>
           </CardFooter>
         </Card>
+        
+        <Button 
+          onClick={toggleForm} 
+          variant="outline" 
+          className="mt-4 w-full"
+        >
+          {isEmail ? "Iniciar sesión con Cédula" : "Iniciar sesión con Correo"}
+        </Button>
         
         <p className="text-center text-sm text-muted-foreground mt-4">
           © {new Date().getFullYear()} A.P.A.C. GOETHE. Todos los derechos reservados.
