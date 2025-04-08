@@ -3,7 +3,7 @@ import axios from 'axios';
 axios.defaults.withCredentials = true;
 axios.defaults.withXSRFToken = true;
 
-const API_URL = 'http://localhost:8000/';
+const API_URL = 'https:://apacg.com.py/';
 
 // axios.defaults.headers.common['Authorization'] = `Bearer ${localStorage.getItem('auth_token')}`;
 
