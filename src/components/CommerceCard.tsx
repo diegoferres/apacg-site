@@ -11,7 +11,7 @@ export interface Commerce {
   id: string;
   name: string;
   claim_count?: number;
-  logo: {
+  logo?: {
     storage_path_full: string;
   }
 }
