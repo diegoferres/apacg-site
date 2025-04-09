@@ -14,18 +14,19 @@ import {
 
 interface SearchBarProps {
   onSearch: (term: string, categories: string[]) => void;
+  categories: string[] | undefined;
 }
 
-const categories = [
-  "Restaurantes",
-  "Cafeterías",
-  "Tiendas",
-  "Entretenimiento",
-  "Salud",
-  "Educación"
-];
+// const categories = [
+//   "Restaurantes",
+//   "Cafeterías",
+//   "Tiendas",
+//   "Entretenimiento",
+//   "Salud",
+//   "Educación"
+// ];
 
-const SearchBar = ({ onSearch }: SearchBarProps) => {
+const SearchBar = ({ onSearch, categories = [] }: SearchBarProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
@@ -59,27 +60,30 @@ const SearchBar = ({ onSearch }: SearchBarProps) => {
           />
         </div>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="ml-2 gap-2 text-muted-foreground">
-              <Filter className="h-4 w-4" />
-              <span className="hidden sm:inline">Filtrar</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuLabel>Categorías</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {categories.map((category) => (
-              <DropdownMenuCheckboxItem
-                key={category}
-                checked={selectedCategories.includes(category)}
-                onCheckedChange={() => toggleCategory(category)}
-              >
-                {category}
-              </DropdownMenuCheckboxItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {categories.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="ml-2 gap-2 text-muted-foreground">
+                <Filter className="h-4 w-4" />
+                <span className="hidden sm:inline">Filtrar</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuLabel>Categorías</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {categories.map((category) => (
+                <DropdownMenuCheckboxItem
+                  key={category}
+                  checked={selectedCategories.includes(category)}
+                  onCheckedChange={() => toggleCategory(category)}
+                >
+                  {category}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+
 
         <Button size="sm" className="ml-2">
           Buscar

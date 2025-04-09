@@ -22,6 +22,12 @@ const Profile = () => {
   const [payments, setPayments] = useState([]);
   const [benefits, setBenefits] = useState([]);
   const navigate = useNavigate();
+  const [name, setName] = useState(user?.name || "");
+  const [first_name, setFirstName] = useState(user.member?.first_name || "");
+  const [last_name, setLastName] = useState(user.member?.last_name || "");
+  const [email, setEmail] = useState(user?.email || "");
+  const [phone, setPhone] = useState(user?.member?.phone || "");
+
 
   const isPending = user?.member?.status === "En Mora";
 
@@ -30,6 +36,13 @@ const Profile = () => {
         try {
           const response = await api.get('api/user');
           setUser(response.data);
+
+          setEmail(response.data.email);
+          setPhone(response.data.member.phone);
+
+          setFirstName(response.data.member.first_name);
+          setLastName(response.data.member.last_name);
+
           console.log(user);
         } catch (error) {
           console.error('Error fetching user:', error);
@@ -81,6 +94,24 @@ const Profile = () => {
     setShowEmptyBenefits(!showEmptyBenefits);
   };
 
+
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault();
+
+    try {
+      const response = await api.put(`/api/client/members/${user?.member?.id}`, {
+        first_name,
+        last_name,
+        phone,
+        avatar: null
+      });
+      
+      setUser({...user, name, email, member: {...user?.member, phone}}); // Refresh user data after update
+    } catch (error) {
+      console.error('Error updating profile:', error);
+    }
+  }
+  
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -358,13 +389,20 @@ const Profile = () => {
                 <CardContent>
                   <form className="space-y-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium" htmlFor="name">Nombre</label>
-                      <input 
-                        id="name"
-                        type="text" 
-                        defaultValue={user?.name}
-                        className="w-full p-2 border rounded-md"
-                      />
+                    <label className="text-sm font-medium" htmlFor="name">Nombre</label>
+                    <input 
+                      id="name"
+                      type="text" 
+                      value={`${first_name} ${last_name}`}  // Mostrar ambos nombres juntos
+                      onChange={(e) => {
+                        // Dividir el nombre completo cuando se edite el campo
+                        const fullName = e.target.value.split(' ');
+                        setFirstName(fullName[0] || ''); // Primer nombre
+                        setLastName(fullName.slice(1).join(' ') || ''); // Apellido(s)
+                      }}
+                      className="w-full p-2 border rounded-md"
+                    />
+
                     </div>
                     
                     <div className="space-y-2">
@@ -373,6 +411,7 @@ const Profile = () => {
                         id="email"
                         type="email" 
                         defaultValue={user?.email}
+                        onChange={(e) => setEmail(e.target.value)}
                         className="w-full p-2 border rounded-md"
                       />
                     </div>
@@ -383,11 +422,12 @@ const Profile = () => {
                         id="phone"
                         type="tel" 
                         defaultValue={user?.member?.phone}
+                        onChange={(e) => setPhone(e.target.value)}
                         className="w-full p-2 border rounded-md"
                       />
                     </div>
                     
-                    <Button type="submit" className="w-full">Guardar Cambios</Button>
+                    <Button onClick={handleUpdateProfile} className="w-full">Guardar Cambios</Button>
                   </form>
                 </CardContent>
               </Card>

@@ -79,6 +79,10 @@ const Benefits = () => {
   const handlePageChange = (page: number) => {
     setSearchParams({ page: page.toString() });
   };
+
+  const availableCategories = Array.from(
+    new Set(benefits.map(b => b.category.name))
+  );
   
   return (
     <div className="min-h-screen flex flex-col">
@@ -93,7 +97,7 @@ const Benefits = () => {
             Explora todos los beneficios disponibles para los miembros de A.P.A.C. GOETHE.
           </p>
           
-          <SearchBar onSearch={handleSearch} />
+          <SearchBar onSearch={handleSearch}  categories={availableCategories} />
         </div>
       </section>
       
@@ -106,20 +110,37 @@ const Benefits = () => {
               ))}
             </div>
           ) : filteredBenefits.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredBenefits.map((benefit, index) => (
-                <BenefitCard 
-                  key={benefit.id} 
-                  benefit={benefit} 
-                  delay={100 + index * 50}
-                />
+            <div className="space-y-10">
+              {Object.entries(
+                filteredBenefits.reduce((acc: Record<string, Benefit[]>, benefit) => {
+                  const category = benefit.category.name;
+                  if (!acc[category]) acc[category] = [];
+                  acc[category].push(benefit);
+                  return acc;
+                }, {})
+              ).map(([category, benefitsInCategory]) => (
+                <div key={category}>
+                  <h2 className="text-2xl font-semibold mb-4">{category}</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {benefitsInCategory.map((benefit, index) => (
+                      <BenefitCard
+                        key={benefit.id}
+                        benefit={benefit}
+                        delay={100 + index * 50}
+                      />
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           ) : (
             <div className="text-center py-12">
-              <p className="text-muted-foreground">No se encontraron beneficios con los criterios seleccionados.</p>
+              <p className="text-muted-foreground">
+                No se encontraron beneficios con los criterios seleccionados.
+              </p>
             </div>
           )}
+
           
           {totalPages > 1 && (
             <Pagination className="mt-12">

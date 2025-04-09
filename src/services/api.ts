@@ -4,7 +4,7 @@ import axios from 'axios';
 axios.defaults.withCredentials = true;
 axios.defaults.withXSRFToken = true;
 
-const API_URL = 'https://apacg.com.py/';
+const API_URL = 'http://localhost:8000/';
 
 // axios.defaults.headers.common['Authorization'] = `Bearer ${localStorage.getItem('auth_token')}`;
 
@@ -18,16 +18,16 @@ export const api = axios.create({
 });
 
 // Interceptor para manejar tokens de autenticación
-api.interceptors.request.use(
-    (config) => {
-        const token = localStorage.getItem('auth_token');
-        if (token) {
-            config.headers['Authorization'] = `Bearer ${token}`;
-        }
-        return config;
-    },
-    (error) => Promise.reject(error)
-);
+// api.interceptors.request.use(
+//     (config) => {
+//         const token = localStorage.getItem('auth_token');
+//         if (token) {
+//             config.headers['Authorization'] = `Bearer ${token}`;
+//         }
+//         return config;
+//     },
+//     (error) => Promise.reject(error)
+// );
 
 // Interceptor para manejar errores comunes
 api.interceptors.response.use(

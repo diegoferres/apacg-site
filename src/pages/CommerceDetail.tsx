@@ -28,6 +28,7 @@ interface CommerceDetail {
 const CommerceDetail = () => {
   const { id } = useParams<{ id: string }>();
   const [commerce, setCommerce] = useState<CommerceDetail | null>(null);
+  const [benefits, setBenefits] = useState<Benefit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
   const { toast } = useToast();
@@ -39,7 +40,7 @@ const CommerceDetail = () => {
       setIsLoading(true);
       try {
         // Fetch commerce details
-        const response = await api.get(`api/client/commerces/show/${id}`);
+        const response = await api.get(`api/client/commerces/${id}`);
         setCommerce(response.data.data);
         setIsLoading(false);
       } catch (error) {
@@ -55,6 +56,24 @@ const CommerceDetail = () => {
     
     fetchCommerceDetails();
   }, [id, toast]);
+
+  useEffect(() => {
+    const fetchBenefits = async () => {
+      if (!commerce) return;
+      
+      try {
+        // Fetch benefits for the commerce
+        const response = await api.get(`api/client/commerces/${commerce.id}/benefits`);
+        setBenefits(response.data.data);
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error fetching benefits:', error);
+      }
+    };
+
+    fetchBenefits();
+
+  }, [commerce]);
   
   const handleImageError = () => {
     setImageError(true);
@@ -148,10 +167,10 @@ const CommerceDetail = () => {
                     <span>{commerce.phone}</span>
                   </div>
                 )}
-                {commerce.email && (
+                {commerce?.user?.email && (
                   <div className="flex items-center text-sm">
                     <Mail className="h-4 w-4 mr-2 flex-shrink-0" />
-                    <span>{commerce.email}</span>
+                    <span>{commerce?.user?.email}</span>
                   </div>
                 )}
                 {commerce.website && (
@@ -171,9 +190,9 @@ const CommerceDetail = () => {
         <div className="mt-12">
           <h2 className="text-2xl font-bold mb-6">Beneficios disponibles</h2>
           
-          {commerce.benefits && commerce.benefits.length > 0 ? (
+          {benefits && benefits.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {commerce.benefits.map((benefit, index) => (
+              {benefits?.map((benefit, index) => (
                 <BenefitCard 
                   key={benefit.id} 
                   benefit={benefit} 
@@ -182,7 +201,7 @@ const CommerceDetail = () => {
               ))}
             </div>
           ) : (
-            <div className="text-center py-12 bg-muted/10 rounded-lg">
+             <div className="text-center py-12 bg-muted/10 rounded-lg">
               <p className="text-muted-foreground">Este comercio aún no tiene beneficios disponibles.</p>
             </div>
           )}

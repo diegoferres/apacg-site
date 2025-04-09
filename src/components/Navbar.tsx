@@ -14,6 +14,7 @@ const Navbar = () => {
   const [isLoading, setIsLoading] = useState(true); // Loading state for user data
   const navigate = useNavigate();
   const user = useStore((state) => state.user);
+  const setUser = useStore((state) => state.setUser);
   const location = useLocation();
 
   useEffect(() => {
@@ -31,6 +32,22 @@ const Navbar = () => {
     
     // fetchUser();
   }, [scrolled]);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await api.get('api/user');
+        setUser(response.data);
+        console.log(user);
+      } catch (error) {
+        console.error('Error fetching user:', error);
+      }
+    }
+
+    if(!user) {
+      fetchUser();
+    }
+  }, []);
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
