@@ -1,11 +1,23 @@
+
 // stores/store.ts
 import { create } from "zustand";
 
-// Define un tipo para el usuario
+// Define a type for the user
 interface User {
   id: number;
   name: string;
   email: string;
+  avatar?: string;
+  member?: {
+    id: number;
+    status: string;
+    member_number: string;
+    phone: string;
+    payment_date: string;
+    image?: {
+      storage_path_full: string;
+    };
+  };
 }
 
 interface UserStore {

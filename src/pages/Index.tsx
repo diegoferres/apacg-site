@@ -12,10 +12,20 @@ import { api } from '@/services/api';
 import CommerceCard from '@/components/CommerceCard';
 import { useStore } from '@/stores/store';
 
+interface Commerce {
+  id: string;
+  name: string;
+  address: string;
+  description: string;
+  logo?: {
+    storage_path_full: string;
+  };
+}
+
 const Index = () => {
   const [filteredBenefits, setFilteredBenefits] = useState<Benefit[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [featuredCommerces, setFeaturedCommerces] = useState<[]>([]);
+  const [featuredCommerces, setFeaturedCommerces] = useState<Commerce[]>([]);
   const user = useStore((state) => state.user);
   const setUser = useStore((state) => state.setUser);
 
