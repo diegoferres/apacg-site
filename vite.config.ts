@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
-    outDir: '../apacg.com.py/public',  // compila directo al public de Laravel
-    emptyOutDir: false,                // no borra los assets del backend
+    outDir: '../apacg.com.py/public/react',  // compila directo al public de Laravel
+    emptyOutDir: true,                // no borra los assets del backend
   }
 }));
