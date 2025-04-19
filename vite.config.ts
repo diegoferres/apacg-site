@@ -19,4 +19,8 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    outDir: '../apacg.com.py/public',  // compila directo al public de Laravel
+    emptyOutDir: false,                // no borra los assets del backend
+  }
 }));
