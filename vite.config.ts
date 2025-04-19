@@ -5,6 +5,7 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  base: '/react/', // 👈 importante para que los assets carguen desde la ruta correcta
   server: {
     host: "::",
     port: 8080,
