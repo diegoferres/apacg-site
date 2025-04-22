@@ -14,8 +14,6 @@ interface User {
     member_number: string;
     phone: string;
     payment_date: string;
-    first_name?: string;
-    last_name?: string;
     image?: {
       storage_path_full: string;
     };

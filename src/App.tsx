@@ -13,20 +13,15 @@ import Login from "./pages/Login";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import PaymentPage from "./pages/PaymentPage";
-import Register from "./pages/Register";
-import RegisterChildren from "./pages/RegisterChildren";
 
 const queryClient = new QueryClient();
-
-// Get the base URL from Vite's import.meta.env or fallback to "/react/"
-const baseUrl = import.meta.env.BASE_URL || "/react/";
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter basename={baseUrl}>
+      <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/beneficios" element={<Benefits />} />
@@ -34,8 +29,6 @@ const App = () => (
           <Route path="/comercios" element={<Commerces />} />
           <Route path="/comercio/:id" element={<CommerceDetail />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/registro" element={<Register />} />
-          <Route path="/registro-hijos" element={<RegisterChildren />} />
           <Route path="/perfil" element={<Profile />} />
           <Route path="/pago-membresia" element={<PaymentPage />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
