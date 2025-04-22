@@ -14,6 +14,8 @@ interface User {
     member_number: string;
     phone: string;
     payment_date: string;
+    first_name: string;
+    last_name: string;
     image?: {
       storage_path_full: string;
     };
@@ -21,8 +23,8 @@ interface User {
 }
 
 interface UserStore {
-  user: User | null; // El usuario puede ser `null` inicialmente
-  isLoggedIn: boolean; // Estado para indicar si el usuario está logueado
+  user: User | null;
+  isLoggedIn: boolean;
   setUser: (userData: User | null) => void;
   logout: () => void;
   setIsLoggedIn: (status: boolean) => void;

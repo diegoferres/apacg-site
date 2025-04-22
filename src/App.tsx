@@ -13,6 +13,7 @@ import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import PaymentPage from "./pages/PaymentPage";
 import Register from "./pages/Register";
+import ChildrenEnrollment from "./pages/ChildrenEnrollment";
 import { ChildrenManager } from "./components/ChildrenManager";
 
 const queryClient = new QueryClient();
@@ -33,7 +34,7 @@ const App = () => (
           <Route path="/register" element={<Register />} />
           <Route path="/perfil" element={<Profile />} />
           <Route path="/pago-membresia" element={<PaymentPage />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="/inscripcion-alumnos" element={<ChildrenEnrollment />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
