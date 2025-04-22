@@ -13,6 +13,7 @@ import { useToast } from '@/components/ui/use-toast';
 
 interface CommerceDetail {
   id: string;
+  slug: string;
   name: string;
   description?: string;
   logo?: {
@@ -26,7 +27,7 @@ interface CommerceDetail {
 }
 
 const CommerceDetail = () => {
-  const { id } = useParams<{ id: string }>();
+  const { slug } = useParams<{ slug: string }>();
   const [commerce, setCommerce] = useState<CommerceDetail | null>(null);
   const [benefits, setBenefits] = useState<Benefit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -35,12 +36,12 @@ const CommerceDetail = () => {
   
   useEffect(() => {
     const fetchCommerceDetails = async () => {
-      if (!id) return;
+      if (!slug) return;
       
       setIsLoading(true);
       try {
         // Fetch commerce details
-        const response = await api.get(`api/client/commerces/${id}`);
+        const response = await api.get(`api/client/commerces/${slug}`);
         setCommerce(response.data.data);
         setIsLoading(false);
       } catch (error) {
@@ -55,7 +56,7 @@ const CommerceDetail = () => {
     };
     
     fetchCommerceDetails();
-  }, [id, toast]);
+  }, [slug, toast]);
 
   useEffect(() => {
     const fetchBenefits = async () => {
@@ -194,7 +195,7 @@ const CommerceDetail = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {benefits?.map((benefit, index) => (
                 <BenefitCard 
-                  key={benefit.id} 
+                  key={benefit.slug} 
                   benefit={benefit} 
                   delay={100 + index * 50}
                 />

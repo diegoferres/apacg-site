@@ -9,6 +9,7 @@ import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 export interface Commerce {
   id: string;
+  slug: string;
   name: string;
   claim_count?: number;
   logo?: {
@@ -49,8 +50,8 @@ const CommerceCard = ({ commerce, delay = 0 }: CommerceCardProps) => {
 
   return (
     <Link 
-      key={commerce.id} 
-      to={`/comercio/${commerce.id}`}
+      key={commerce.slug} 
+      to={`/comercio/${commerce.slug}`}
     >
       <Card 
         className={`overflow-hidden transition-all duration-500 transform hover:shadow-md hover:-translate-y-1 ${
