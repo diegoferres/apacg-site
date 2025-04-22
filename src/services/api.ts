@@ -4,7 +4,7 @@ import axios from 'axios';
 axios.defaults.withCredentials = true;
 axios.defaults.withXSRFToken = true;
 
-const API_URL = 'http://apacg.com.py/';
+const API_URL = 'http://localhost:8000/';
 
 // axios.defaults.headers.common['Authorization'] = `Bearer ${localStorage.getItem('auth_token')}`;
 
@@ -38,9 +38,9 @@ api.interceptors.response.use(
             // Redirigir a login o limpiar sesión
             localStorage.removeItem('auth_token');
             // Si estamos en una página protegida, redirigir a login
-            if (window.location.pathname !== '/login') {
-                window.location.href = '/login';
-            }
+            // if (window.location.pathname !== '/login') {
+            //     window.location.href = '/login';
+            // }
         }
         return Promise.reject(error);
     }

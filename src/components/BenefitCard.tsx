@@ -102,7 +102,7 @@ const BenefitCard = ({ benefit, delay = 0 }: BenefitCardProps) => {
           </span>
         )}
         <Button asChild variant="ghost" size="sm" className="ml-auto">
-          <Link to={`/beneficio/${benefit.id}`} className="flex items-center">
+          <Link to={`/beneficio/${benefit.slug}`} className="flex items-center">
             Ver más <ChevronRight className="h-4 w-4 ml-1" />
           </Link>
         </Button>

@@ -20,10 +20,12 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import BenefitCard, { Benefit } from '@/components/BenefitCard';
 import { api } from '@/services/api';
+import { format } from 'path';
 
 // Interface for the benefit detail
 interface BenefitDetail {
   id: string;
+  slug: string;
   title: string;
   description: string;
   terms_and_conditions: string;
@@ -46,7 +48,7 @@ interface BenefitDetail {
 }
 
 const BenefitDetail = () => {
-  const { id } = useParams<{ id: string }>();
+  const { slug } = useParams<{ slug: string }>();
   const [benefit, setBenefit] = useState<BenefitDetail | null>(null);
   const [similarBenefits, setSimilarBenefits] = useState<Benefit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -54,10 +56,11 @@ const BenefitDetail = () => {
 
   useEffect(() => {
     setIsLoading(true);
-    const fetchBenefit = async (id: string) => {
+    const fetchBenefit = async (slug: string) => {
       try {
-        const response = await api.get(`api/client/benefits/${id}`);
+        const response = await api.get(`api/client/benefits/${slug}`);
         const data = response.data.data;
+        
         setBenefit(data);
       } catch (error) {
         console.error('Error fetching benefit:', error);
@@ -66,8 +69,10 @@ const BenefitDetail = () => {
       }
     };
 
-    fetchBenefit(id);
-  }, [id]);
+    
+
+    fetchBenefit(slug);
+  }, [slug]);
 
   useEffect(() => {
     const fetchMoreBenefits = async () => {
@@ -94,6 +99,12 @@ const BenefitDetail = () => {
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     return date.toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' });
+  };
+
+  const formatToPlainText = (htmlContent: string) => {
+    return htmlContent
+      .replace(/\t/g, ' ') // Opcional: reemplazar tabs por espacios
+      .replace(/<[^>]*>/g, ''); // Eliminar HTML
   };
 
   const isBenefitActive = (): boolean => {
@@ -212,19 +223,24 @@ const BenefitDetail = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="md:col-span-2 animate-fade-up" style={{ animationDelay: '0.1s' }}>
-              <Card className="p-6 mb-8">
-                <h2 className="text-xl font-semibold mb-4">Descripción</h2>
-                <p className="text-muted-foreground whitespace-pre-line mb-4">
-                  {benefit.description}
-                </p>
-                
-                <Separator className="my-6" />
-                
-                <h3 className="text-lg font-medium">Términos y Condiciones</h3>
-                <p className="text-muted-foreground whitespace-pre-line mb-4">
-                  {benefit.terms_and_conditions}
-                </p>
-              </Card>
+            <Card className="p-6 mb-8">
+              <h2 className="text-xl font-semibold mb-4">Descripción</h2>
+              <div className="overflow-x-auto">
+                <div className="whitespace-pre-wrap break-words text-muted-foreground max-h-[400px] overflow-y-auto">
+                  {formatToPlainText(benefit.description)}
+                </div>
+              </div>
+
+              <Separator className="my-6" />
+
+              <h3 className="text-lg font-medium">Términos y Condiciones</h3>
+              <div className='overflow-x-auto'>
+              <div className="whitespace-pre-wrap break-words text-muted-foreground max-h-[400px] overflow-y-auto">
+                {formatToPlainText(benefit.terms_and_conditions)}
+              </div>
+              </div>
+            </Card>
+
             </div>
             
             <div className="animate-fade-up" style={{ animationDelay: '0.2s' }}>
@@ -257,7 +273,7 @@ const BenefitDetail = () => {
             <h2 className="text-2xl font-bold mb-6">Beneficios similares</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {similarBenefits.map((benefit, index) => (
-                <BenefitCard key={benefit.id} benefit={benefit} delay={100 + index * 50} />
+                <BenefitCard key={benefit.slug} benefit={benefit} delay={100 + index * 50} />
               ))}
             </div>
           </div>
