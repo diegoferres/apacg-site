@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '@/services/api';
@@ -64,8 +63,6 @@ const Commerces = () => {
       );
     }
     
-    // Nota: Como no tenemos categorías para comercios, ignoramos ese filtro
-    
     setFilteredCommerces(results);
   };
   
@@ -86,7 +83,7 @@ const Commerces = () => {
             Explora todos los comercios asociados que ofrecen beneficios exclusivos para los miembros de A.P.A.C. GOETHE.
           </p>
           
-          <SearchBar onSearch={handleSearch} />
+          <SearchBar onSearch={handleSearch} categories={[]} />
         </div>
       </section>
       
@@ -128,7 +125,6 @@ const Commerces = () => {
                 
                 {[...Array(totalPages)].map((_, i) => {
                   const page = i + 1;
-                  // Show current page, first, last, and pages around current
                   if (
                     page === 1 || 
                     page === totalPages || 

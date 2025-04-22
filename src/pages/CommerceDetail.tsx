@@ -23,6 +23,9 @@ interface CommerceDetail {
   email?: string;
   website?: string;
   benefits?: Benefit[];
+  user?: {
+    email: string;
+  };
 }
 
 const CommerceDetail = () => {

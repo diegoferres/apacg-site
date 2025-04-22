@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { QrCode, LogOut, User, CreditCard, Gift, Edit, Mail, Phone, Calendar, CheckCircle, XCircle, Receipt, ExternalLink, School } from "lucide-react";
+import { QrCode, LogOut, User as UserIcon, CreditCard, Gift, Edit, Mail, Phone, Calendar, CheckCircle, XCircle, Receipt, ExternalLink, School } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useStore } from "@/stores/store";
@@ -23,8 +23,8 @@ const Profile = () => {
   const [benefits, setBenefits] = useState([]);
   const navigate = useNavigate();
   const [name, setName] = useState(user?.name || "");
-  const [first_name, setFirstName] = useState(user.member?.first_name || "");
-  const [last_name, setLastName] = useState(user.member?.last_name || "");
+  const [first_name, setFirstName] = useState("");
+  const [last_name, setLastName] = useState("");
   const [email, setEmail] = useState(user?.email || "");
   const [phone, setPhone] = useState(user?.member?.phone || "");
 
@@ -258,7 +258,7 @@ const Profile = () => {
                       
                       <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
                         <div className="flex items-center gap-2">
-                          <User className="h-5 w-5 text-muted-foreground" />
+                          <UserIcon className="h-5 w-5 text-muted-foreground" />
                           <span className="font-medium">Estado:</span>
                         </div>
                         <span className={`px-3 py-1 rounded-full text-sm font-medium ${
@@ -362,7 +362,7 @@ const Profile = () => {
                         Aún no has reclamado ningún beneficio. Explora los beneficios disponibles para comenzar.
                       </p>
                       <Button className="mt-4" asChild>
-                        <a href="/beneficios">Ver Beneficios Disponibles</a>
+                        <Link to="/beneficios">Ver Beneficios Disponibles</Link>
                       </Button>
                     </div>
                   )}
