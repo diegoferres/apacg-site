@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,8 +10,9 @@ import { QrCode, LogOut, User, CreditCard, Gift, Edit, Mail, Phone, Calendar, Ch
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useStore } from "@/stores/store";
-import { FaUserAlt } from 'react-icons/fa'; // Ajusta el ícono según tus necesidades
+import { FaUserAlt } from 'react-icons/fa';
 import { api } from "@/services/api";
+import { ChildrenManager } from "@/components/ChildrenManager";
 
 const Profile = () => {
   const [activeTab, setActiveTab] = useState("membership");
@@ -28,60 +28,58 @@ const Profile = () => {
   const [email, setEmail] = useState(user?.email || "");
   const [phone, setPhone] = useState(user?.member?.phone || "");
 
-
   const isPending = user?.member?.status === "En Mora";
 
-    useEffect(() => {
-      const fetchUser = async () => {
-        try {
-          const response = await api.get('api/user');
-          setUser(response.data);
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await api.get('api/user');
+        setUser(response.data);
 
-          setEmail(response.data.email);
-          setPhone(response.data.member.phone);
+        setEmail(response.data.email);
+        setPhone(response.data.member.phone);
 
-          setFirstName(response.data.member.first_name);
-          setLastName(response.data.member.last_name);
+        setFirstName(response.data.member.first_name);
+        setLastName(response.data.member.last_name);
 
-          console.log(user);
-        } catch (error) {
-          console.error('Error fetching user:', error);
-        }
+        console.log(user);
+      } catch (error) {
+        console.error('Error fetching user:', error);
       }
+    }
 
-      fetchUser();
-    }, []);
+    fetchUser();
+  }, []);
 
-    useEffect(() => {
-      const fetchPayments = async () => {
-        if (user?.member?.id) { // Verifica que `user` esté disponible
-          try {
-            const response = await api.get(`api/client/memberships/${user.id}`);
-            console.log(response.data);
-            setPayments(response.data.data.data);
-          } catch (error) {
-            console.error('Error fetching payments:', error);
-          }
-        }
-      };
-
-      const fetchBenefits = async () => {
+  useEffect(() => {
+    const fetchPayments = async () => {
+      if (user?.member?.id) {
         try {
-          const response = await api.get(`api/client/benefits/member/${user?.member?.id}`);
+          const response = await api.get(`api/client/memberships/${user.id}`);
           console.log(response.data);
-
-          setBenefits(response.data.data);
+          setPayments(response.data.data.data);
         } catch (error) {
-          console.error('Error fetching benefits:', error);
+          console.error('Error fetching payments:', error);
         }
       }
+    };
+
+    const fetchBenefits = async () => {
+      try {
+        const response = await api.get(`api/client/benefits/member/${user?.member?.id}`);
+        console.log(response.data);
+
+        setBenefits(response.data.data);
+      } catch (error) {
+        console.error('Error fetching benefits:', error);
+      }
+    }
   
-      fetchPayments(); // Se ejecuta solo cuando `user` está disponible
-      fetchBenefits(); // Se ejecuta solo cuando `user` está disponible
-    }, [user]);
+    fetchPayments();
+    fetchBenefits();
+  }, [user]);
 
   const handleLogout = () => {
-    // In a real app, this would call an authentication logout function
     navigate("/login");
   };
 
@@ -89,11 +87,9 @@ const Profile = () => {
     navigate("/pago-membresia");
   };
 
-  // Toggle function to demo empty/filled benefits view
   const toggleBenefitsView = () => {
     setShowEmptyBenefits(!showEmptyBenefits);
   };
-
 
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
@@ -106,18 +102,17 @@ const Profile = () => {
         avatar: null
       });
       
-      setUser({...user, name, email, member: {...user?.member, phone}}); // Refresh user data after update
+      setUser({...user, name, email, member: {...user?.member, phone}});
     } catch (error) {
       console.error('Error updating profile:', error);
     }
   }
-  
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
       <main className="flex-grow container mx-auto px-4 pt-24 pb-12">
-        {/* Breadcrumb */}
         <Breadcrumb className="mb-6">
           <BreadcrumbList>
             <BreadcrumbItem>
@@ -131,7 +126,6 @@ const Profile = () => {
         </Breadcrumb>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Sidebar Profile Panel */}
           <div className="md:col-span-1">
             <Card className="mb-6">
               <CardHeader className="text-center">
@@ -166,13 +160,11 @@ const Profile = () => {
               
               <CardContent className="flex flex-col items-center">
                 <div className="mb-4 p-2 bg-white rounded-lg">
-                  {/* <QrCode className="h-32 w-32" />
-                   */}
-                 <img 
-                  src={user?.member?.image?.storage_path_full} 
-                  alt="QR Code" 
-                  className="h-32 w-32" 
-                />
+                  <img 
+                    src={user?.member?.image?.storage_path_full} 
+                    alt="QR Code" 
+                    className="h-32 w-32" 
+                  />
                 </div>
                 <p className="text-sm font-medium mb-4">Código de Socio: {user?.member?.member_number}</p>
                 <Button 
@@ -186,7 +178,6 @@ const Profile = () => {
               </CardContent>
             </Card>
             
-            {/* Profile Navigation Menu */}
             <Card>
               <CardContent className="p-0">
                 <div className="divide-y">
@@ -214,14 +205,20 @@ const Profile = () => {
                     <Edit className="mr-2 h-5 w-5" />
                     Editar Perfil
                   </Button>
+                  <Button 
+                    variant={activeTab === "children" ? "default" : "ghost"} 
+                    className="w-full justify-start rounded-none h-12"
+                    onClick={() => setActiveTab("children")}
+                  >
+                    {/* <Users className="mr-2 h-5 w-5" /> */}
+                    Hijos Matriculados
+                  </Button>
                 </div>
               </CardContent>
             </Card>
           </div>
           
-          {/* Main Content Area */}
           <div className="md:col-span-2">
-            {/* Membership Section */}
             {activeTab === "membership" && (
               <div className="space-y-6">
                 <Card>
@@ -279,7 +276,6 @@ const Profile = () => {
                   </CardContent>
                 </Card>
                 
-                {/* Payment History Section */}
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center">
@@ -318,7 +314,6 @@ const Profile = () => {
               </div>
             )}
             
-            {/* Benefits Section */}
             {activeTab === "benefits" && (
               <Card>
                 <CardHeader>
@@ -328,15 +323,14 @@ const Profile = () => {
                   </CardTitle>
                   <CardDescription className="flex justify-between items-center">
                     <span>Listado de beneficios que has utilizado</span>
-                    {/* Toggle button for demo purposes */}
-                    {/* <Button 
+                    <Button 
                       variant="outline" 
                       size="sm" 
                       onClick={toggleBenefitsView}
                       className="ml-auto text-xs"
                     >
                       Demo: {showEmptyBenefits ? "Mostrar con datos" : "Mostrar vacío"}
-                    </Button> */}
+                    </Button>
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -346,15 +340,10 @@ const Profile = () => {
                         <div key={benefit.id} className="p-4 border rounded-lg">
                           <div className="flex justify-between mb-2">
                             <h3 className="font-medium">{benefit.title}</h3>
-                            {/* <span className="text-sm text-muted-foreground">{benefit.}</span> */}
                           </div>
                           <p className="text-sm text-muted-foreground mb-2">
                             Comercio: {benefit.commerce?.name}
                           </p>
-                          {/* <div className="flex items-center gap-2 text-sm">
-                            <span className="font-medium">Código utilizado:</span>
-                            <code className="bg-muted px-2 py-1 rounded text-xs">{benefit.code}</code>
-                          </div> */}
                         </div>
                       ))}
                     </div>
@@ -374,7 +363,6 @@ const Profile = () => {
               </Card>
             )}
             
-            {/* Edit Profile Section */}
             {activeTab === "edit" && (
               <Card>
                 <CardHeader>
@@ -389,20 +377,18 @@ const Profile = () => {
                 <CardContent>
                   <form className="space-y-4">
                     <div className="space-y-2">
-                    <label className="text-sm font-medium" htmlFor="name">Nombre</label>
-                    <input 
-                      id="name"
-                      type="text" 
-                      value={`${first_name} ${last_name}`}  // Mostrar ambos nombres juntos
-                      onChange={(e) => {
-                        // Dividir el nombre completo cuando se edite el campo
-                        const fullName = e.target.value.split(' ');
-                        setFirstName(fullName[0] || ''); // Primer nombre
-                        setLastName(fullName.slice(1).join(' ') || ''); // Apellido(s)
-                      }}
-                      className="w-full p-2 border rounded-md"
-                    />
-
+                      <label className="text-sm font-medium" htmlFor="name">Nombre</label>
+                      <input 
+                        id="name"
+                        type="text" 
+                        value={`${first_name} ${last_name}`}
+                        onChange={(e) => {
+                          const fullName = e.target.value.split(' ');
+                          setFirstName(fullName[0] || '');
+                          setLastName(fullName.slice(1).join(' ') || '');
+                        }}
+                        className="w-full p-2 border rounded-md"
+                      />
                     </div>
                     
                     <div className="space-y-2">
@@ -429,6 +415,23 @@ const Profile = () => {
                     
                     <Button onClick={handleUpdateProfile} className="w-full">Guardar Cambios</Button>
                   </form>
+                </CardContent>
+              </Card>
+            )}
+            
+            {activeTab === "children" && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    {/* <Users className="mr-2 h-5 w-5" /> */}
+                    Hijos Matriculados
+                  </CardTitle>
+                  <CardDescription>
+                    Gestiona los hijos matriculados asociados a tu cuenta
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ChildrenManager />
                 </CardContent>
               </Card>
             )}
