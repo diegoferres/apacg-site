@@ -4,7 +4,8 @@ import axios from 'axios';
 axios.defaults.withCredentials = true;
 axios.defaults.withXSRFToken = true;
 
-const API_URL = 'https://apacg.com.py/';
+// Obtener la URL base desde las variables de entorno
+const API_URL = import.meta.env.VITE_API_BASE_URL || 'https://apacg.com.py/';
 
 // axios.defaults.headers.common['Authorization'] = `Bearer ${localStorage.getItem('auth_token')}`;
 
