@@ -2,7 +2,7 @@
 // stores/store.ts
 import { create } from "zustand";
 
-// Define a type for the user
+// Define a type for the current user
 interface User {
   id: number;
   name: string;
