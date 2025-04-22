@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -17,12 +18,15 @@ import RegisterChildren from "./pages/RegisterChildren";
 
 const queryClient = new QueryClient();
 
+// Get the base URL from Vite's import.meta.env or fallback to "/react/"
+const baseUrl = import.meta.env.BASE_URL || "/react/";
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      <BrowserRouter basename={baseUrl}>
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/beneficios" element={<Benefits />} />
