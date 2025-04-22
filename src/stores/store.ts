@@ -1,8 +1,6 @@
+import { create } from 'zustand';
 
-// stores/store.ts
-import { create } from "zustand";
-
-// Define a type for the current user
+// Tu interfaz sigue igual
 interface User {
   id: number;
   name: string;
@@ -30,10 +28,13 @@ interface UserStore {
   setIsLoggedIn: (status: boolean) => void;
 }
 
-export const useStore = create<UserStore>((set) => ({
+export const userStore = create<UserStore>((set) => ({
   user: null,
   isLoggedIn: false,
   setUser: (userData) => set({ user: userData }),
   logout: () => set({ user: null, isLoggedIn: false }),
   setIsLoggedIn: (status) => set({ isLoggedIn: status }),
 }));
+
+// Hook para usar dentro de componentes
+export const useStore = userStore;

@@ -13,8 +13,9 @@ import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import PaymentPage from "./pages/PaymentPage";
 import Register from "./pages/Register";
-import ChildrenEnrollment from "./pages/ChildrenEnrollment";
 import { ChildrenManager } from "./components/ChildrenManager";
+import ProtectedWithStudents from "./components/ProtectedWithStudents";
+import ChildrenEnrollment from "./pages/ChildrenEnrollment";
 
 const queryClient = new QueryClient();
 
@@ -25,16 +26,46 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/beneficios" element={<Benefits />} />
-          <Route path="/beneficio/:slug" element={<BenefitDetail />} />
-          <Route path="/comercios" element={<Commerces />} />
-          <Route path="/comercio/:slug" element={<CommerceDetail />} />
+          <Route path="/" element={
+              <ProtectedWithStudents>
+                <Index />
+              </ProtectedWithStudents>
+          } />
+          <Route path="/beneficios" element={
+              <ProtectedWithStudents>
+                <Benefits />
+              </ProtectedWithStudents>
+          } />
+          <Route path="/beneficio/:slug" element={
+            <ProtectedWithStudents>
+              <BenefitDetail />
+            </ProtectedWithStudents>
+          } />
+          <Route path="/comercios" element={
+            <ProtectedWithStudents>
+              <Commerces />
+            </ProtectedWithStudents>
+          } />
+          <Route path="/comercio/:slug" element={
+            <ProtectedWithStudents>
+              <CommerceDetail />
+            </ProtectedWithStudents>
+          } />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/perfil" element={<Profile />} />
-          <Route path="/pago-membresia" element={<PaymentPage />} />
+          <Route path="/perfil" element={
+            <ProtectedWithStudents>
+              <Profile />
+            </ProtectedWithStudents>
+          } />
+          <Route path="/pago-membresia" element={
+            <ProtectedWithStudents>
+              <PaymentPage />
+            </ProtectedWithStudents>
+          } />
+          {/* <Route path="/children-manager" element={<ChildrenManager />}></Route> */}
           <Route path="/inscripcion-alumnos" element={<ChildrenEnrollment />} />
+          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
