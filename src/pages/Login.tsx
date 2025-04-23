@@ -131,7 +131,7 @@ const Login = () => {
           <Link to="/">
             <div className="flex items-center justify-center gap-2 text-primary">
               {/* <School className="h-10 w-10" /> */}
-              <img src="/logo.jpg" alt="Logo" className="h-20 w-18" />
+              <img src={import.meta.env.VITE_BASE_URL + "/logo.jpg"} alt="Logo" className="h-20 w-18" />
               {/* <span className="font-bold text-2xl">A.P.A.C. GOETHE</span> */}
             </div>
           </Link>

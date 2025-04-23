@@ -54,7 +54,7 @@ const Footer = () => {
         <div className="border-t border-border/30 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center text-sm text-muted-foreground">
           <p>© {currentYear} A.P.A.C. GOETHE. Todos los derechos reservados.</p>
           <p className="mt-4 md:mt-0 flex items-center">
-            Desarrollado con <Heart className="h-4 w-4 mx-1 text-red-500" /> por Lovable
+            <span className="font-bold">Desarrollado por</span> <a className='font-bold ml-1' target='_blank' href="https://180softlab.com">180SoftLab</a> 
           </p>
         </div>
       </div>
