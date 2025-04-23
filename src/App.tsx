@@ -16,20 +16,52 @@ import Register from "./pages/Register";
 import { ChildrenManager } from "./components/ChildrenManager";
 import ProtectedWithStudents from "./components/ProtectedWithStudents";
 import ChildrenEnrollment from "./pages/ChildrenEnrollment";
+import ProtectedRoute from "./components/ProtectedRoute";
+import { useStore } from "./stores/store";
+import { useEffect } from "react";
+import api from "./services/api";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
+const App = () => {
+  const { setIsLoading, setUser, setIsLoggedIn } = useStore();
+  
+  useEffect(() => {
+    // Verificar si hay un token en localStorage o sessionStorage
+    const checkAuth = async () => {
+      try {
+        // Verificar si hay un token o sesión activa
+        const response = await api.get('api/user');
+        if (response.data && response.data) {
+          // Si hay un usuario autenticado, actualizar el store
+          setUser(response.data);
+          setIsLoggedIn(true);
+        }
+      } catch (error) {
+        // Si hay un error, el usuario no está autenticado
+        console.log('No hay sesión activa');
+      } finally {
+        // Finalmente, indicar que ya no está cargando
+        setIsLoading(false);
+      }
+    };
+    
+    checkAuth();
+  }, []);
+
+  return (
+    <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
       <BrowserRouter>
         <Routes>
           <Route path="/" element={
-              <ProtectedWithStudents>
-                <Index />
-              </ProtectedWithStudents>
+              // <ProtectedRoute>
+                // <ProtectedWithStudents>
+                  <Index />
+                // </ProtectedWithStudents>
+              // </ProtectedRoute>
           } />
           <Route path="/beneficios" element={
               <ProtectedWithStudents>
@@ -71,6 +103,8 @@ const App = () => (
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
-);
+  )
+
+};
 
 export default App;

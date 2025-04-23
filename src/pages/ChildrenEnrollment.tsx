@@ -10,7 +10,8 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import api from '@/services/api';
-import { setISODay } from 'date-fns';
+import { useStore } from '@/stores/store';
+import { useNavigate } from 'react-router-dom';
 
 interface Child {
   id: string;
@@ -37,10 +38,13 @@ interface Child {
 
 const ChildrenEnrollment = () => {
   const [ci, setCi] = useState('');
+  const navigate = useNavigate();
   const [isSearching, setIsSearching] = useState(false);
   const [students, setStudents] = useState<Child[]>([]);
   // const [students, setStudents] = useState([]);
   const { toast } = useToast();
+  const user = useStore((state) => state.user);
+  const setUser = useStore((state) => state.setUser);
 
   // const searchChild = async () => {
   //   if (!document.trim()) {
@@ -160,6 +164,11 @@ const ChildrenEnrollment = () => {
 
       console.log('response', response);
 
+      setUser(response.data.data);
+
+      // fetchUser();
+      navigate('/');
+
       toast({
         title: "Éxito",
         description: "Alumnos guardados correctamente",
@@ -172,6 +181,17 @@ const ChildrenEnrollment = () => {
       });
     }
   } 
+  
+  // const fetchUser = async () => {
+  //   try {
+  //     const response = await api.get('api/user');
+  //     useStore.setState({ user: response.data.data });
+  //     navigate('/');
+  //   } catch (error) {
+  //     console.error('Error fetching user:', error);
+  //   }
+  // }
+  
 
   return (
     <div className="min-h-screen flex flex-col">

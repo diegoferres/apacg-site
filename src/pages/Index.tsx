@@ -30,15 +30,15 @@ const Index = () => {
   const setUser = useStore((state) => state.setUser);
 
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const response = await api.get('api/user');
-        setUser(response.data);
-        console.log(user);
-      } catch (error) {
-        console.error('Error fetching user:', error);
-      }
-    }
+    // const fetchUser = async () => {
+    //   try {
+    //     const response = await api.get('api/user');
+    //     setUser(response.data);
+    //     console.log(user);
+    //   } catch (error) {
+    //     console.error('Error fetching user:', error);
+    //   }
+    // }
 
     const fetchBenefits = async () => {
       try {
@@ -61,7 +61,7 @@ const Index = () => {
       }
     }
 
-    fetchUser();
+    // fetchUser();
     fetchBenefits();
     fetchCommerces();
   }, []);
@@ -75,7 +75,7 @@ const Index = () => {
         <div className="container mx-auto max-w-6xl relative z-10">
           <div className="text-center mb-12 animate-fade-up">
             <Badge variant="outline" className="mb-4 py-1 px-3 bg-primary/5">
-              Asociación de Padres y Amigos del Colegio
+              Asociación de Padres de Alumnos del Colegio GOETHE
             </Badge>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 tracking-tight">
               Encuentra los mejores <span className="text-primary">beneficios</span> para vos

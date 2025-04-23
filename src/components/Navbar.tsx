@@ -33,21 +33,21 @@ const Navbar = () => {
     // fetchUser();
   }, [scrolled]);
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const response = await api.get('api/user');
-        setUser(response.data);
-        console.log(user);
-      } catch (error) {
-        console.error('Error fetching user:', error);
-      }
-    }
+  // useEffect(() => {
+  //   const fetchUser = async () => {
+  //     try {
+  //       const response = await api.get('api/user');
+  //       setUser(response.data);
+  //       console.log(user);
+  //     } catch (error) {
+  //       console.error('Error fetching user:', error);
+  //     }
+  //   }
 
-    if(!user) {
-      fetchUser();
-    }
-  }, []);
+  //   if(!user) {
+  //     fetchUser();
+  //   }
+  // }, []);
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
@@ -61,8 +61,9 @@ const Navbar = () => {
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-2 animate-fade-in">
             <div className="flex items-center gap-2 text-primary">
-              <School className="h-8 w-8" />
-              <span className="font-bold text-xl hidden sm:inline">A.P.A.C. GOETHE</span>
+              {/* <School className="h-8 w-8" /> */}
+              <img src="/logo.jpg" alt="Logo" className="h-14 w-12" />
+              {/* <span className="font-bold text-xl hidden sm:inline">A.P.A.C. GOETHE</span> */}
             </div>
           </Link>
 

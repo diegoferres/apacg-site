@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/form";
 import { ArrowLeft, Lock, Mail, Eye, EyeOff, School } from 'lucide-react';
 import { api } from '@/services/api';
+import { useStore } from '@/stores/store';
 
 const formSchema = z.object({
   email: z.string(),
@@ -37,6 +38,9 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isEmail, setIsEmail] = useState(true); // Estado para alternar entre email y cédula
+  const navigate = useNavigate();
+  const { setUser, setIsLoggedIn, setIsLoading: setGlobalLoading } = useStore();
+  const { user } = useStore();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -49,6 +53,7 @@ const Login = () => {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
+    setGlobalLoading(true); // Indicar que está cargando a nivel global
   
     try {
       // Primero, obtenemos el CSRF token necesario para las solicitudes
@@ -62,34 +67,51 @@ const Login = () => {
       // Realizamos la solicitud de login
       try {
         const response = await api.post('api/login', payload);
-        console.log(response.data); // solo si todo va bien
+        console.log(response.data);
+        
         // Manejar la respuesta de login
-      const { message, redirect_to, user } = response.data;
-  
-      // Mostrar un mensaje de éxito con el toast
-      toast({
-        title: message, // Ejemplo: "Inicio de sesión exitoso"
-        description: `Redirigiendo a ${redirect_to}`,
-      });
+        const userData = response.data.user;
+        const redirect_to = response.data.redirect_to;
 
-      console.log('redirect_to', redirect_to);
+        // Actualizar el estado global con la información del usuario
+        setUser(userData);
+        setIsLoggedIn(true);
+        setGlobalLoading(false);
 
-      window.location.href = redirect_to; // Redirigir a la URL proporcionada en la respuesta
+        // Mostrar un mensaje de éxito con el toast
+        toast({
+          title: `¡Bienvenido, ${userData.name}!`,
+        });
+
+        // Usar setTimeout para dar tiempo a que el estado se actualice
+        setTimeout(() => {
+          // Usar navigate en lugar de window.location para mantener el estado
+          window.location = redirect_to;
+        }, 500);
+        console.log('user', user);
       } catch (error) {
         console.log('Error capturado');
-        console.log(error.response?.data); // Aquí aparece el contenido del dd()
+        console.log(error.response?.data);
+        
+        // Mostrar mensaje de error específico si está disponible
+        const errorMessage = error.response?.data?.message || "Correo o contraseña incorrectos";
+        
+        toast({
+          title: "Error al iniciar sesión",
+          description: errorMessage,
+          variant: "destructive",
+        });
       }
-  
-        // Redirige a la URL proporcionada en la respuesta
     } catch (error) {
-      // Manejo de error en caso de que las credenciales sean incorrectas o haya un problema
+      // Manejo de error general
       toast({
         title: "Error al iniciar sesión",
-        description: "Correo o contraseña incorrectos",
-        variant: "destructive", // Puedes personalizar el estilo del error
+        description: "Ha ocurrido un error inesperado. Intente nuevamente.",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
+      setGlobalLoading(false); // Finalizar carga global
     }
   };
   
@@ -108,8 +130,9 @@ const Login = () => {
         <div className="text-center mb-6">
           <Link to="/">
             <div className="flex items-center justify-center gap-2 text-primary">
-              <School className="h-10 w-10" />
-              <span className="font-bold text-2xl">A.P.A.C. GOETHE</span>
+              {/* <School className="h-10 w-10" /> */}
+              <img src="/logo.jpg" alt="Logo" className="h-20 w-18" />
+              {/* <span className="font-bold text-2xl">A.P.A.C. GOETHE</span> */}
             </div>
           </Link>
         </div>

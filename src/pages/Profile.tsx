@@ -22,65 +22,73 @@ const Profile = () => {
   const [payments, setPayments] = useState([]);
   const [benefits, setBenefits] = useState([]);
   const navigate = useNavigate();
-  const [name, setName] = useState(user?.name || "");
-  const [first_name, setFirstName] = useState(user.member?.first_name || "");
-  const [last_name, setLastName] = useState(user.member?.last_name || "");
-  const [email, setEmail] = useState(user?.email || "");
-  const [phone, setPhone] = useState(user?.member?.phone || "");
+  const [first_name, setFirstName] = useState("");
+  const [last_name, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
   const isPending = user?.member?.status === "En Mora";
 
+  // Fetch user data when component mounts
   useEffect(() => {
     const fetchUser = async () => {
       try {
+        setIsLoading(true);
         const response = await api.get('api/user');
         setUser(response.data);
-
+        
+        // Set form values from response
         setEmail(response.data.email);
-        setPhone(response.data.member.phone);
-
-        setFirstName(response.data.member.first_name);
-        setLastName(response.data.member.last_name);
-
-        console.log(user);
+        setPhone(response.data.member?.phone || "");
+        setFirstName(response.data.member?.first_name || "");
+        setLastName(response.data.member?.last_name || "");
+        
+        setIsLoading(false);
       } catch (error) {
         console.error('Error fetching user:', error);
-      }
-    }
-
-    fetchUser();
-  }, []);
-
-  useEffect(() => {
-    const fetchPayments = async () => {
-      if (user?.member?.id) {
-        try {
-          const response = await api.get(`api/client/memberships/${user.id}`);
-          console.log(response.data);
-          setPayments(response.data.data.data);
-        } catch (error) {
-          console.error('Error fetching payments:', error);
-        }
+        setIsLoading(false);
       }
     };
 
-    const fetchBenefits = async () => {
+    fetchUser();
+  }, [setUser]);
+
+  // Fetch payments and benefits only after user data is loaded
+  useEffect(() => {
+    if (!user?.member?.id) return;
+    
+    const fetchData = async () => {
       try {
-        const response = await api.get(`api/client/benefits/member/${user?.member?.id}`);
-        console.log(response.data);
-
-        setBenefits(response.data.data);
+        // Fetch payments
+        if (user.id) {
+          const paymentsResponse = await api.get(`api/client/memberships/${user.id}`);
+          setPayments(paymentsResponse.data.data.data || []);
+        }
+        
+        // Fetch benefits
+        const benefitsResponse = await api.get(`api/client/benefits/member/${user.member.id}`);
+        setBenefits(benefitsResponse.data.data || []);
       } catch (error) {
-        console.error('Error fetching benefits:', error);
+        console.error('Error fetching data:', error);
       }
-    }
-  
-    fetchPayments();
-    fetchBenefits();
-  }, [user]);
+    };
+    
+    fetchData();
+  }, [user?.id, user?.member?.id]);
 
-  const handleLogout = () => {
-    navigate("/login");
+  const handleLogout = async () => {
+    try {
+      // Realizar una solicitud al backend para hacer logout
+      await api.post('/logout');  // Asumiendo que tienes un endpoint /api/logout
+  
+      // Limpiar el estado y redirigir al login
+      setUser(null);  // Limpiar estado global
+      localStorage.removeItem('user');  // Limpiar almacenamiento local
+      navigate("/login");  // Redirigir al login
+    } catch (error) {
+      console.error('Error en el logout:', error);
+    }
   };
 
   const handlePayMembership = () => {
@@ -94,18 +102,46 @@ const Profile = () => {
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
 
+    if (!user?.member?.id) {
+      console.error('Cannot update profile: member ID not available');
+      return;
+    }
+
     try {
-      const response = await api.put(`/api/client/members/${user?.member?.id}`, {
+      const response = await api.put(`/api/client/members/${user.member.id}`, {
         first_name,
         last_name,
         phone,
         avatar: null
       });
       
-      setUser({...user, name, email, member: {...user?.member, phone}});
+      // Update local user state with new values
+      setUser({
+        ...user,
+        name: `${first_name} ${last_name}`,
+        email,
+        member: {
+          ...user.member,
+          first_name,
+          last_name,
+          phone
+        }
+      });
     } catch (error) {
       console.error('Error updating profile:', error);
     }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <main className="flex-grow container mx-auto px-4 pt-24 pb-12 flex justify-center items-center">
+          <p>Cargando perfil...</p>
+        </main>
+        <Footer />
+      </div>
+    );
   }
 
   return (
@@ -134,12 +170,12 @@ const Profile = () => {
                     {user?.avatar ? (
                       <AvatarImage src={user?.avatar} alt={user?.name} />
                     ) : (
-                      <AvatarFallback className="text-2xl">{user?.name.charAt(0)}</AvatarFallback>
+                      <AvatarFallback className="text-2xl">{user?.name?.charAt(0) || 'U'}</AvatarFallback>
                     )}
                   </Avatar>
                 </div>
                 <CardTitle className="flex items-center justify-center gap-2">
-                  {user?.name}
+                  {user?.name || `${first_name} ${last_name}`}
                   {user?.member?.status === "Activo" ? (
                     <CheckCircle className="h-5 w-5 text-green-500" />
                   ) : (
@@ -149,11 +185,11 @@ const Profile = () => {
                 <CardDescription>
                   <div className="flex items-center justify-center gap-2 mt-1">
                     <Mail className="h-4 w-4" />
-                    <span>{user?.email}</span>
+                    <span>{email || user?.email}</span>
                   </div>
                   <div className="flex items-center justify-center gap-2 mt-1">
                     <Phone className="h-4 w-4" />
-                    <span>{user?.member?.phone}</span>
+                    <span>{phone || user?.member?.phone}</span>
                   </div>
                 </CardDescription>
               </CardHeader>
@@ -210,7 +246,6 @@ const Profile = () => {
                     className="w-full justify-start rounded-none h-12"
                     onClick={() => setActiveTab("children")}
                   >
-                    {/* <Users className="mr-2 h-5 w-5" /> */}
                     Hijos Matriculados
                   </Button>
                 </div>
@@ -287,28 +322,34 @@ const Profile = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Fecha</TableHead>
-                          <TableHead>Monto</TableHead>
-                          <TableHead>Estado</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {payments?.map((payment) => (
-                          <TableRow key={payment.id}>
-                            <TableCell>{payment.payment_date}</TableCell>
-                            <TableCell>{payment.amount}</TableCell>
-                            <TableCell>
-                              <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                {payment.status}
-                              </span>
-                            </TableCell>
+                    {payments.length > 0 ? (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Fecha</TableHead>
+                            <TableHead>Monto</TableHead>
+                            <TableHead>Estado</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {payments.map((payment) => (
+                            <TableRow key={payment.id}>
+                              <TableCell>{payment.payment_date}</TableCell>
+                              <TableCell>{payment.amount}</TableCell>
+                              <TableCell>
+                                <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                  {payment.status}
+                                </span>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    ) : (
+                      <div className="text-center py-4">
+                        <p>No hay pagos registrados.</p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
@@ -334,7 +375,7 @@ const Profile = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {benefits.length > 0 ? (
+                  {benefits.length > 0 && !showEmptyBenefits ? (
                     <div className="space-y-4">
                       {benefits.map((benefit) => (
                         <div key={benefit.id} className="p-4 border rounded-lg">
@@ -375,20 +416,32 @@ const Profile = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <form className="space-y-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium" htmlFor="name">Nombre</label>
-                      <input 
-                        id="name"
-                        type="text" 
-                        value={`${first_name} ${last_name}`}
-                        onChange={(e) => {
-                          const fullName = e.target.value.split(' ');
-                          setFirstName(fullName[0] || '');
-                          setLastName(fullName.slice(1).join(' ') || '');
-                        }}
-                        className="w-full p-2 border rounded-md"
-                      />
+                  <form className="space-y-4" onSubmit={(e) => {
+                    e.preventDefault();
+                    handleUpdateProfile(e);
+                  }}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium" htmlFor="first_name">Nombre</label>
+                        <input 
+                          id="first_name"
+                          type="text" 
+                          value={first_name}
+                          onChange={(e) => setFirstName(e.target.value)}
+                          className="w-full p-2 border rounded-md"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium" htmlFor="last_name">Apellido</label>
+                        <input 
+                          id="last_name"
+                          type="text" 
+                          value={last_name}
+                          onChange={(e) => setLastName(e.target.value)}
+                          className="w-full p-2 border rounded-md"
+                        />
+                      </div>
                     </div>
                     
                     <div className="space-y-2">
@@ -396,9 +449,10 @@ const Profile = () => {
                       <input 
                         id="email"
                         type="email" 
-                        defaultValue={user?.email}
+                        value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         className="w-full p-2 border rounded-md"
+                        disabled // Email usually requires special handling for updates
                       />
                     </div>
                     
@@ -407,13 +461,13 @@ const Profile = () => {
                       <input 
                         id="phone"
                         type="tel" 
-                        defaultValue={user?.member?.phone}
+                        value={phone}
                         onChange={(e) => setPhone(e.target.value)}
                         className="w-full p-2 border rounded-md"
                       />
                     </div>
                     
-                    <Button onClick={handleUpdateProfile} className="w-full">Guardar Cambios</Button>
+                    <Button type="submit" className="w-full">Guardar Cambios</Button>
                   </form>
                 </CardContent>
               </Card>
@@ -423,7 +477,6 @@ const Profile = () => {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center">
-                    {/* <Users className="mr-2 h-5 w-5" /> */}
                     Hijos Matriculados
                   </CardTitle>
                   <CardDescription>
