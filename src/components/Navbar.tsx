@@ -62,7 +62,7 @@ const Navbar = () => {
           <Link to="/" className="flex items-center space-x-2 animate-fade-in">
             <div className="flex items-center gap-2 text-primary">
               {/* <School className="h-8 w-8" /> */}
-              <img src={import.meta.env.VITE_BASE_URL + "/logo.jpg"} alt="Logo" className="h-14 w-12" />
+              <img src={import.meta.env.VITE_BASE_URL + "/react/logo.jpg"} alt="Logo" className="h-14 w-12" />
               {/* <span className="font-bold text-xl hidden sm:inline">A.P.A.C. GOETHE</span> */}
             </div>
           </Link>
