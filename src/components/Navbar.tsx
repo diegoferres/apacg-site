@@ -29,7 +29,7 @@ const Navbar = () => {
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
-    
+
     // fetchUser();
   }, [scrolled]);
 
@@ -52,7 +52,7 @@ const Navbar = () => {
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
   return (
-    <header 
+    <header
       className={`fixed top-0 left-0 w-full z-40 transition-all duration-300 ${
         scrolled ? 'glass py-2 shadow-sm' : 'py-4'
       }`}
@@ -62,35 +62,35 @@ const Navbar = () => {
           <Link to="/" className="flex items-center space-x-2 animate-fade-in">
             <div className="flex items-center gap-2 text-primary">
               {/* <School className="h-8 w-8" /> */}
-              <img src={import.meta.env.VITE_BASE_URL + "/react/logo.jpg"} alt="Logo" className="h-14 w-12" />
+              <img src={import.meta.env.VITE_BASE_URL + "/react/logo.png"} alt="Logo" className="h-14 w-12" />
               {/* <span className="font-bold text-xl hidden sm:inline">A.P.A.C. GOETHE</span> */}
             </div>
           </Link>
 
           {/* Desktop menu */}
           <nav className="hidden md:flex items-center space-x-6">
-            <Link 
-              to="/" 
+            <Link
+              to="/"
               className="text-foreground/90 hover:text-foreground font-medium transition-colors"
             >
               Inicio
             </Link>
-            <Link 
-              to="/beneficios" 
+            <Link
+              to="/beneficios"
               className="text-foreground/90 hover:text-foreground font-medium transition-colors"
             >
               Beneficios
             </Link>
-            <Link 
-              to="/comercios" 
+            <Link
+              to="/comercios"
               className="text-foreground/90 hover:text-foreground font-medium transition-colors"
             >
               Comercios
             </Link>
             {user &&user.id ? (
-              <Button 
-                asChild 
-                variant={location.pathname === "/perfil" ? "default" : "ghost"} 
+              <Button
+                asChild
+                variant={location.pathname === "/perfil" ? "default" : "ghost"}
                 className="gap-1"
               >
                 <Link to="/perfil">
@@ -99,9 +99,9 @@ const Navbar = () => {
                 </Link>
               </Button>
             ) : (
-              <Button 
-                asChild 
-                variant={location.pathname === "/login" ? "default" : "ghost"} 
+              <Button
+                asChild
+                variant={location.pathname === "/login" ? "default" : "ghost"}
                 className="gap-1"
               >
                 <Link to="/login">
@@ -128,31 +128,31 @@ const Navbar = () => {
         <div className="md:hidden glass absolute top-full left-0 w-full py-4 animate-fade-in">
           <div className="container mx-auto px-4">
             <nav className="flex flex-col space-y-4">
-              <Link 
-                to="/" 
+              <Link
+                to="/"
                 className="text-foreground/90 hover:text-foreground font-medium transition-colors py-2"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Inicio
               </Link>
-              <Link 
-                to="/beneficios" 
+              <Link
+                to="/beneficios"
                 className="text-foreground/90 hover:text-foreground font-medium transition-colors py-2"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Beneficios
               </Link>
-              <Link 
-                to="/comercios" 
+              <Link
+                to="/comercios"
                 className="text-foreground/90 hover:text-foreground font-medium transition-colors py-2"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Comercios
               </Link>
               {isLoggedIn ? (
-                <Button 
-                  asChild 
-                  variant="default" 
+                <Button
+                  asChild
+                  variant="default"
                   className="w-full"
                 >
                   <Link to="/perfil" onClick={() => setIsMenuOpen(false)}>
@@ -161,9 +161,9 @@ const Navbar = () => {
                   </Link>
                 </Button>
               ) : (
-                <Button 
-                  asChild 
-                  variant="default" 
+                <Button
+                  asChild
+                  variant="default"
                   className="w-full"
                 >
                   <Link to="/login" onClick={() => setIsMenuOpen(false)}>
