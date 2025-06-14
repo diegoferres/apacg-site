@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -14,9 +13,11 @@ import { useStore } from '@/stores/store';
 
 interface Commerce {
   id: string;
+  slug: string;
   name: string;
   address: string;
   description: string;
+  claim_count?: number;
   logo?: {
     storage_path_full: string;
   };

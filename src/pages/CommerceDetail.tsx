@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api } from '@/services/api';
@@ -24,6 +23,9 @@ interface CommerceDetail {
   email?: string;
   website?: string;
   benefits?: Benefit[];
+  user?: {
+    email: string;
+  };
 }
 
 const CommerceDetail = () => {

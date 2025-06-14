@@ -86,7 +86,7 @@ const Commerces = () => {
             Explora todos los comercios asociados que ofrecen beneficios exclusivos para los miembros de A.P.A.C. GOETHE.
           </p>
           
-          <SearchBar onSearch={handleSearch} />
+          <SearchBar onSearch={handleSearch} categories={[]} />
         </div>
       </section>
       

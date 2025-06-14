@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, Store, Tag, ChevronRight, Image } from 'lucide-react';
@@ -9,6 +8,7 @@ import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 export interface Benefit {
   id: string;
+  slug: string;
   title: string;
   commerce: {
     name: string; // Extraído de la relación con Commerce
