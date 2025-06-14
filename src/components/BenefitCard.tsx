@@ -11,18 +11,18 @@ export interface Benefit {
   slug: string;
   title: string;
   commerce: {
-    name: string; // Extraído de la relación con Commerce
+    name: string;
   };
   description: string;
   category: {
-    name: string; // Extraído de la relación con Category
+    name: string;
   };
   start_date: string;
   end_date: string;
   claim_count?: number;
   cover?: {
     storage_path_full: string;
-  }; // Added image property
+  };
 }
 
 interface BenefitCardProps {
