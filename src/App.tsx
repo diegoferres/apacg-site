@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,6 +9,7 @@ import BenefitDetail from "./pages/BenefitDetail";
 import Benefits from "./pages/Benefits";
 import Commerces from "./pages/Commerces";
 import CommerceDetail from "./pages/CommerceDetail";
+import Events from "./pages/Events";
 import Login from "./pages/Login";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";

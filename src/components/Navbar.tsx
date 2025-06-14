@@ -61,9 +61,7 @@ const Navbar = () => {
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-2 animate-fade-in">
             <div className="flex items-center gap-2 text-primary">
-              {/* <School className="h-8 w-8" /> */}
               <img src={import.meta.env.VITE_BASE_URL + "/react/logo.png"} alt="Logo" className="h-14 w-12" />
-              {/* <span className="font-bold text-xl hidden sm:inline">A.P.A.C. GOETHE</span> */}
             </div>
           </Link>
 
@@ -86,6 +84,12 @@ const Navbar = () => {
               className="text-foreground/90 hover:text-foreground font-medium transition-colors"
             >
               Comercios
+            </Link>
+            <Link
+              to="/eventos"
+              className="text-foreground/90 hover:text-foreground font-medium transition-colors"
+            >
+              Eventos
             </Link>
             {user &&user.id ? (
               <Button
@@ -148,6 +152,13 @@ const Navbar = () => {
                 onClick={() => setIsMenuOpen(false)}
               >
                 Comercios
+              </Link>
+              <Link
+                to="/eventos"
+                className="text-foreground/90 hover:text-foreground font-medium transition-colors py-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Eventos
               </Link>
               {isLoggedIn ? (
                 <Button
