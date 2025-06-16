@@ -11,10 +11,12 @@ export interface Commerce {
   id: string;
   slug: string;
   name: string;
+  address: string;
+  description: string;
   claim_count?: number;
   logo?: {
     storage_path_full: string;
-  }
+  };
 }
 
 interface CommerceCardProps {
@@ -78,27 +80,12 @@ const CommerceCard = ({ commerce, delay = 0 }: CommerceCardProps) => {
         <CardContent className="p-4 pt-2">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-semibold">{commerce.name}</h3>
-            {/* <Badge variant="secondary" className="text-xs">
-              {commerce.}
-            </Badge> */}
           </div>
           
           <div className="text-sm text-muted-foreground">
             {commerce.claim_count} {commerce.claim_count === 1 ? 'beneficio' : 'beneficios'} disponibles
           </div>
         </CardContent>
-        {/* <CardFooter className="p-4 pt-2 flex justify-between items-center border-t border-border/40">
-          {benefit.claim_count !== undefined && (
-            <span className="text-xs text-muted-foreground">
-              {benefit.claim_count} personas usaron este beneficio
-            </span>
-          )}
-          <Button asChild variant="ghost" size="sm" className="ml-auto">
-            <Link to={`/beneficio/${benefit.id}`} className="flex items-center">
-              Ver más <ChevronRight className="h-4 w-4 ml-1" />
-            </Link>
-          </Button>
-        </CardFooter> */}
       </Card>
     </Link>
   );

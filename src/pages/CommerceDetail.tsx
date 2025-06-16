@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api } from '@/services/api';
@@ -150,7 +149,7 @@ const CommerceDetail = () => {
                 <h2 className="text-xl font-semibold mb-4">Beneficios Disponibles</h2>
                 <div className="grid grid-cols-1 gap-4">
                   {commerce.benefits.map((benefit) => (
-                    <BenefitCard key={benefit.id} benefit={benefit} />
+                    <BenefitCard key={benefit.slug} benefit={benefit} />
                   ))}
                 </div>
               </div>

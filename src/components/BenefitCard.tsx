@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, Store, Tag, ChevronRight, Image } from 'lucide-react';
