@@ -85,6 +85,11 @@ const App = () => {
               <CommerceDetail />
             </ProtectedWithStudents>
           } />
+          <Route path="/eventos" element={
+            <ProtectedWithStudents>
+              <Events />
+            </ProtectedWithStudents>
+          } />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/perfil" element={
