@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from "react-hook-form";
@@ -36,7 +37,7 @@ const Login = () => {
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isEmail, setIsEmail] = useState(true); // Estado para alternar entre email y cédula
+  const [isEmail, setIsEmail] = useState(true);
   const navigate = useNavigate();
   const { setUser, setIsLoggedIn, setIsLoading: setGlobalLoading } = useStore();
   const { user } = useStore();
@@ -52,39 +53,31 @@ const Login = () => {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
-    setGlobalLoading(true); // Indicar que está cargando a nivel global
+    setGlobalLoading(true);
 
     try {
-      // Primero, obtenemos el CSRF token necesario para las solicitudes
       await api.get('sanctum/csrf-cookie');
 
-      // Preparamos el payload con los valores adecuados
       const payload = isEmail
         ? { email: values.email, password: values.password }
         : { cedula: values.cedula, password: values.password };
 
-      // Realizamos la solicitud de login
       try {
         const response = await api.post('api/login', payload);
         console.log(response.data);
 
-        // Manejar la respuesta de login
         const userData = response.data.user;
         const redirect_to = response.data.redirect_to;
 
-        // Actualizar el estado global con la información del usuario
         setUser(userData);
         setIsLoggedIn(true);
         setGlobalLoading(false);
 
-        // Mostrar un mensaje de éxito con el toast
         toast({
           title: `¡Bienvenido, ${userData.name}!`,
         });
 
-        // Usar setTimeout para dar tiempo a que el estado se actualice
         setTimeout(() => {
-          // Usar navigate en lugar de window.location para mantener el estado
           window.location = redirect_to;
         }, 500);
         console.log('user', user);
@@ -92,7 +85,6 @@ const Login = () => {
         console.log('Error capturado');
         console.log(error.response?.data);
 
-        // Mostrar mensaje de error específico si está disponible
         const errorMessage = error.response?.data?.message || "Correo o contraseña incorrectos";
 
         toast({
@@ -102,7 +94,6 @@ const Login = () => {
         });
       }
     } catch (error) {
-      // Manejo de error general
       toast({
         title: "Error al iniciar sesión",
         description: "Ha ocurrido un error inesperado. Intente nuevamente.",
@@ -110,17 +101,16 @@ const Login = () => {
       });
     } finally {
       setIsLoading(false);
-      setGlobalLoading(false); // Finalizar carga global
+      setGlobalLoading(false);
     }
   };
-
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
 
   const toggleForm = () => {
-    setIsEmail(!isEmail); // Cambiar entre email y cédula
+    setIsEmail(!isEmail);
   };
 
   return (
@@ -129,9 +119,7 @@ const Login = () => {
         <div className="text-center mb-6">
           <Link to="/">
             <div className="flex items-center justify-center gap-2 text-primary">
-              {/* <School className="h-10 w-10" /> */}
               <img src={import.meta.env.VITE_BASE_URL + "/react/logo.png"} alt="Logo" className="h-20 w-18" />
-              {/* <span className="font-bold text-2xl">A.P.A.C. GOETHE</span> */}
             </div>
           </Link>
         </div>
