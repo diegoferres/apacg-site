@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { UserCircle, Menu, X, School } from 'lucide-react';
+import { UserCircle, Menu, X } from 'lucide-react';
 import { useStore } from '@/stores/store';
 import api from '@/services/api';
 

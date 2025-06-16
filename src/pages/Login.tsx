@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from "react-hook-form";
@@ -5,8 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useToast } from '@/hooks/use-toast';
-import axios from 'axios';
+import { useToast } from '@/components/ui/use-toast';
 import {
   Card,
   CardHeader,
@@ -23,7 +23,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { ArrowLeft, Lock, Mail, Eye, EyeOff, School } from 'lucide-react';
+import { ArrowLeft, Lock, Mail, Eye, EyeOff } from 'lucide-react';
 import api from '@/services/api';
 import { useStore } from '@/stores/store';
 
