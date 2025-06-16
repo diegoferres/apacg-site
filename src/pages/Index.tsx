@@ -1,4 +1,5 @@
 
+
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -9,7 +10,7 @@ import Footer from '@/components/Footer';
 import SearchBar from '@/components/SearchBar';
 import BenefitCard, { Benefit } from '@/components/BenefitCard';
 import { Store, Tag, ArrowRight, Calendar, Clock, MapPin } from 'lucide-react';
-import api from '@/services/api';
+import { api } from '@/services/api';
 import CommerceCard, { Commerce } from '@/components/CommerceCard';
 import { useStore } from '@/stores/store';
 
