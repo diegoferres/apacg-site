@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -154,7 +153,7 @@ const Index = () => {
               <Card key={event.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 animate-fade-up" style={{ animationDelay: `${100 + index * 100}ms` }}>
                 <CardHeader className="pb-3">
                   <div className="flex justify-between items-start">
-                    <CardTitle className="text-xl font-bold text-blue-900 line-clamp-2">
+                    <CardTitle className="text-xl font-bold text-blue-900">
                       {event.title}
                     </CardTitle>
                     <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">
