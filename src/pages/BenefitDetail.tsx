@@ -1,140 +1,82 @@
-
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { 
-  Calendar, 
-  Store, 
-  Tag, 
-  Clock, 
-  CheckCircle, 
-  AlertCircle, 
-  ArrowLeft,
-  Users,
-  Image 
-} from 'lucide-react';
+  Pagination, 
+  PaginationContent, 
+  PaginationItem, 
+  PaginationLink, 
+  PaginationNext, 
+  PaginationPrevious 
+} from '@/components/ui/pagination';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
+import { useToast } from '@/components/ui/use-toast';
+import { 
+  ArrowLeft, 
+  Calendar, 
+  Clock, 
+  Tag, 
+  Image 
+} from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import BenefitCard, { Benefit } from '@/components/BenefitCard';
 import api from '@/services/api';
-import { format } from 'path';
+import { format } from 'date-fns';
 
-// Interface for the benefit detail
 interface BenefitDetail {
   id: string;
   slug: string;
-  title: string;
+  name: string;
   description: string;
-  terms_and_conditions: string;
   start_date: string;
   end_date: string;
-  claim_count: number;
-  cover?: {
+  redemption_details: string;
+  commerce?: {
+    name: string;
+  };
+  categories?: [{
+    name: string;
+  }];
+  image?: {
     storage_path_full: string;
-  };
-  category: {
-    name: string;
-  };
-  commerce: {
-    id: number;
-    name: string;
-    address: string;
-    phone: string;
-    email: string;
   };
 }
 
 const BenefitDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const [benefit, setBenefit] = useState<BenefitDetail | null>(null);
-  const [similarBenefits, setSimilarBenefits] = useState<Benefit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
   const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
-    setIsLoading(true);
-    const fetchBenefit = async (slug: string) => {
+    const fetchBenefit = async () => {
+      setIsLoading(true);
       try {
         const response = await api.get(`api/client/benefits/${slug}`);
-        const data = response.data.data;
-        
-        setBenefit(data);
+        setBenefit(response.data.data);
       } catch (error) {
         console.error('Error fetching benefit:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load benefit details. Please try again later.",
+          variant: "destructive",
+        });
       } finally {
         setIsLoading(false);
       }
     };
 
-    
-
-    fetchBenefit(slug);
-  }, [slug]);
-
-  useEffect(() => {
-    const fetchMoreBenefits = async () => {
-      try {
-        if (benefit && benefit.commerce && benefit.commerce.id) {
-          const response = await api.get(`api/client/benefits/more/${benefit.commerce.id}`, {
-            params: {
-              id: benefit.id,
-            }
-          });
-          const data = response.data.data;
-          setSimilarBenefits(data);
-        }
-      } catch (error) {
-        console.error('Error fetching more benefits:', error);
-      }
-    };
-
-    if (benefit?.commerce?.id) {
-      fetchMoreBenefits();
-    }
-  }, [benefit]);
-
-  const formatDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' });
-  };
-
-  const formatToPlainText = (htmlContent: string) => {
-    return htmlContent
-      .replace(/\t/g, ' ') // Opcional: reemplazar tabs por espacios
-      .replace(/<[^>]*>/g, ''); // Eliminar HTML
-  };
-
-  const isBenefitActive = (): boolean => {
-    if (!benefit) return false;
-    
-    const now = new Date();
-    const from = new Date(benefit.start_date);
-    const to = new Date(benefit.end_date);
-    return now >= from && now <= to;
-  };
-
-  const handleImageError = () => {
-    setImageError(true);
-  };
+    fetchBenefit();
+  }, [slug, toast]);
 
   if (isLoading) {
-    // Loading state
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="flex flex-col min-h-screen">
         <Navbar />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="animate-pulse space-y-8 w-full max-w-4xl px-4">
-            <div className="h-12 bg-secondary rounded-lg"></div>
-            <div className="h-24 bg-secondary rounded-lg"></div>
-            <div className="space-y-4">
-              <div className="h-8 bg-secondary rounded-lg"></div>
-              <div className="h-8 bg-secondary rounded-lg w-3/4"></div>
-              <div className="h-8 bg-secondary rounded-lg w-1/2"></div>
-            </div>
-          </div>
+        <div className="container mx-auto px-4 py-8 flex-grow">
+          <div className="animate-pulse bg-muted/30 rounded-md h-64 w-full"></div>
         </div>
         <Footer />
       </div>
@@ -143,14 +85,11 @@ const BenefitDetail = () => {
 
   if (!benefit) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="flex flex-col min-h-screen">
         <Navbar />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <h2 className="text-xl font-semibold mb-4">Beneficio no encontrado</h2>
-            <Button asChild>
-              <Link to="/">Volver al inicio</Link>
-            </Button>
+        <div className="container mx-auto px-4 py-8 flex-grow">
+          <div className="text-center text-muted-foreground">
+            Benefit not found.
           </div>
         </div>
         <Footer />
@@ -158,128 +97,69 @@ const BenefitDetail = () => {
     );
   }
 
+  const handleImageError = () => {
+    setImageError(true);
+  };
+
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="flex flex-col min-h-screen">
       <Navbar />
-      
-      <main className="flex-1 pt-28 pb-16 px-4">
-        <div className="container mx-auto max-w-4xl">
-          <div className="mb-6 animate-fade-up">
-            <Button variant="ghost" size="sm" asChild className="mb-4">
-              <Link to="/" className="flex items-center">
-                <ArrowLeft className="h-4 w-4 mr-2" /> Volver a Inicio
-              </Link>
-            </Button>
-            
-            <div className="flex items-center flex-wrap gap-2 mb-3">
-              <Badge variant="outline" className="bg-primary/5">
-                {benefit.category.name}
-              </Badge>
-              {isBenefitActive() ? (
-                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                  <CheckCircle className="h-3 w-3 mr-1" /> Activo
-                </Badge>
-              ) : (
-                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-                  <AlertCircle className="h-3 w-3 mr-1" /> Finalizado
-                </Badge>
-              )}
-            </div>
-            
-            {benefit.cover && !imageError ? (
-              <div className="w-full h-64 md:h-80 mb-6 rounded-lg overflow-hidden">
+      <div className="container mx-auto px-4 py-8 flex-grow">
+        <Button asChild variant="ghost" className="mb-4">
+          <Link to="/beneficios" className="flex items-center">
+            <ArrowLeft className="mr-2 h-4 w-4" /> Volver a Beneficios
+          </Link>
+        </Button>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div>
+            {benefit.image && !imageError ? (
+              <div className="relative w-full h-96 overflow-hidden rounded-md">
                 <img
-                  src={benefit.cover.storage_path_full}
-                  alt={benefit.title}
+                  src={benefit.image?.storage_path_full}
+                  alt={benefit.name}
                   className="w-full h-full object-cover"
                   onError={handleImageError}
                 />
               </div>
             ) : (
-              <div className="w-full h-64 md:h-80 mb-6 rounded-lg bg-muted/30 flex items-center justify-center">
+              <div className="bg-muted/30 w-full h-96 flex items-center justify-center rounded-md">
                 <Image className="h-16 w-16 text-muted-foreground/60" />
               </div>
             )}
-            
-            <h1 className="text-3xl md:text-4xl font-bold mb-4">
-              {benefit.title}
-            </h1>
-            
-            <div className="flex flex-wrap gap-y-3 gap-x-6 text-sm text-muted-foreground mb-8">
-              <div className="flex items-center">
-                <Store className="h-4 w-4 mr-2 flex-shrink-0" />
-                <span>{benefit.commerce.name}</span>
-              </div>
-              <div className="flex items-center">
-                <Calendar className="h-4 w-4 mr-2 flex-shrink-0" />
-                <span>Válido: {formatDate(benefit.start_date)} - {formatDate(benefit.end_date)}</span>
-              </div>
-              <div className="flex items-center">
-                <Users className="h-4 w-4 mr-2 flex-shrink-0" />
-                <span>{benefit.claim_count} personas usaron este beneficio</span>
-              </div>
+            <h1 className="text-3xl font-bold mt-4">{benefit.name}</h1>
+            <p className="text-muted-foreground mt-2">{benefit.description}</p>
+            <div className="flex items-center gap-2 mt-4">
+              <Calendar className="h-5 w-5 text-muted-foreground" />
+              <p className="text-sm">
+                {format(new Date(benefit.start_date), 'dd/MM/yyyy')} - {format(new Date(benefit.end_date), 'dd/MM/yyyy')}
+              </p>
             </div>
+            {benefit.commerce && (
+              <div className="flex items-center gap-2 mt-2">
+                <Tag className="h-5 w-5 text-muted-foreground" />
+                <p className="text-sm">Ofrecido por: {benefit.commerce.name}</p>
+              </div>
+            )}
+            {benefit.categories && benefit.categories.length > 0 && (
+              <div className="flex items-center gap-2 mt-2">
+                <Tag className="h-5 w-5 text-muted-foreground" />
+                <p className="text-sm">
+                  Categorías:{' '}
+                  {benefit.categories.map((category) => category.name).join(', ')}
+                </p>
+              </div>
+            )}
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="md:col-span-2 animate-fade-up" style={{ animationDelay: '0.1s' }}>
-            <Card className="p-6 mb-8">
-              <h2 className="text-xl font-semibold mb-4">Descripción</h2>
-              <div className="overflow-x-auto">
-                <div className="whitespace-pre-wrap break-words text-muted-foreground max-h-[400px] overflow-y-auto">
-                  {formatToPlainText(benefit.description)}
-                </div>
-              </div>
 
-              <Separator className="my-6" />
-
-              <h3 className="text-lg font-medium">Términos y Condiciones</h3>
-              <div className='overflow-x-auto'>
-              <div className="whitespace-pre-wrap break-words text-muted-foreground max-h-[400px] overflow-y-auto">
-                {formatToPlainText(benefit.terms_and_conditions)}
-              </div>
-              </div>
-            </Card>
-
-            </div>
-            
-            <div className="animate-fade-up" style={{ animationDelay: '0.2s' }}>
-              <Card className="p-6 mb-8">
-                <h2 className="text-xl font-semibold mb-4">Información del Comercio</h2>
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="font-medium mb-1">Ubicación</h3>
-                    <p className="text-sm text-muted-foreground">{benefit.commerce.address}</p>
-                  </div>
-                  <div>
-                    <h3 className="font-medium mb-1">Contacto</h3>
-                    <p className="text-sm text-muted-foreground">Tel: {benefit.commerce.phone}</p>
-                    <p className="text-sm text-muted-foreground">Email: {benefit.commerce.email}</p>
-                  </div>
-                </div>
-              </Card>
-              
-              <Card className="p-6">
-                <div className="text-center mb-3">
-                  <p className="text-sm text-muted-foreground mb-3">¿Tienes dudas sobre este beneficio?</p>
-                  <Button className="w-full">Contactar a la Asociación</Button>
-                </div>
-              </Card>
-            </div>
-          </div>
-          
-          {/* Similar Benefits Section */}
-          <div className="mt-12 animate-fade-up" style={{ animationDelay: '0.3s' }}>
-            <h2 className="text-2xl font-bold mb-6">Beneficios similares</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {similarBenefits.map((benefit, index) => (
-                <BenefitCard key={benefit.slug} benefit={benefit} delay={100 + index * 50} />
-              ))}
+          <div>
+            <div className="bg-secondary/10 p-4 rounded-md">
+              <h2 className="text-xl font-semibold mb-4">Detalles de la Promoción</h2>
+              <p className="text-sm">{benefit.redemption_details}</p>
             </div>
           </div>
         </div>
-      </main>
-      
+      </div>
       <Footer />
     </div>
   );
