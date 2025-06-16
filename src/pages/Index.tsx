@@ -11,18 +11,6 @@ import { api } from '@/services/api';
 import CommerceCard, { Commerce } from '@/components/CommerceCard';
 import { useStore } from '@/stores/store';
 
-interface Commerce {
-  id: string;
-  slug: string;
-  name: string;
-  address: string;
-  description: string;
-  claim_count?: number;
-  logo?: {
-    storage_path_full: string;
-  };
-}
-
 const Index = () => {
   const [filteredBenefits, setFilteredBenefits] = useState<Benefit[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
