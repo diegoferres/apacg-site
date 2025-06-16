@@ -1,15 +1,37 @@
+
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import SearchBar from '@/components/SearchBar';
 import BenefitCard, { Benefit } from '@/components/BenefitCard';
-import { Store, Tag, ArrowRight } from 'lucide-react';
+import { Store, Tag, ArrowRight, Calendar, Clock, MapPin } from 'lucide-react';
 import { api } from '@/services/api';
 import CommerceCard, { Commerce } from '@/components/CommerceCard';
 import { useStore } from '@/stores/store';
+
+// Mock data para eventos destacados en el home
+const featuredEvents = [
+  {
+    id: 1,
+    title: "Gala Anual de Graduación",
+    date: "2024-07-15",
+    time: "19:00",
+    location: "Auditorio Principal",
+    priceFrom: 15000
+  },
+  {
+    id: 2,
+    title: "Festival Cultural Internacional",
+    date: "2024-08-20",
+    time: "15:00",
+    location: "Patio Central",
+    priceFrom: 12000
+  }
+];
 
 const Index = () => {
   const [filteredBenefits, setFilteredBenefits] = useState<Benefit[]>([]);
@@ -50,10 +72,21 @@ const Index = () => {
       }
     }
 
-    // fetchUser();
     fetchBenefits();
     fetchCommerces();
   }, []);
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: 'short'
+    });
+  };
+
+  const formatPrice = (price: number) => {
+    return `$${price.toLocaleString('es-ES')}`;
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -97,6 +130,67 @@ const Index = () => {
                 benefit={benefit} 
                 delay={100 + index * 50} 
               />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Events Section */}
+      <section className="py-12 px-4 bg-gradient-to-b from-blue-50/50 to-white">
+        <div className="container mx-auto max-w-6xl">
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-2xl md:text-3xl font-bold animate-fade-up">
+              Próximos Eventos
+            </h2>
+            <Button variant="ghost" asChild className="gap-1 animate-fade-up">
+              <Link to="/eventos">
+                Ver todos <ArrowRight className="h-4 w-4 ml-1" />
+              </Link>
+            </Button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {featuredEvents.map((event, index) => (
+              <Card key={event.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 animate-fade-up" style={{ animationDelay: `${100 + index * 100}ms` }}>
+                <CardHeader className="pb-3">
+                  <div className="flex justify-between items-start">
+                    <CardTitle className="text-xl font-bold text-blue-900 line-clamp-2">
+                      {event.title}
+                    </CardTitle>
+                    <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">
+                      <Calendar className="h-3 w-3 mr-1" />
+                      {formatDate(event.date)}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                
+                <CardContent className="space-y-3">
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <Clock className="h-4 w-4 mr-2 text-blue-600" />
+                    {event.time} hrs
+                  </div>
+                  
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <MapPin className="h-4 w-4 mr-2 text-blue-600" />
+                    {event.location}
+                  </div>
+                  
+                  <div className="flex items-center justify-between pt-4">
+                    <div>
+                      <span className="text-xs text-muted-foreground">Desde</span>
+                      <p className="text-xl font-bold text-blue-600">
+                        {formatPrice(event.priceFrom)}
+                      </p>
+                    </div>
+                    
+                    <Button asChild className="bg-blue-600 hover:bg-blue-700">
+                      <Link to="/eventos">
+                        Ver Detalles
+                      </Link>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </div>
