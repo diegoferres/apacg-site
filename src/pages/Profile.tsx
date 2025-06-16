@@ -11,7 +11,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useStore } from "@/stores/store";
 import { FaUserAlt } from 'react-icons/fa';
-import { api } from "@/services/api";
+import api from "@/services/api";
 import { ChildrenManager } from "@/components/ChildrenManager";
 
 const Profile = () => {

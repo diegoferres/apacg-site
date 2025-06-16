@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { X } from "lucide-react";
-import { api } from '@/services/api';
+import api from '@/services/api';
 import { useStore } from '@/stores/store';
 
 interface Child {

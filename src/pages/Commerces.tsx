@@ -1,6 +1,7 @@
+
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { api } from '@/services/api';
+import api from '@/services/api';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CommerceCard, { Commerce } from '@/components/CommerceCard';

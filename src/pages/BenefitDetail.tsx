@@ -19,7 +19,7 @@ import { Separator } from '@/components/ui/separator';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import BenefitCard, { Benefit } from '@/components/BenefitCard';
-import { api } from '@/services/api';
+import api from '@/services/api';
 import { format } from 'path';
 
 // Interface for the benefit detail

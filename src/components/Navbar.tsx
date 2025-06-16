@@ -1,10 +1,9 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { UserCircle, Menu, X, School } from 'lucide-react';
 import { useStore } from '@/stores/store';
-import { api } from '@/services/api';
+import api from '@/services/api';
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
