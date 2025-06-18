@@ -8,7 +8,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import SearchBar from '@/components/SearchBar';
 import BenefitCard, { Benefit } from '@/components/BenefitCard';
-import { Store, Tag, ArrowRight, Calendar, Clock, MapPin } from 'lucide-react';
+import { Store, Tag, ArrowRight, Calendar, Clock, MapPin, Users } from 'lucide-react';
 import api from '@/services/api';
 import CommerceCard, { Commerce } from '@/components/CommerceCard';
 import { useStore } from '@/stores/store';
@@ -18,18 +18,22 @@ const featuredEvents = [
   {
     id: 1,
     title: "Gala Anual de Graduación",
+    shortDescription: "Celebración especial para honrar a nuestros graduados",
     date: "2024-07-15",
     time: "19:00",
     location: "Auditorio Principal",
-    priceFrom: 15000
+    priceFrom: 15000,
+    image: null
   },
   {
     id: 2,
     title: "Festival Cultural Internacional",
+    shortDescription: "Una celebración de la diversidad cultural",
     date: "2024-08-20",
     time: "15:00",
     location: "Patio Central",
-    priceFrom: 12000
+    priceFrom: 12000,
+    image: "https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?auto=format&fit=crop&w=800&q=80"
   }
 ];
 
@@ -136,7 +140,7 @@ const Index = () => {
       </section>
 
       {/* Events Section */}
-      <section className="py-12 px-4 bg-gradient-to-b from-blue-50/50 to-white">
+      <section className="py-16 px-4 bg-muted/30">
         <div className="container mx-auto max-w-6xl">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-2xl md:text-3xl font-bold animate-fade-up">
@@ -151,39 +155,61 @@ const Index = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {featuredEvents.map((event, index) => (
-              <Card key={event.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 animate-fade-up" style={{ animationDelay: `${100 + index * 100}ms` }}>
-                <CardHeader className="pb-3">
-                  <div className="flex justify-between items-start">
-                    <CardTitle className="text-xl font-bold text-blue-900">
-                      {event.title}
-                    </CardTitle>
-                    <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">
+              <Card key={event.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 group animate-fade-up" style={{ animationDelay: `${100 + index * 100}ms` }}>
+                {event.image ? (
+                  <div className="relative h-48 overflow-hidden">
+                    <img
+                      src={event.image}
+                      alt={event.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                    <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
                       <Calendar className="h-3 w-3 mr-1" />
                       {formatDate(event.date)}
                     </Badge>
                   </div>
+                ) : (
+                  <div className="relative h-48 bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center">
+                    <div className="text-center">
+                      <Users className="h-12 w-12 text-primary/60 mx-auto mb-2" />
+                      <Badge className="bg-white/90 text-primary hover:bg-white">
+                        <Calendar className="h-3 w-3 mr-1" />
+                        {formatDate(event.date)}
+                      </Badge>
+                    </div>
+                  </div>
+                )}
+                
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-xl font-bold group-hover:text-primary transition-colors">
+                    {event.title}
+                  </CardTitle>
+                  <p className="text-muted-foreground text-sm line-clamp-2">
+                    {event.shortDescription}
+                  </p>
                 </CardHeader>
                 
                 <CardContent className="space-y-3">
                   <div className="flex items-center text-sm text-muted-foreground">
-                    <Clock className="h-4 w-4 mr-2 text-blue-600" />
+                    <Clock className="h-4 w-4 mr-2 text-primary" />
                     {event.time} hrs
                   </div>
                   
                   <div className="flex items-center text-sm text-muted-foreground">
-                    <MapPin className="h-4 w-4 mr-2 text-blue-600" />
+                    <MapPin className="h-4 w-4 mr-2 text-primary" />
                     {event.location}
                   </div>
                   
                   <div className="flex items-center justify-between pt-4">
                     <div>
                       <span className="text-xs text-muted-foreground">Desde</span>
-                      <p className="text-xl font-bold text-blue-600">
+                      <p className="text-xl font-bold text-primary">
                         {formatPrice(event.priceFrom)}
                       </p>
                     </div>
                     
-                    <Button asChild className="bg-blue-600 hover:bg-blue-700">
+                    <Button asChild className="bg-primary hover:bg-primary/90">
                       <Link to="/eventos">
                         Ver Detalles
                       </Link>
