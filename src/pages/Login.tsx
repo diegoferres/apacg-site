@@ -7,13 +7,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import axios from 'axios';
-import { 
-  Card, 
-  CardHeader, 
-  CardTitle, 
-  CardDescription, 
-  CardContent, 
-  CardFooter 
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter
 } from '@/components/ui/card';
 import {
   Form,
@@ -54,21 +54,21 @@ const Login = () => {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
     setGlobalLoading(true); // Indicar que está cargando a nivel global
-  
+
     try {
       // Primero, obtenemos el CSRF token necesario para las solicitudes
       await api.get('sanctum/csrf-cookie');
-  
+
       // Preparamos el payload con los valores adecuados
       const payload = isEmail
         ? { email: values.email, password: values.password }
         : { cedula: values.cedula, password: values.password };
-  
+
       // Realizamos la solicitud de login
       try {
         const response = await api.post('api/login', payload);
         console.log(response.data);
-        
+
         // Manejar la respuesta de login
         const userData = response.data.user;
         const redirect_to = response.data.redirect_to;
@@ -92,10 +92,10 @@ const Login = () => {
       } catch (error) {
         console.log('Error capturado');
         console.log(error.response?.data);
-        
+
         // Mostrar mensaje de error específico si está disponible
         const errorMessage = error.response?.data?.message || "Correo o contraseña incorrectos";
-        
+
         toast({
           title: "Error al iniciar sesión",
           description: errorMessage,
@@ -114,7 +114,7 @@ const Login = () => {
       setGlobalLoading(false); // Finalizar carga global
     }
   };
-  
+
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -131,12 +131,12 @@ const Login = () => {
           <Link to="/">
             <div className="flex items-center justify-center gap-2 text-primary">
               {/* <School className="h-10 w-10" /> */}
-              <img src={import.meta.env.VITE_BASE_URL + "/react/logo.jpg"} alt="Logo" className="h-20 w-18" />
+              <img src={import.meta.env.VITE_BASE_URL + "/react/logo.png"} alt="Logo" className="h-20 w-18" />
               {/* <span className="font-bold text-2xl">A.P.A.C. GOETHE</span> */}
             </div>
           </Link>
         </div>
-        
+
         <Card className="glass shadow-sm border-border/40">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl font-bold text-center">Iniciar Sesión</CardTitle>
@@ -157,10 +157,10 @@ const Login = () => {
                         <FormControl>
                           <div className="relative">
                             <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                            <Input 
-                              placeholder="tu@email.com" 
-                              className="pl-10" 
-                              {...field} 
+                            <Input
+                              placeholder="tu@email.com"
+                              className="pl-10"
+                              {...field}
                             />
                           </div>
                         </FormControl>
@@ -178,10 +178,10 @@ const Login = () => {
                         <FormControl>
                           <div className="relative">
                             <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                            <Input 
-                              placeholder="Tu cédula" 
-                              className="pl-10" 
-                              {...field} 
+                            <Input
+                              placeholder="Tu cédula"
+                              className="pl-10"
+                              {...field}
                             />
                           </div>
                         </FormControl>
@@ -200,11 +200,11 @@ const Login = () => {
                       <FormControl>
                         <div className="relative">
                           <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                          <Input 
-                            type={showPassword ? "text" : "password"} 
-                            placeholder="••••••••" 
-                            className="pl-10" 
-                            {...field} 
+                          <Input
+                            type={showPassword ? "text" : "password"}
+                            placeholder="••••••••"
+                            className="pl-10"
+                            {...field}
                           />
                           <Button
                             type="button"
@@ -213,8 +213,8 @@ const Login = () => {
                             className="absolute right-0 top-0 h-full px-3 py-2 text-muted-foreground"
                             onClick={togglePasswordVisibility}
                           >
-                            {showPassword ? 
-                              <EyeOff className="h-4 w-4" /> : 
+                            {showPassword ?
+                              <EyeOff className="h-4 w-4" /> :
                               <Eye className="h-4 w-4" />
                             }
                           </Button>
@@ -224,20 +224,20 @@ const Login = () => {
                     </FormItem>
                   )}
                 />
-                
-                <Button 
-                  type="submit" 
-                  className="w-full" 
+
+                <Button
+                  type="submit"
+                  className="w-full"
                   disabled={isLoading}
                 >
                   {isLoading ? "Iniciando sesión..." : "Iniciar Sesión"}
                 </Button>
               </form>
             </Form>
-            
+
             <div className="mt-4 text-center">
-              <Link 
-                to="/recuperar-contrasena" 
+              <Link
+                to="/recuperar-contrasena"
                 className="text-sm text-primary hover:underline"
               >
                 ¿Olvidaste tu contraseña?
@@ -253,15 +253,15 @@ const Login = () => {
             </Button>
           </CardFooter>
         </Card>
-        
-        <Button 
-          onClick={toggleForm} 
-          variant="outline" 
+
+        <Button
+          onClick={toggleForm}
+          variant="outline"
           className="mt-4 w-full"
         >
           {isEmail ? "Iniciar sesión con Cédula" : "Iniciar sesión con Correo"}
         </Button>
-        
+
         <p className="text-center text-sm text-muted-foreground mt-4">
           © {new Date().getFullYear()} A.P.A.C. GOETHE. Todos los derechos reservados.
         </p>
