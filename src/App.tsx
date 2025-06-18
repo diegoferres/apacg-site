@@ -64,36 +64,36 @@ const App = () => {
               // </ProtectedRoute>
           } />
           <Route path="/beneficios" element={
-              <ProtectedWithStudents>
+              // <ProtectedWithStudents>
                 <Benefits />
-              </ProtectedWithStudents>
+              // {/* </ProtectedWithStudents> */}
           } />
           <Route path="/beneficio/:slug" element={
-            <ProtectedWithStudents>
+            // <ProtectedWithStudents>
               <BenefitDetail />
-            </ProtectedWithStudents>
+            // </ProtectedWithStudents>
           } />
           <Route path="/comercios" element={
-            <ProtectedWithStudents>
+            // <ProtectedWithStudents>
               <Commerces />
-            </ProtectedWithStudents>
+            // </ProtectedWithStudents>
           } />
           <Route path="/comercio/:slug" element={
-            <ProtectedWithStudents>
+            // <ProtectedWithStudents>
               <CommerceDetail />
-            </ProtectedWithStudents>
+            // </ProtectedWithStudents>
           } />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/perfil" element={
-            <ProtectedWithStudents>
+            // <ProtectedWithStudents>
               <Profile />
-            </ProtectedWithStudents>
+            // </ProtectedWithStudents>
           } />
           <Route path="/pago-membresia" element={
-            <ProtectedWithStudents>
+            // <ProtectedWithStudents>
               <PaymentPage />
-            </ProtectedWithStudents>
+            // </ProtectedWithStudents>
           } />
           {/* <Route path="/children-manager" element={<ChildrenManager />}></Route> */}
           <Route path="/inscripcion-alumnos" element={<ChildrenEnrollment />} />
