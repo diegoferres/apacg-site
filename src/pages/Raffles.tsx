@@ -45,13 +45,23 @@ const mockRaffles = [
 ];
 
 const Raffles = () => {
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('es-ES', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString || dateString === 'No definido' || dateString.trim() === '') {
+      return 'No definido';
+    }
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return 'No definido';
+      }
+      return date.toLocaleDateString('es-ES', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+      });
+    } catch {
+      return 'No definido';
+    }
   };
 
   const formatPrice = (price: number) => {

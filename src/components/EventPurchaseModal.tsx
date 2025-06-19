@@ -38,14 +38,24 @@ const EventPurchaseModal = ({ event, isOpen, onClose }: EventPurchaseModalProps)
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('es-ES', {
-      weekday: 'long',
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric'
-    });
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString || dateString === 'No definido' || dateString.trim() === '') {
+      return 'No definido';
+    }
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return 'No definido';
+      }
+      return date.toLocaleDateString('es-ES', {
+        weekday: 'long',
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric'
+      });
+    } catch {
+      return 'No definido';
+    }
   };
 
   const formatPrice = (price: number) => {

@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { MapPin, Calendar, Clock, Ticket, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -64,6 +64,7 @@ const mockRaffles: Raffle[] = [
 
 const RaffleDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [quantity, setQuantity] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -85,13 +86,23 @@ const RaffleDetail = () => {
     );
   }
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('es-ES', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric'
-    });
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString || dateString === 'No definido' || dateString.trim() === '') {
+      return 'No definido';
+    }
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return 'No definido';
+      }
+      return date.toLocaleDateString('es-ES', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric'
+      });
+    } catch {
+      return 'No definido';
+    }
   };
 
   const formatPrice = (price: number) => {
@@ -147,11 +158,9 @@ const RaffleDetail = () => {
           </nav>
           
           {/* Back Button */}
-          <Button variant="ghost" asChild className="mb-6">
-            <Link to="/rifas">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Volver a Rifas
-            </Link>
+          <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Volver
           </Button>
           
           {/* Header Card with Raffle Info */}
@@ -191,9 +200,10 @@ const RaffleDetail = () => {
                   <CardTitle className="text-xl md:text-2xl">Acerca de la Rifa</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground leading-relaxed">
-                    {raffle.description}
-                  </p>
+                  <div 
+                    className="text-muted-foreground leading-relaxed prose prose-sm max-w-none"
+                    dangerouslySetInnerHTML={{ __html: raffle.description }}
+                  />
                 </CardContent>
               </Card>
             </div>

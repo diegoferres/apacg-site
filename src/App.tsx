@@ -58,24 +58,24 @@ const App = () => {
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/beneficios" element={
-              <ProtectedWithStudents>
+              /*<ProtectedWithStudents>*/
                 <Benefits />
-              </ProtectedWithStudents>
+              /*</ProtectedWithStudents>*/
             } />
             <Route path="/beneficio/:slug" element={
-              <ProtectedWithStudents>
+              /*<ProtectedWithStudents>*/
                 <BenefitDetail />
-              </ProtectedWithStudents>
+              /*</ProtectedWithStudents>*/
             } />
             <Route path="/comercios" element={
-              <ProtectedWithStudents>
+              /*<ProtectedWithStudents>*/
                 <Commerces />
-              </ProtectedWithStudents>
+              /*</ProtectedWithStudents>*/
             } />
             <Route path="/comercio/:slug" element={
-              <ProtectedWithStudents>
+              /*<ProtectedWithStudents>*/
                 <CommerceDetail />
-              </ProtectedWithStudents>
+              /*</ProtectedWithStudents>*/
             } />
             <Route path="/eventos" element={<Events />} />
             <Route path="/evento/:id" element={<EventDetail />} />

@@ -47,9 +47,19 @@ const BenefitCard = ({ benefit, delay = 0 }: BenefitCardProps) => {
     return () => clearTimeout(timer);
   }, [delay]);
 
-  const formatDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const formatDate = (dateString: string | null | undefined): string => {
+    if (!dateString || dateString === 'No definido' || dateString.trim() === '') {
+      return 'No definido';
+    }
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return 'No definido';
+      }
+      return date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    } catch {
+      return 'No definido';
+    }
   };
 
   const handleImageError = () => {

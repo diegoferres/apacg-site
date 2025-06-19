@@ -16,24 +16,24 @@ import { useStore } from '@/stores/store';
 // Mock data para eventos destacados en el home
 const featuredEvents = [
   {
-    id: 1,
-    title: "Gala Anual de Graduación",
-    shortDescription: "Celebración especial para honrar a nuestros graduados",
-    date: "2024-07-15",
-    time: "19:00",
-    location: "Auditorio Principal",
-    priceFrom: 15000,
-    image: null
+    id: 3,
+    title: "Corrida Goethe Lauf 5K/10K",
+    shortDescription: "Participa en nuestra tradicional corrida deportiva",
+    date: "2024-10-12",
+    time: "07:00",
+    location: "Predio Colegio Goethe",
+    priceFrom: 25000,
+    image: "/corrida_lauf.jpeg"
   },
   {
     id: 2,
-    title: "Festival Cultural Internacional",
-    shortDescription: "Una celebración de la diversidad cultural",
-    date: "2024-08-20",
-    time: "15:00",
-    location: "Patio Central",
-    priceFrom: 12000,
-    image: "https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?auto=format&fit=crop&w=800&q=80"
+    title: "Intercolegial de Padres",
+    shortDescription: "Competencia deportiva entre padres de diferentes colegios",
+    date: "2024-10-10",
+    time: "08:00",
+    location: "Predio Colegio Goethe",
+    priceFrom: 0,
+    image: "/intercolegial_padres.png"
   }
 ];
 
@@ -106,12 +106,28 @@ const Index = () => {
     fetchCommerces();
   }, []);
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('es-ES', {
-      day: '2-digit',
-      month: 'short'
-    });
+  // Helper function to strip HTML tags for short descriptions
+  const stripHtml = (html: string) => {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    return doc.body.textContent || "";
+  };
+
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString || dateString === 'No definido' || dateString.trim() === '') {
+      return 'No definido';
+    }
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return 'No definido';
+      }
+      return date.toLocaleDateString('es-ES', {
+        day: '2-digit',
+        month: 'short'
+      });
+    } catch {
+      return 'No definido';
+    }
   };
 
   const formatPrice = (price: number) => {
@@ -198,7 +214,7 @@ const Index = () => {
                 ) : (
                   <div className="relative h-48 bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center">
                     <div className="text-center">
-                      <Users className="h-12 w-12 text-primary/60 mx-auto mb-2" />
+                      <Ticket className="h-12 w-12 text-primary/60 mx-auto mb-2" />
                       <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
                         <Calendar className="h-3 w-3 mr-1" />
                         {formatDate(event.date)}
@@ -212,7 +228,7 @@ const Index = () => {
                     {event.title}
                   </CardTitle>
                   <p className="text-muted-foreground text-sm line-clamp-2">
-                    {event.shortDescription}
+                    {stripHtml(event.shortDescription)}
                   </p>
                 </CardHeader>
                 
@@ -276,7 +292,7 @@ const Index = () => {
                     {raffle.title}
                   </CardTitle>
                   <p className="text-muted-foreground text-sm line-clamp-2">
-                    {raffle.shortDescription}
+                    {stripHtml(raffle.shortDescription)}
                   </p>
                 </CardHeader>
                 
