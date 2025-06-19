@@ -34,7 +34,7 @@ const mockRaffles: Raffle[] = [
     drawLocation: "Auditorio Principal Colegio Goethe",
     isOnline: false,
     price: 5000,
-    image: "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?auto=format&fit=crop&w=800&q=80"
+    image: null
   },
   {
     id: 2,
@@ -58,7 +58,7 @@ const mockRaffles: Raffle[] = [
     drawLocation: "Salón de Actos Colegio Goethe",
     isOnline: false,
     price: 8000,
-    image: "https://images.unsplash.com/photo-1549451371-64aa98a6f1af?auto=format&fit=crop&w=800&q=80"
+    image: null
   }
 ];
 
@@ -95,7 +95,7 @@ const RaffleDetail = () => {
   };
 
   const formatPrice = (price: number) => {
-    return `$${price.toLocaleString('es-ES')}`;
+    return `Gs. ${price.toLocaleString('es-ES')}`;
   };
 
   const updateQuantity = (change: number) => {
@@ -154,126 +154,116 @@ const RaffleDetail = () => {
             </Link>
           </Button>
           
-          <div className="grid lg:grid-cols-2 gap-12">
-            {/* Raffle Image */}
-            <div className="space-y-4">
-              {raffle.image ? (
-                <div className="relative overflow-hidden rounded-lg">
-                  <img
-                    src={raffle.image}
-                    alt={raffle.title}
-                    className="w-full h-96 object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+          {/* Header Card with Raffle Info */}
+          <Card className="mb-8">
+            <CardContent className="p-6 md:p-8">
+              <div className="space-y-6">
+                <div>
+                  <Badge className="mb-3 bg-primary/10 text-primary hover:bg-primary/20">
+                    <Calendar className="h-3 w-3 mr-1" />
+                    {formatDate(raffle.drawDate)}
+                  </Badge>
+                  <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground mb-2">
+                    {raffle.title}
+                  </h1>
                 </div>
-              ) : (
-                <div className="relative h-96 bg-gradient-to-br from-primary/10 to-primary/20 rounded-lg flex items-center justify-center">
-                  <div className="text-center">
-                    <Ticket className="h-16 w-16 text-primary/60 mx-auto mb-4" />
-                    <p className="text-primary/80 font-medium">Rifa Especial</p>
+                
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="flex items-center text-muted-foreground">
+                    <Clock className="h-5 w-5 mr-3 text-primary flex-shrink-0" />
+                    <span>Sortea el {formatDate(raffle.drawDate)} a las {raffle.drawTime} hrs</span>
+                  </div>
+                  
+                  <div className="flex items-center text-muted-foreground">
+                    <MapPin className="h-5 w-5 mr-3 text-primary flex-shrink-0" />
+                    <span className="truncate">Lugar de sorteo: {raffle.isOnline ? "Online" : raffle.drawLocation}</span>
                   </div>
                 </div>
-              )}
+              </div>
+            </CardContent>
+          </Card>
+          
+          <div className="grid lg:grid-cols-3 gap-8">
+            {/* Raffle Description */}
+            <div className="lg:col-span-2 space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-xl md:text-2xl">Acerca de la Rifa</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground leading-relaxed">
+                    {raffle.description}
+                  </p>
+                </CardContent>
+              </Card>
             </div>
             
-            {/* Raffle Details */}
+            {/* Purchase Section */}
             <div className="space-y-6">
-              <div>
-                <Badge className="mb-4 bg-primary/10 text-primary hover:bg-primary/20">
-                  <Calendar className="h-3 w-3 mr-1" />
-                  {formatDate(raffle.drawDate)}
-                </Badge>
-                <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-                  {raffle.title}
-                </h1>
-              </div>
               
-              <div className="space-y-4">
-                <div className="flex items-center text-muted-foreground">
-                  <Clock className="h-5 w-5 mr-3 text-primary" />
-                  <span>{raffle.drawTime} hrs</span>
-                </div>
-                
-                <div className="flex items-center text-muted-foreground">
-                  <MapPin className="h-5 w-5 mr-3 text-primary" />
-                  <span>{raffle.isOnline ? "Sorteo Online" : raffle.drawLocation}</span>
-                </div>
-              </div>
-              
-              {/* Ticket Purchase */}
-              <div className="mt-8">
-                <h3 className="text-xl font-bold mb-4">Números</h3>
-                <div className="p-4 border rounded-lg hover:border-primary/20 transition-colors">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <h4 className="font-semibold">Número de Rifa</h4>
-                      <span className="text-xl font-bold text-primary">
-                        {formatPrice(raffle.price)}
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center gap-3">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => updateQuantity(-1)}
-                        disabled={quantity === 0}
-                        className="h-8 w-8"
-                      >
-                        -
-                      </Button>
+              <Card className="sticky top-24">
+                <CardHeader>
+                  <CardTitle className="text-lg md:text-xl">Participar en la Rifa</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="p-4 border rounded-lg hover:border-primary/20 transition-colors">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="flex-1">
+                        <h4 className="font-semibold">Número de Rifa</h4>
+                        <span className="text-xl md:text-2xl font-bold text-primary">
+                          {formatPrice(raffle.price)}
+                        </span>
+                      </div>
                       
-                      <span className="w-8 text-center font-semibold">
-                        {quantity}
-                      </span>
-                      
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => updateQuantity(1)}
-                        className="h-8 w-8"
-                      >
-                        +
-                      </Button>
+                      <div className="flex items-center gap-3 justify-center sm:justify-end">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => updateQuantity(-1)}
+                          disabled={quantity === 0}
+                          className="h-8 w-8"
+                        >
+                          -
+                        </Button>
+                        
+                        <span className="w-8 text-center font-semibold">
+                          {quantity}
+                        </span>
+                        
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => updateQuantity(1)}
+                          className="h-8 w-8"
+                        >
+                          +
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-                
-                {/* Purchase Button */}
-                {quantity > 0 && (
-                  <div className="mt-6 p-4 bg-primary/5 border border-primary/20 rounded-lg">
-                    <div className="flex justify-between items-center mb-4">
-                      <span className="font-semibold">Total:</span>
-                      <span className="text-2xl font-bold text-primary">
-                        {formatPrice(getTotalPrice())}
-                      </span>
+                  
+                  {/* Purchase Button */}
+                  {quantity > 0 && (
+                    <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                      <div className="flex justify-between items-center mb-4">
+                        <span className="font-semibold">Total:</span>
+                        <span className="text-xl md:text-2xl font-bold text-primary">
+                          {formatPrice(getTotalPrice())}
+                        </span>
+                      </div>
+                      
+                      <Button
+                        onClick={handlePurchase}
+                        disabled={isLoading}
+                        className="w-full bg-primary hover:bg-primary/90"
+                        size="lg"
+                      >
+                        {isLoading ? "Procesando..." : "Comprar ahora"}
+                      </Button>
                     </div>
-                    
-                    <Button
-                      onClick={handlePurchase}
-                      disabled={isLoading}
-                      className="w-full bg-primary hover:bg-primary/90"
-                      size="lg"
-                    >
-                      {isLoading ? "Procesando..." : "Comprar ahora"}
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-      
-      {/* Raffle Description */}
-      <section className="py-16 bg-muted/30">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-2xl md:text-3xl font-bold mb-6">Acerca de la Rifa</h2>
-            <div className="prose prose-lg max-w-none">
-              <p className="text-muted-foreground leading-relaxed">
-                {raffle.description}
-              </p>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>

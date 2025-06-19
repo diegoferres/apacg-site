@@ -49,7 +49,7 @@ const EventPurchaseModal = ({ event, isOpen, onClose }: EventPurchaseModalProps)
   };
 
   const formatPrice = (price: number) => {
-    return `$${price.toLocaleString('es-ES')}`;
+    return `Gs. ${price.toLocaleString('es-ES')}`;
   };
 
   const updateTicketQuantity = (ticketId: number, change: number) => {

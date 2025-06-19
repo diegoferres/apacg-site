@@ -16,6 +16,8 @@ import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import PaymentPage from "./pages/PaymentPage";
 import Register from "./pages/Register";
+import Raffles from "./pages/Raffles";
+import RaffleDetail from "./pages/RaffleDetail";
 import { ChildrenManager } from "./components/ChildrenManager";
 import ProtectedWithStudents from "./components/ProtectedWithStudents";
 import ChildrenEnrollment from "./pages/ChildrenEnrollment";

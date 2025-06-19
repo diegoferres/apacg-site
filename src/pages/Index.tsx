@@ -115,7 +115,7 @@ const Index = () => {
   };
 
   const formatPrice = (price: number) => {
-    return `$${price.toLocaleString('es-ES')}`;
+    return `Gs. ${price.toLocaleString('es-ES')}`;
   };
 
   return (
@@ -262,36 +262,17 @@ const Index = () => {
             </Button>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {featuredRaffles.map((raffle, index) => (
               <Card key={raffle.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 group animate-fade-up" style={{ animationDelay: `${100 + index * 100}ms` }}>
-                {raffle.image ? (
-                  <div className="relative h-48 overflow-hidden">
-                    <img
-                      src={raffle.image}
-                      alt={raffle.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-                    <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
+                <CardHeader className="pb-4">
+                  <div className="flex justify-between items-start mb-2">
+                    <Badge className="bg-primary/10 text-primary hover:bg-primary/20">
                       <Calendar className="h-3 w-3 mr-1" />
                       {formatDate(raffle.drawDate)}
                     </Badge>
                   </div>
-                ) : (
-                  <div className="relative h-48 bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center">
-                    <div className="text-center">
-                      <Ticket className="h-12 w-12 text-primary/60 mx-auto mb-2" />
-                      <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
-                        <Calendar className="h-3 w-3 mr-1" />
-                        {formatDate(raffle.drawDate)}
-                      </Badge>
-                    </div>
-                  </div>
-                )}
-                
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-xl font-bold group-hover:text-primary transition-colors">
+                  <CardTitle className="text-lg font-bold group-hover:text-primary transition-colors">
                     {raffle.title}
                   </CardTitle>
                   <p className="text-muted-foreground text-sm line-clamp-2">
@@ -302,12 +283,12 @@ const Index = () => {
                 <CardContent className="space-y-3">
                   <div className="flex items-center text-sm text-muted-foreground">
                     <Clock className="h-4 w-4 mr-2 text-primary" />
-                    {raffle.drawTime} hrs
+                    <span>Sortea el {formatDate(raffle.drawDate)} a las {raffle.drawTime} hrs</span>
                   </div>
                   
                   <div className="flex items-center text-sm text-muted-foreground">
                     <MapPin className="h-4 w-4 mr-2 text-primary" />
-                    {raffle.isOnline ? "Sorteo Online" : raffle.drawLocation}
+                    <span>Lugar de sorteo: {raffle.isOnline ? "Online" : raffle.drawLocation}</span>
                   </div>
                   
                   <div className="flex items-center justify-between pt-4">

@@ -128,7 +128,7 @@ const Events = () => {
   };
 
   const formatPrice = (price: number) => {
-    return `$${price.toLocaleString('es-ES')}`;
+    return `Gs. ${price.toLocaleString('es-ES')}`;
   };
 
   const handleBuyTickets = (event: any) => {
