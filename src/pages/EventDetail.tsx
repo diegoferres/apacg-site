@@ -1,15 +1,37 @@
 
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { MapPin, Calendar, Clock, Users, ArrowLeft } from 'lucide-react';
+import { MapPin, Calendar, Clock, Users, ArrowLeft, Plus, Minus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { useToast } from '@/hooks/use-toast';
 
-// Mock data para eventos
-const mockEvents = [
+interface TicketType {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  stock: number;
+}
+
+interface Event {
+  id: number;
+  title: string;
+  description: string;
+  shortDescription: string;
+  date: string;
+  time: string;
+  location: string;
+  image: string | null;
+  priceFrom: number;
+  ticketTypes: TicketType[];
+}
+
+// Mock data para eventos con tipos de entradas
+const mockEvents: Event[] = [
   {
     id: 1,
     title: "Gala Anual de Graduación",
@@ -19,7 +41,30 @@ const mockEvents = [
     time: "19:00",
     location: "Auditorio Principal Colegio Goethe",
     image: null,
-    priceFrom: 15000
+    priceFrom: 15000,
+    ticketTypes: [
+      {
+        id: 1,
+        name: "Entrada General",
+        description: "Acceso general al evento con cocktail incluido",
+        price: 15000,
+        stock: 50
+      },
+      {
+        id: 2,
+        name: "Entrada VIP",
+        description: "Acceso preferencial con mesa reservada y bebidas premium",
+        price: 25000,
+        stock: 20
+      },
+      {
+        id: 3,
+        name: "Entrada Estudiante",
+        description: "Tarifa especial para estudiantes con descuento",
+        price: 10000,
+        stock: 30
+      }
+    ]
   },
   {
     id: 2,
@@ -30,7 +75,23 @@ const mockEvents = [
     time: "15:00",
     location: "Patio Central Colegio Goethe",
     image: "https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?auto=format&fit=crop&w=800&q=80",
-    priceFrom: 12000
+    priceFrom: 12000,
+    ticketTypes: [
+      {
+        id: 4,
+        name: "Entrada Familiar",
+        description: "Acceso para toda la familia (hasta 4 personas)",
+        price: 12000,
+        stock: 25
+      },
+      {
+        id: 5,
+        name: "Entrada Individual",
+        description: "Acceso individual al festival",
+        price: 5000,
+        stock: 100
+      }
+    ]
   },
   {
     id: 3,
@@ -41,12 +102,38 @@ const mockEvents = [
     time: "18:30",
     location: "Teatro Municipal",
     image: "https://images.unsplash.com/photo-1470813740244-df37b8c1edcb?auto=format&fit=crop&w=800&q=80",
-    priceFrom: 10000
+    priceFrom: 10000,
+    ticketTypes: [
+      {
+        id: 6,
+        name: "Platea",
+        description: "Ubicación preferencial en platea baja",
+        price: 18000,
+        stock: 40
+      },
+      {
+        id: 7,
+        name: "Pullman",
+        description: "Ubicación en pullman con buena vista",
+        price: 12000,
+        stock: 60
+      },
+      {
+        id: 8,
+        name: "Cazuela",
+        description: "Ubicación económica en cazuela alta",
+        price: 8000,
+        stock: 80
+      }
+    ]
   }
 ];
 
 const EventDetail = () => {
   const { id } = useParams();
+  const { toast } = useToast();
+  const [selectedTickets, setSelectedTickets] = useState<Record<number, number>>({});
+  const [isLoading, setIsLoading] = useState(false);
   
   const event = mockEvents.find(e => e.id === parseInt(id || ''));
   
@@ -76,6 +163,53 @@ const EventDetail = () => {
 
   const formatPrice = (price: number) => {
     return `$${price.toLocaleString('es-ES')}`;
+  };
+
+  const updateTicketQuantity = (ticketId: number, change: number) => {
+    const currentQuantity = selectedTickets[ticketId] || 0;
+    const newQuantity = Math.max(0, currentQuantity + change);
+    const ticketType = event.ticketTypes.find(t => t.id === ticketId);
+    
+    if (ticketType && newQuantity <= ticketType.stock) {
+      setSelectedTickets(prev => ({
+        ...prev,
+        [ticketId]: newQuantity
+      }));
+    }
+  };
+
+  const getTotalPrice = () => {
+    return Object.entries(selectedTickets).reduce((total, [ticketId, quantity]) => {
+      const ticketType = event.ticketTypes.find(t => t.id === parseInt(ticketId));
+      return total + (ticketType ? ticketType.price * quantity : 0);
+    }, 0);
+  };
+
+  const getTotalTickets = () => {
+    return Object.values(selectedTickets).reduce((total, quantity) => total + quantity, 0);
+  };
+
+  const handlePurchase = async () => {
+    if (getTotalTickets() === 0) {
+      toast({
+        title: "Selecciona al menos una entrada",
+        description: "Debes seleccionar al menos una entrada para continuar.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    
+    // Simular proceso de compra
+    setTimeout(() => {
+      toast({
+        title: "¡Compra exitosa!",
+        description: `Has comprado ${getTotalTickets()} entrada(s) para ${event.title}. Recibirás un correo de confirmación.`
+      });
+      setIsLoading(false);
+      setSelectedTickets({});
+    }, 2000);
   };
 
   return (
@@ -147,23 +281,6 @@ const EventDetail = () => {
                   <span>{event.location}</span>
                 </div>
               </div>
-              
-              <div className="bg-muted/30 p-6 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Entradas desde</p>
-                    <p className="text-3xl font-bold text-primary">
-                      {formatPrice(event.priceFrom)}
-                    </p>
-                  </div>
-                  <Button 
-                    size="lg"
-                    className="bg-primary hover:bg-primary/90"
-                  >
-                    Más Información
-                  </Button>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -179,6 +296,109 @@ const EventDetail = () => {
                 {event.description}
               </p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Ticket Selection */}
+      <section className="py-16">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-2xl md:text-3xl font-bold mb-8">Selecciona tus entradas</h2>
+            
+            <div className="space-y-6 mb-8">
+              {event.ticketTypes.map((ticketType) => (
+                <Card key={ticketType.id} className="border-2 hover:border-primary/20 transition-colors">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-xl mb-2">{ticketType.name}</h3>
+                        <p className="text-muted-foreground mb-4">
+                          {ticketType.description}
+                        </p>
+                        <div className="flex items-center gap-4">
+                          <span className="text-2xl font-bold text-primary">
+                            {formatPrice(ticketType.price)}
+                          </span>
+                          <Badge variant="outline" className="text-sm">
+                            {ticketType.stock} disponibles
+                          </Badge>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-3">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => updateTicketQuantity(ticketType.id, -1)}
+                          disabled={!selectedTickets[ticketType.id]}
+                          className="h-10 w-10"
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        
+                        <span className="w-12 text-center font-semibold text-lg">
+                          {selectedTickets[ticketType.id] || 0}
+                        </span>
+                        
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => updateTicketQuantity(ticketType.id, 1)}
+                          disabled={(selectedTickets[ticketType.id] || 0) >= ticketType.stock}
+                          className="h-10 w-10"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+            
+            {/* Purchase Summary */}
+            {getTotalTickets() > 0 && (
+              <Card className="border-2 border-primary/20 bg-primary/5">
+                <CardHeader>
+                  <CardTitle className="text-xl">Resumen de compra</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3 mb-6">
+                    {Object.entries(selectedTickets).map(([ticketId, quantity]) => {
+                      if (quantity === 0) return null;
+                      const ticketType = event.ticketTypes.find(t => t.id === parseInt(ticketId));
+                      if (!ticketType) return null;
+                      
+                      return (
+                        <div key={ticketId} className="flex justify-between items-center">
+                          <span className="font-medium">{quantity}x {ticketType.name}</span>
+                          <span className="font-semibold">{formatPrice(ticketType.price * quantity)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  <div className="border-t pt-6">
+                    <div className="flex justify-between items-center mb-6">
+                      <span className="text-xl font-bold">Total:</span>
+                      <span className="text-3xl font-bold text-primary">
+                        {formatPrice(getTotalPrice())}
+                      </span>
+                    </div>
+                    
+                    <Button
+                      onClick={handlePurchase}
+                      disabled={isLoading}
+                      className="w-full bg-primary hover:bg-primary/90 text-lg py-6"
+                      size="lg"
+                    >
+                      {isLoading ? "Procesando..." : "Comprar ahora"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </section>
