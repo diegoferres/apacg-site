@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { MapPin, Calendar, Clock, Users, ArrowLeft, Plus, Minus } from 'lucide-react';
@@ -281,6 +280,70 @@ const EventDetail = () => {
                   <span>{event.location}</span>
                 </div>
               </div>
+              
+              {/* Ticket Selection - Simplified */}
+              <div className="mt-8">
+                <h3 className="text-xl font-bold mb-4">Entradas</h3>
+                <div className="space-y-3">
+                  {event.ticketTypes.map((ticketType) => (
+                    <div key={ticketType.id} className="flex items-center justify-between p-4 border rounded-lg hover:border-primary/20 transition-colors">
+                      <div className="flex-1">
+                        <h4 className="font-semibold">{ticketType.name}</h4>
+                        <span className="text-xl font-bold text-primary">
+                          {formatPrice(ticketType.price)}
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center gap-3">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => updateTicketQuantity(ticketType.id, -1)}
+                          disabled={!selectedTickets[ticketType.id]}
+                          className="h-8 w-8"
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        
+                        <span className="w-8 text-center font-semibold">
+                          {selectedTickets[ticketType.id] || 0}
+                        </span>
+                        
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => updateTicketQuantity(ticketType.id, 1)}
+                          disabled={(selectedTickets[ticketType.id] || 0) >= ticketType.stock}
+                          className="h-8 w-8"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Purchase Button */}
+                {getTotalTickets() > 0 && (
+                  <div className="mt-6 p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                    <div className="flex justify-between items-center mb-4">
+                      <span className="font-semibold">Total:</span>
+                      <span className="text-2xl font-bold text-primary">
+                        {formatPrice(getTotalPrice())}
+                      </span>
+                    </div>
+                    
+                    <Button
+                      onClick={handlePurchase}
+                      disabled={isLoading}
+                      className="w-full bg-primary hover:bg-primary/90"
+                      size="lg"
+                    >
+                      {isLoading ? "Procesando..." : "Comprar ahora"}
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -296,109 +359,6 @@ const EventDetail = () => {
                 {event.description}
               </p>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Ticket Selection */}
-      <section className="py-16">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-2xl md:text-3xl font-bold mb-8">Selecciona tus entradas</h2>
-            
-            <div className="space-y-6 mb-8">
-              {event.ticketTypes.map((ticketType) => (
-                <Card key={ticketType.id} className="border-2 hover:border-primary/20 transition-colors">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-xl mb-2">{ticketType.name}</h3>
-                        <p className="text-muted-foreground mb-4">
-                          {ticketType.description}
-                        </p>
-                        <div className="flex items-center gap-4">
-                          <span className="text-2xl font-bold text-primary">
-                            {formatPrice(ticketType.price)}
-                          </span>
-                          <Badge variant="outline" className="text-sm">
-                            {ticketType.stock} disponibles
-                          </Badge>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-3">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => updateTicketQuantity(ticketType.id, -1)}
-                          disabled={!selectedTickets[ticketType.id]}
-                          className="h-10 w-10"
-                        >
-                          <Minus className="h-4 w-4" />
-                        </Button>
-                        
-                        <span className="w-12 text-center font-semibold text-lg">
-                          {selectedTickets[ticketType.id] || 0}
-                        </span>
-                        
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => updateTicketQuantity(ticketType.id, 1)}
-                          disabled={(selectedTickets[ticketType.id] || 0) >= ticketType.stock}
-                          className="h-10 w-10"
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-            
-            {/* Purchase Summary */}
-            {getTotalTickets() > 0 && (
-              <Card className="border-2 border-primary/20 bg-primary/5">
-                <CardHeader>
-                  <CardTitle className="text-xl">Resumen de compra</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3 mb-6">
-                    {Object.entries(selectedTickets).map(([ticketId, quantity]) => {
-                      if (quantity === 0) return null;
-                      const ticketType = event.ticketTypes.find(t => t.id === parseInt(ticketId));
-                      if (!ticketType) return null;
-                      
-                      return (
-                        <div key={ticketId} className="flex justify-between items-center">
-                          <span className="font-medium">{quantity}x {ticketType.name}</span>
-                          <span className="font-semibold">{formatPrice(ticketType.price * quantity)}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  
-                  <div className="border-t pt-6">
-                    <div className="flex justify-between items-center mb-6">
-                      <span className="text-xl font-bold">Total:</span>
-                      <span className="text-3xl font-bold text-primary">
-                        {formatPrice(getTotalPrice())}
-                      </span>
-                    </div>
-                    
-                    <Button
-                      onClick={handlePurchase}
-                      disabled={isLoading}
-                      className="w-full bg-primary hover:bg-primary/90 text-lg py-6"
-                      size="lg"
-                    >
-                      {isLoading ? "Procesando..." : "Comprar ahora"}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </div>
         </div>
       </section>
