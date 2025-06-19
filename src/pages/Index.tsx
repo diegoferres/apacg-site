@@ -8,7 +8,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import SearchBar from '@/components/SearchBar';
 import BenefitCard, { Benefit } from '@/components/BenefitCard';
-import { Store, Tag, ArrowRight, Calendar, Clock, MapPin, Users } from 'lucide-react';
+import { Store, Tag, ArrowRight, Calendar, Clock, MapPin, Users, Ticket } from 'lucide-react';
 import api from '@/services/api';
 import CommerceCard, { Commerce } from '@/components/CommerceCard';
 import { useStore } from '@/stores/store';
@@ -34,6 +34,32 @@ const featuredEvents = [
     location: "Patio Central",
     priceFrom: 12000,
     image: "https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?auto=format&fit=crop&w=800&q=80"
+  }
+];
+
+// Mock data para rifas destacadas en el home
+const featuredRaffles = [
+  {
+    id: 1,
+    title: "Rifa Benéfica Colegio Goethe",
+    shortDescription: "Rifa anual para mejoras en la infraestructura escolar",
+    drawDate: "2024-08-30",
+    drawTime: "20:00",
+    drawLocation: "Auditorio Principal",
+    isOnline: false,
+    price: 5000,
+    image: "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?auto=format&fit=crop&w=800&q=80"
+  },
+  {
+    id: 2,
+    title: "Rifa Virtual Día del Maestro",
+    shortDescription: "Rifa virtual en celebración del Día del Maestro",
+    drawDate: "2024-09-11",
+    drawTime: "19:00",
+    drawLocation: null,
+    isOnline: true,
+    price: 3000,
+    image: null
   }
 ];
 
@@ -211,6 +237,89 @@ const Index = () => {
                     
                     <Button asChild className="bg-primary hover:bg-primary/90">
                       <Link to={`/evento/${event.id}`}>
+                        Ver Detalles
+                      </Link>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Raffles Section */}
+      <section className="py-16 px-4">
+        <div className="container mx-auto max-w-6xl">
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-2xl md:text-3xl font-bold animate-fade-up">
+              Rifas Disponibles
+            </h2>
+            <Button variant="ghost" asChild className="gap-1 animate-fade-up">
+              <Link to="/rifas">
+                Ver todas <ArrowRight className="h-4 w-4 ml-1" />
+              </Link>
+            </Button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {featuredRaffles.map((raffle, index) => (
+              <Card key={raffle.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 group animate-fade-up" style={{ animationDelay: `${100 + index * 100}ms` }}>
+                {raffle.image ? (
+                  <div className="relative h-48 overflow-hidden">
+                    <img
+                      src={raffle.image}
+                      alt={raffle.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                    <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
+                      <Calendar className="h-3 w-3 mr-1" />
+                      {formatDate(raffle.drawDate)}
+                    </Badge>
+                  </div>
+                ) : (
+                  <div className="relative h-48 bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center">
+                    <div className="text-center">
+                      <Ticket className="h-12 w-12 text-primary/60 mx-auto mb-2" />
+                      <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
+                        <Calendar className="h-3 w-3 mr-1" />
+                        {formatDate(raffle.drawDate)}
+                      </Badge>
+                    </div>
+                  </div>
+                )}
+                
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-xl font-bold group-hover:text-primary transition-colors">
+                    {raffle.title}
+                  </CardTitle>
+                  <p className="text-muted-foreground text-sm line-clamp-2">
+                    {raffle.shortDescription}
+                  </p>
+                </CardHeader>
+                
+                <CardContent className="space-y-3">
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <Clock className="h-4 w-4 mr-2 text-primary" />
+                    {raffle.drawTime} hrs
+                  </div>
+                  
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <MapPin className="h-4 w-4 mr-2 text-primary" />
+                    {raffle.isOnline ? "Sorteo Online" : raffle.drawLocation}
+                  </div>
+                  
+                  <div className="flex items-center justify-between pt-4">
+                    <div>
+                      <span className="text-xs text-muted-foreground">Precio</span>
+                      <p className="text-xl font-bold text-primary">
+                        {formatPrice(raffle.price)}
+                      </p>
+                    </div>
+                    
+                    <Button asChild className="bg-primary hover:bg-primary/90">
+                      <Link to={`/rifa/${raffle.id}`}>
                         Ver Detalles
                       </Link>
                     </Button>

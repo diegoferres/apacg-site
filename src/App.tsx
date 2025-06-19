@@ -77,6 +77,8 @@ const App = () => {
             } />
             <Route path="/eventos" element={<Events />} />
             <Route path="/evento/:id" element={<EventDetail />} />
+            <Route path="/rifas" element={<Raffles />} />
+            <Route path="/rifa/:id" element={<RaffleDetail />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/perfil" element={
