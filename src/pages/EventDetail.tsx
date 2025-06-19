@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 interface TicketType {
   id: number;
   name: string;
+  description: string;
   price: number;
   stock: number;
 }
@@ -45,18 +46,21 @@ const mockEvents: Event[] = [
       {
         id: 1,
         name: "Entrada General",
+        description: "Acceso general al evento con cocktail incluido",
         price: 15000,
         stock: 50
       },
       {
         id: 2,
         name: "Entrada VIP",
+        description: "Acceso preferencial con mesa reservada y bebidas premium",
         price: 25000,
         stock: 20
       },
       {
         id: 3,
         name: "Entrada Estudiante",
+        description: "Tarifa especial para estudiantes con descuento",
         price: 10000,
         stock: 30
       }
@@ -76,12 +80,14 @@ const mockEvents: Event[] = [
       {
         id: 4,
         name: "Entrada Familiar",
+        description: "Acceso para toda la familia (hasta 4 personas)",
         price: 12000,
         stock: 25
       },
       {
         id: 5,
         name: "Entrada Individual",
+        description: "Acceso individual al festival",
         price: 5000,
         stock: 100
       }
@@ -101,18 +107,21 @@ const mockEvents: Event[] = [
       {
         id: 6,
         name: "Platea",
+        description: "Ubicación preferencial en platea baja",
         price: 18000,
         stock: 40
       },
       {
         id: 7,
         name: "Pullman",
+        description: "Ubicación en pullman con buena vista",
         price: 12000,
         stock: 60
       },
       {
         id: 8,
         name: "Cazuela",
+        description: "Ubicación económica en cazuela alta",
         price: 8000,
         stock: 80
       }
@@ -277,22 +286,44 @@ const EventDetail = () => {
         </div>
       </section>
       
-      {/* Ticket Selection */}
-      <section className="py-12 bg-muted/20">
+      {/* Event Description */}
+      <section className="py-16 bg-muted/30">
         <div className="container mx-auto px-4 md:px-6">
-          <div className="max-w-2xl mx-auto">
-            <h2 className="text-2xl md:text-3xl font-bold mb-8 text-center">Entradas</h2>
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-2xl md:text-3xl font-bold mb-6">Acerca del Evento</h2>
+            <div className="prose prose-lg max-w-none">
+              <p className="text-muted-foreground leading-relaxed">
+                {event.description}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Ticket Selection */}
+      <section className="py-16">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-2xl md:text-3xl font-bold mb-8">Selecciona tus entradas</h2>
             
-            <div className="space-y-4 mb-8">
+            <div className="space-y-6 mb-8">
               {event.ticketTypes.map((ticketType) => (
-                <Card key={ticketType.id} className="border hover:border-primary/30 transition-colors">
-                  <CardContent className="p-4">
+                <Card key={ticketType.id} className="border-2 hover:border-primary/20 transition-colors">
+                  <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
-                        <h3 className="font-semibold text-lg">{ticketType.name}</h3>
-                        <span className="text-xl font-bold text-primary">
-                          {formatPrice(ticketType.price)}
-                        </span>
+                        <h3 className="font-semibold text-xl mb-2">{ticketType.name}</h3>
+                        <p className="text-muted-foreground mb-4">
+                          {ticketType.description}
+                        </p>
+                        <div className="flex items-center gap-4">
+                          <span className="text-2xl font-bold text-primary">
+                            {formatPrice(ticketType.price)}
+                          </span>
+                          <Badge variant="outline" className="text-sm">
+                            {ticketType.stock} disponibles
+                          </Badge>
+                        </div>
                       </div>
                       
                       <div className="flex items-center gap-3">
@@ -301,12 +332,12 @@ const EventDetail = () => {
                           size="icon"
                           onClick={() => updateTicketQuantity(ticketType.id, -1)}
                           disabled={!selectedTickets[ticketType.id]}
-                          className="h-8 w-8"
+                          className="h-10 w-10"
                         >
                           <Minus className="h-4 w-4" />
                         </Button>
                         
-                        <span className="w-8 text-center font-semibold">
+                        <span className="w-12 text-center font-semibold text-lg">
                           {selectedTickets[ticketType.id] || 0}
                         </span>
                         
@@ -315,7 +346,7 @@ const EventDetail = () => {
                           size="icon"
                           onClick={() => updateTicketQuantity(ticketType.id, 1)}
                           disabled={(selectedTickets[ticketType.id] || 0) >= ticketType.stock}
-                          className="h-8 w-8"
+                          className="h-10 w-10"
                         >
                           <Plus className="h-4 w-4" />
                         </Button>
@@ -329,39 +360,45 @@ const EventDetail = () => {
             {/* Purchase Summary */}
             {getTotalTickets() > 0 && (
               <Card className="border-2 border-primary/20 bg-primary/5">
-                <CardContent className="p-6">
-                  <div className="flex justify-between items-center mb-4">
-                    <span className="text-lg font-semibold">Total:</span>
-                    <span className="text-2xl font-bold text-primary">
-                      {formatPrice(getTotalPrice())}
-                    </span>
+                <CardHeader>
+                  <CardTitle className="text-xl">Resumen de compra</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3 mb-6">
+                    {Object.entries(selectedTickets).map(([ticketId, quantity]) => {
+                      if (quantity === 0) return null;
+                      const ticketType = event.ticketTypes.find(t => t.id === parseInt(ticketId));
+                      if (!ticketType) return null;
+                      
+                      return (
+                        <div key={ticketId} className="flex justify-between items-center">
+                          <span className="font-medium">{quantity}x {ticketType.name}</span>
+                          <span className="font-semibold">{formatPrice(ticketType.price * quantity)}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                   
-                  <Button
-                    onClick={handlePurchase}
-                    disabled={isLoading}
-                    className="w-full bg-primary hover:bg-primary/90 text-lg py-6"
-                    size="lg"
-                  >
-                    {isLoading ? "Procesando..." : "Comprar ahora"}
-                  </Button>
+                  <div className="border-t pt-6">
+                    <div className="flex justify-between items-center mb-6">
+                      <span className="text-xl font-bold">Total:</span>
+                      <span className="text-3xl font-bold text-primary">
+                        {formatPrice(getTotalPrice())}
+                      </span>
+                    </div>
+                    
+                    <Button
+                      onClick={handlePurchase}
+                      disabled={isLoading}
+                      className="w-full bg-primary hover:bg-primary/90 text-lg py-6"
+                      size="lg"
+                    >
+                      {isLoading ? "Procesando..." : "Comprar ahora"}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             )}
-          </div>
-        </div>
-      </section>
-
-      {/* Event Description */}
-      <section className="py-16">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-2xl md:text-3xl font-bold mb-6">Acerca del Evento</h2>
-            <div className="prose prose-lg max-w-none">
-              <p className="text-muted-foreground leading-relaxed">
-                {event.description}
-              </p>
-            </div>
           </div>
         </div>
       </section>
