@@ -173,7 +173,7 @@ const Index = () => {
                   <div className="relative h-48 bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center">
                     <div className="text-center">
                       <Users className="h-12 w-12 text-primary/60 mx-auto mb-2" />
-                      <Badge className="bg-white/90 text-primary hover:bg-white">
+                      <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
                         <Calendar className="h-3 w-3 mr-1" />
                         {formatDate(event.date)}
                       </Badge>
@@ -210,7 +210,7 @@ const Index = () => {
                     </div>
                     
                     <Button asChild className="bg-primary hover:bg-primary/90">
-                      <Link to="/eventos">
+                      <Link to={`/evento/${event.id}`}>
                         Ver Detalles
                       </Link>
                     </Button>

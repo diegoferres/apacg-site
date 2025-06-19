@@ -10,6 +10,7 @@ import Benefits from "./pages/Benefits";
 import Commerces from "./pages/Commerces";
 import CommerceDetail from "./pages/CommerceDetail";
 import Events from "./pages/Events";
+import EventDetail from "./pages/EventDetail";
 import Login from "./pages/Login";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
@@ -75,6 +76,7 @@ const App = () => {
               </ProtectedWithStudents>
             } />
             <Route path="/eventos" element={<Events />} />
+            <Route path="/evento/:id" element={<EventDetail />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/perfil" element={

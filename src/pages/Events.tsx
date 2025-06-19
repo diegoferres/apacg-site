@@ -1,4 +1,4 @@
-
+import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { MapPin, Calendar, Clock, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -145,7 +145,7 @@ const Events = () => {
         <div className="container mx-auto px-4 md:px-6">
           {/* Breadcrumb */}
           <nav className="flex items-center space-x-2 text-sm text-muted-foreground mb-6">
-            <span>Inicio</span>
+            <Link to="/" className="hover:text-foreground transition-colors">Inicio</Link>
             <span>/</span>
             <span className="text-foreground font-medium">Eventos</span>
           </nav>
@@ -166,7 +166,7 @@ const Events = () => {
         <div className="container mx-auto px-4 md:px-6">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {mockEvents.map((event) => (
-              <Card key={event.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-300 group">
+              <Card key={event.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 group">
                 {event.image ? (
                   <div className="relative h-48 overflow-hidden">
                     <img
@@ -197,7 +197,7 @@ const Events = () => {
                     {event.title}
                   </CardTitle>
                   <p className="text-muted-foreground text-sm line-clamp-3">
-                    {event.description}
+                    {event.shortDescription}
                   </p>
                 </CardHeader>
                 
@@ -220,11 +220,10 @@ const Events = () => {
                       </p>
                     </div>
                     
-                    <Button 
-                      onClick={() => handleBuyTickets(event)}
-                      className="bg-primary hover:bg-primary/90"
-                    >
-                      Comprar Entradas
+                    <Button asChild className="bg-primary hover:bg-primary/90">
+                      <Link to={`/evento/${event.id}`}>
+                        Ver Detalles
+                      </Link>
                     </Button>
                   </div>
                 </CardContent>
