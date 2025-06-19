@@ -1,16 +1,14 @@
 
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { MapPin, Calendar, Clock, Users, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { Link } from 'react-router-dom';
-import EventPurchaseModal from '@/components/EventPurchaseModal';
 
-// Mock data para eventos (mismo que en Events.tsx)
+// Mock data para eventos
 const mockEvents = [
   {
     id: 1,
@@ -21,37 +19,7 @@ const mockEvents = [
     time: "19:00",
     location: "Auditorio Principal Colegio Goethe",
     image: null,
-    priceFrom: 15000,
-    ticketTypes: [
-      {
-        id: 1,
-        name: "Entrada General",
-        description: "Acceso completo al evento",
-        price: 15000,
-        stock: 150
-      },
-      {
-        id: 2,
-        name: "Entrada VIP",
-        description: "Acceso preferencial + refrigerio",
-        price: 25000,
-        stock: 50
-      },
-      {
-        id: 3,
-        name: "Entrada Estudiante",
-        description: "Con credencial estudiantil válida",
-        price: 8000,
-        stock: 100
-      },
-      {
-        id: 4,
-        name: "Entrada Familiar",
-        description: "Hasta 4 personas",
-        price: 40000,
-        stock: 30
-      }
-    ]
+    priceFrom: 15000
   },
   {
     id: 2,
@@ -62,30 +30,7 @@ const mockEvents = [
     time: "15:00",
     location: "Patio Central Colegio Goethe",
     image: "https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?auto=format&fit=crop&w=800&q=80",
-    priceFrom: 12000,
-    ticketTypes: [
-      {
-        id: 1,
-        name: "Entrada General",
-        description: "Acceso completo al festival",
-        price: 12000,
-        stock: 200
-      },
-      {
-        id: 2,
-        name: "Entrada VIP",
-        description: "Área preferencial + degustación",
-        price: 20000,
-        stock: 75
-      },
-      {
-        id: 3,
-        name: "Entrada Estudiante",
-        description: "Con credencial estudiantil válida",
-        price: 6000,
-        stock: 150
-      }
-    ]
+    priceFrom: 12000
   },
   {
     id: 3,
@@ -96,29 +41,12 @@ const mockEvents = [
     time: "18:30",
     location: "Teatro Municipal",
     image: "https://images.unsplash.com/photo-1470813740244-df37b8c1edcb?auto=format&fit=crop&w=800&q=80",
-    priceFrom: 10000,
-    ticketTypes: [
-      {
-        id: 1,
-        name: "Entrada General",
-        description: "Acceso general al concierto",
-        price: 10000,
-        stock: 300
-      },
-      {
-        id: 2,
-        name: "Entrada Preferencial",
-        description: "Mejores asientos disponibles",
-        price: 18000,
-        stock: 100
-      }
-    ]
+    priceFrom: 10000
   }
 ];
 
 const EventDetail = () => {
   const { id } = useParams();
-  const [isModalOpen, setIsModalOpen] = useState(false);
   
   const event = mockEvents.find(e => e.id === parseInt(id || ''));
   
@@ -229,11 +157,10 @@ const EventDetail = () => {
                     </p>
                   </div>
                   <Button 
-                    onClick={() => setIsModalOpen(true)}
                     size="lg"
                     className="bg-primary hover:bg-primary/90"
                   >
-                    Comprar Entradas
+                    Más Información
                   </Button>
                 </div>
               </div>
@@ -256,54 +183,7 @@ const EventDetail = () => {
         </div>
       </section>
       
-      {/* Ticket Types */}
-      <section className="py-16">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-2xl md:text-3xl font-bold mb-8">Tipos de Entrada</h2>
-            <div className="grid md:grid-cols-2 gap-6">
-              {event.ticketTypes.map((ticket) => (
-                <Card key={ticket.id} className="border-2 hover:border-primary/50 transition-colors">
-                  <CardHeader>
-                    <CardTitle className="text-xl">{ticket.name}</CardTitle>
-                    <p className="text-muted-foreground">{ticket.description}</p>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-2xl font-bold text-primary">
-                          {formatPrice(ticket.price)}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {ticket.stock} disponibles
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-            
-            <div className="mt-8 text-center">
-              <Button 
-                onClick={() => setIsModalOpen(true)}
-                size="lg"
-                className="bg-primary hover:bg-primary/90"
-              >
-                Comprar Entradas
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
-      
       <Footer />
-      
-      <EventPurchaseModal
-        event={event}
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-      />
     </div>
   );
 };
