@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -8,7 +7,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import SearchBar from '@/components/SearchBar';
 import BenefitCard, { Benefit } from '@/components/BenefitCard';
-import { Store, Tag, ArrowRight, Calendar, Clock, MapPin, Users, Ticket } from 'lucide-react';
+import { Store, Tag, ArrowRight, Calendar, Clock, MapPin, Users, Ticket, FileText } from 'lucide-react';
 import api from '@/services/api';
 import CommerceCard, { Commerce } from '@/components/CommerceCard';
 import { useStore } from '@/stores/store';
@@ -60,6 +59,34 @@ const featuredRaffles = [
     isOnline: true,
     price: 3000,
     image: null
+  }
+];
+
+// Mock data para novedades destacadas en el home
+const featuredNews = [
+  {
+    id: 1,
+    title: "Nueva Alianza con Comercios Locales",
+    slug: "nueva-alianza-comercios-locales",
+    excerpt: "Nos complace anunciar nuevas alianzas comerciales que beneficiarán a todos nuestros socios con descuentos exclusivos.",
+    date: "2024-01-15",
+    image: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=800&q=80"
+  },
+  {
+    id: 2,
+    title: "Asamblea General Ordinaria 2024",
+    slug: "asamblea-general-ordinaria-2024",
+    excerpt: "Se convoca a todos los socios a la Asamblea General Ordinaria que se realizará el próximo mes.",
+    date: "2024-01-10",
+    image: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=800&q=80"
+  },
+  {
+    id: 3,
+    title: "Mejoras en la Plataforma Digital",
+    slug: "mejoras-plataforma-digital",
+    excerpt: "Hemos implementado importantes mejoras en nuestra plataforma para brindar una mejor experiencia a nuestros usuarios.",
+    date: "2024-01-05",
+    image: "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?auto=format&fit=crop&w=800&q=80"
   }
 ];
 
@@ -176,6 +203,70 @@ const Index = () => {
                 benefit={benefit} 
                 delay={100 + index * 50} 
               />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* News Section */}
+      <section className="py-16 px-4 bg-muted/30">
+        <div className="container mx-auto max-w-6xl">
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-2xl md:text-3xl font-bold animate-fade-up">
+              Últimas Novedades
+            </h2>
+            <Button variant="ghost" asChild className="gap-1 animate-fade-up">
+              <Link to="/novedades">
+                Ver todas <ArrowRight className="h-4 w-4 ml-1" />
+              </Link>
+            </Button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {featuredNews.map((news, index) => (
+              <Card key={news.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 group animate-fade-up" style={{ animationDelay: `${100 + index * 100}ms` }}>
+                {news.image ? (
+                  <div className="relative h-48 overflow-hidden">
+                    <img
+                      src={news.image}
+                      alt={news.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                    <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
+                      <Calendar className="h-3 w-3 mr-1" />
+                      {formatDate(news.date)}
+                    </Badge>
+                  </div>
+                ) : (
+                  <div className="relative h-48 bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center">
+                    <div className="text-center">
+                      <FileText className="h-12 w-12 text-primary/60 mx-auto mb-2" />
+                      <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
+                        <Calendar className="h-3 w-3 mr-1" />
+                        {formatDate(news.date)}
+                      </Badge>
+                    </div>
+                  </div>
+                )}
+                
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-xl font-bold group-hover:text-primary transition-colors line-clamp-2">
+                    {news.title}
+                  </CardTitle>
+                  <p className="text-muted-foreground text-sm line-clamp-3">
+                    {stripHtml(news.excerpt)}
+                  </p>
+                </CardHeader>
+                
+                <CardContent className="pt-0">
+                  <Button asChild className="w-full bg-primary hover:bg-primary/90">
+                    <Link to={`/novedad/${news.slug}`}>
+                      Leer Más
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </div>

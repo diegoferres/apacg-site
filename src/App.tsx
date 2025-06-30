@@ -18,6 +18,8 @@ import PaymentPage from "./pages/PaymentPage";
 import Register from "./pages/Register";
 import Raffles from "./pages/Raffles";
 import RaffleDetail from "./pages/RaffleDetail";
+import News from "./pages/News";
+import NewsDetail from "./pages/NewsDetail";
 import { ChildrenManager } from "./components/ChildrenManager";
 import ProtectedWithStudents from "./components/ProtectedWithStudents";
 import ChildrenEnrollment from "./pages/ChildrenEnrollment";
@@ -81,6 +83,8 @@ const App = () => {
             <Route path="/evento/:id" element={<EventDetail />} />
             <Route path="/rifas" element={<Raffles />} />
             <Route path="/rifa/:id" element={<RaffleDetail />} />
+            <Route path="/novedades" element={<News />} />
+            <Route path="/novedad/:slug" element={<NewsDetail />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/perfil" element={

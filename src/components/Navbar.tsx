@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -96,6 +97,12 @@ const Navbar = () => {
             >
               Rifas
             </Link>
+            <Link
+              to="/novedades"
+              className="text-foreground/90 hover:text-foreground font-medium transition-colors"
+            >
+              Novedades
+            </Link>
             {user &&user.id ? (
               <Button
                 asChild
@@ -171,6 +178,13 @@ const Navbar = () => {
                 onClick={() => setIsMenuOpen(false)}
               >
                 Rifas
+              </Link>
+              <Link
+                to="/novedades"
+                className="text-foreground/90 hover:text-foreground font-medium transition-colors py-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Novedades
               </Link>
               {isLoggedIn ? (
                 <Button
