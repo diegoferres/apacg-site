@@ -90,6 +90,12 @@ const Navbar = () => {
             >
               Eventos
             </Link>
+            <Link
+              to="/rifas"
+              className="text-foreground/90 hover:text-foreground font-medium transition-colors"
+            >
+              Rifas
+            </Link>
             {user &&user.id ? (
               <Button
                 asChild
@@ -158,6 +164,13 @@ const Navbar = () => {
                 onClick={() => setIsMenuOpen(false)}
               >
                 Eventos
+              </Link>
+              <Link
+                to="/rifas"
+                className="text-foreground/90 hover:text-foreground font-medium transition-colors py-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Rifas
               </Link>
               {isLoggedIn ? (
                 <Button

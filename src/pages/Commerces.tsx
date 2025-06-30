@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import api from '@/services/api';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -79,6 +79,13 @@ const Commerces = () => {
       
       <section className="pt-28 pb-8 px-4 bg-secondary/30">
         <div className="container mx-auto max-w-6xl">
+          {/* Breadcrumb */}
+          <nav className="flex items-center space-x-2 text-sm text-muted-foreground mb-6">
+            <Link to="/" className="hover:text-foreground transition-colors">Inicio</Link>
+            <span>/</span>
+            <span className="text-foreground font-medium">Comercios</span>
+          </nav>
+          
           <h1 className="text-3xl md:text-4xl font-bold mb-6 animate-fade-up">
             Comercios Asociados
           </h1>

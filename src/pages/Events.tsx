@@ -1,11 +1,22 @@
 import { Link } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { MapPin, Calendar, Clock, Ticket } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import SearchBar from '@/components/SearchBar';
+import { 
+  Pagination, 
+  PaginationContent, 
+  PaginationItem, 
+  PaginationLink, 
+  PaginationNext, 
+  PaginationPrevious 
+} from '@/components/ui/pagination';
+import { useToast } from '@/components/ui/use-toast';
 import EventPurchaseModal from '@/components/EventPurchaseModal';
 
 // Mock data para eventos con descripciones completas
@@ -168,13 +179,73 @@ const mockEvents = [
 ];
 
 const Events = () => {
+  const [events, setEvents] = useState(mockEvents);
+  const [filteredEvents, setFilteredEvents] = useState(mockEvents);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const page = searchParams.get('page') ? parseInt(searchParams.get('page') || '1') : 1;
+    setCurrentPage(page);
+    
+    // En el futuro, aquí se haría la llamada al API
+    // const fetchEvents = async () => {
+    //   setIsLoading(true);
+    //   try {
+    //     const response = await api.get('api/client/events/list', {
+    //       params: { page }
+    //     });
+    //     setEvents(response.data.data.data);
+    //     setFilteredEvents(response.data.data.data);
+    //     setTotalPages(response.data.data.last_page || 1);
+    //   } catch (error) {
+    //     console.error('Error fetching events:', error);
+    //     toast({
+    //       title: "Error",
+    //       description: "No se pudieron cargar los eventos. Intente nuevamente más tarde.",
+    //       variant: "destructive",
+    //     });
+    //   } finally {
+    //     setIsLoading(false);
+    //   }
+    // };
+    // fetchEvents();
+    
+    setFilteredEvents(mockEvents);
+    setIsLoading(false);
+  }, [searchParams, toast]);
 
   // Helper function to strip HTML tags for short descriptions
   const stripHtml = (html: string) => {
     const doc = new DOMParser().parseFromString(html, 'text/html');
     return doc.body.textContent || "";
+  };
+
+  const handleSearch = (term: string, categories: string[]) => {
+    let results = [...events];
+    
+    if (term) {
+      const searchTerm = term.toLowerCase();
+      results = results.filter(event => 
+        event.title.toLowerCase().includes(searchTerm) ||
+        event.description.toLowerCase().includes(searchTerm) ||
+        event.shortDescription.toLowerCase().includes(searchTerm) ||
+        event.location.toLowerCase().includes(searchTerm)
+      );
+    }
+    
+    // Los eventos no tienen categorías por ahora, pero se puede agregar en el futuro
+    
+    setFilteredEvents(results);
+  };
+
+  const handlePageChange = (page: number) => {
+    setSearchParams({ page: page.toString() });
   };
 
   const formatDate = (dateString: string | null | undefined) => {
@@ -206,12 +277,11 @@ const Events = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen flex flex-col">
       <Navbar />
       
-      {/* Hero Section */}
-      <section className="pt-24 pb-12 bg-gradient-to-b from-muted/50 to-background">
-        <div className="container mx-auto px-4 md:px-6">
+      <section className="pt-28 pb-8 px-4 bg-secondary/30">
+        <div className="container mx-auto max-w-6xl">
           {/* Breadcrumb */}
           <nav className="flex items-center space-x-2 text-sm text-muted-foreground mb-6">
             <Link to="/" className="hover:text-foreground transition-colors">Inicio</Link>
@@ -219,22 +289,28 @@ const Events = () => {
             <span className="text-foreground font-medium">Eventos</span>
           </nav>
           
-          <div className="text-center">
-            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-              Eventos Disponibles
-            </h1>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Descubre y participa en los eventos especiales organizados por A.P.A.C. GOETHE
-            </p>
-          </div>
+          <h1 className="text-3xl md:text-4xl font-bold mb-6 animate-fade-up">
+            Eventos Disponibles
+          </h1>
+          <p className="text-lg text-muted-foreground mb-8 max-w-3xl animate-fade-up">
+            Descubre y participa en los eventos especiales organizados por A.P.A.C. GOETHE.
+          </p>
+          
+          <SearchBar onSearch={handleSearch} categories={[]} />
         </div>
       </section>
 
-      {/* Events Grid */}
-      <section className="py-16">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {mockEvents.map((event) => (
+      <section className="py-12 px-4">
+        <div className="container mx-auto max-w-6xl">
+          {isLoading ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[...Array(6)].map((_, index) => (
+                <div key={index} className="h-96 bg-muted/30 animate-pulse rounded-lg"></div>
+              ))}
+            </div>
+          ) : filteredEvents.length > 0 ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filteredEvents.map((event) => (
               <Card key={event.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 group">
                 {event.image ? (
                   <div className="relative h-48 overflow-hidden">
@@ -297,8 +373,67 @@ const Events = () => {
                   </div>
                 </CardContent>
               </Card>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">
+                No se encontraron eventos con los criterios seleccionados.
+              </p>
+            </div>
+          )}
+
+          {totalPages > 1 && (
+            <Pagination className="mt-12">
+              <PaginationContent>
+                {currentPage > 1 && (
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      className="cursor-pointer"
+                    />
+                  </PaginationItem>
+                )}
+                
+                {[...Array(totalPages)].map((_, i) => {
+                  const page = i + 1;
+                  // Show current page, first, last, and pages around current
+                  if (
+                    page === 1 || 
+                    page === totalPages || 
+                    (page >= currentPage - 1 && page <= currentPage + 1)
+                  ) {
+                    return (
+                      <PaginationItem key={page}>
+                        <PaginationLink
+                          isActive={page === currentPage}
+                          onClick={() => handlePageChange(page)}
+                          className="cursor-pointer"
+                        >
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  } else if (
+                    page === currentPage - 2 || 
+                    page === currentPage + 2
+                  ) {
+                    return <PaginationItem key={page}>...</PaginationItem>;
+                  }
+                  return null;
+                })}
+                
+                {currentPage < totalPages && (
+                  <PaginationItem>
+                    <PaginationNext 
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      className="cursor-pointer"
+                    />
+                  </PaginationItem>
+                )}
+              </PaginationContent>
+            </Pagination>
+          )}
         </div>
       </section>
       
