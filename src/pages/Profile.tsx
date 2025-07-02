@@ -76,11 +76,7 @@ const Profile = () => {
         const benefitsResponse = await api.get(`api/client/benefits/member/${user.member.id}`);
         setBenefits(benefitsResponse.data.data || []);
         
-        // Fetch raffles
-        const rafflesResponse = await api.get('api/client/raffles');
-        setRaffles(rafflesResponse.data.data || []);
-        
-        // Demo data for raffles (comment out when real API is ready)
+        // Set example raffle data
         setRaffles([
           {
             id: 1,
@@ -169,67 +165,35 @@ const Profile = () => {
     }
   };
 
-  const handleViewStudents = async (raffle) => {
-    try {
-      setSelectedRaffle(raffle);
-      // Fetch students for this member
-      const studentsResponse = await api.get(`api/client/members/${user.member.id}/students`);
-      setSelectedRaffleStudents(studentsResponse.data.data || []);
-      
-      // Demo data for students (comment out when real API is ready)
-      setSelectedRaffleStudents([
-        {
-          id: 1,
-          first_name: "María",
-          last_name: "González",
-          school_year: "5° Grado",
-          student_number: "EST-2024-001"
-        },
-        {
-          id: 2,
-          first_name: "Carlos",
-          last_name: "Rodríguez", 
-          school_year: "3° Grado",
-          student_number: "EST-2024-002"
-        },
-        {
-          id: 3,
-          first_name: "Ana",
-          last_name: "López",
-          school_year: "1° Grado",
-          student_number: "EST-2024-003"
-        }
-      ]);
-      
-      setShowStudentsModal(true);
-    } catch (error) {
-      console.error('Error fetching students:', error);
-      // Show demo data even on error for testing
-      setSelectedRaffleStudents([
-        {
-          id: 1,
-          first_name: "María",
-          last_name: "González",
-          school_year: "5° Grado",
-          student_number: "EST-2024-001"
-        },
-        {
-          id: 2,
-          first_name: "Carlos",
-          last_name: "Rodríguez", 
-          school_year: "3° Grado",
-          student_number: "EST-2024-002"
-        },
-        {
-          id: 3,
-          first_name: "Ana",
-          last_name: "López",
-          school_year: "1° Grado",
-          student_number: "EST-2024-003"
-        }
-      ]);
-      setShowStudentsModal(true);
-    }
+  const handleViewStudents = (raffle) => {
+    setSelectedRaffle(raffle);
+    
+    // Set example student data
+    setSelectedRaffleStudents([
+      {
+        id: 1,
+        first_name: "María",
+        last_name: "González",
+        school_year: "5° Grado",
+        student_number: "EST-2024-001"
+      },
+      {
+        id: 2,
+        first_name: "Carlos",
+        last_name: "Rodríguez", 
+        school_year: "3° Grado",
+        student_number: "EST-2024-002"
+      },
+      {
+        id: 3,
+        first_name: "Ana",
+        last_name: "López",
+        school_year: "1° Grado",
+        student_number: "EST-2024-003"
+      }
+    ]);
+    
+    setShowStudentsModal(true);
   };
 
   const copyReferralLink = (studentId, raffleName) => {
@@ -644,8 +608,6 @@ const Profile = () => {
                       ))}
                     </div>
                    ) : (
-                     // Vista vacía comentada para ejemplo cuando no hay datos reales de la API
-                     /* 
                      <div className="text-center py-8">
                        <Ticket className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                        <h3 className="text-lg font-medium mb-2">No hay rifas disponibles</h3>
@@ -653,8 +615,6 @@ const Profile = () => {
                          Actualmente no hay rifas activas disponibles.
                        </p>
                      </div>
-                     */
-                     null
                    )}
                 </CardContent>
               </Card>
@@ -714,16 +674,12 @@ const Profile = () => {
                 </div>
               ))
              ) : (
-               // Vista vacía comentada para ejemplo cuando no hay alumnos
-               /* 
                <div className="text-center py-8">
                  <Users className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
                  <p className="text-sm text-muted-foreground">
                    No hay alumnos matriculados para generar links de referido.
                  </p>
                </div>
-               */
-               null
              )}
           </div>
         </DialogContent>
