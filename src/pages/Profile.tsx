@@ -79,6 +79,31 @@ const Profile = () => {
         // Fetch raffles
         const rafflesResponse = await api.get('api/client/raffles');
         setRaffles(rafflesResponse.data.data || []);
+        
+        // Demo data for raffles (comment out when real API is ready)
+        setRaffles([
+          {
+            id: 1,
+            title: "Sorteo de Smartphone Samsung Galaxy S24",
+            draw_date: "2025-08-15",
+            location: "Sede Central APACG",
+            price: "50000"
+          },
+          {
+            id: 2,
+            title: "Rifa de Notebook Dell Inspiron",
+            draw_date: "2025-09-20", 
+            location: "Online - Transmisión en vivo",
+            price: "30000"
+          },
+          {
+            id: 3,
+            title: "Sorteo de Bicicleta Mountain Bike",
+            draw_date: "2025-07-30",
+            location: "Patio del Colegio",
+            price: "25000"
+          }
+        ]);
       } catch (error) {
         console.error('Error fetching data:', error);
       }
@@ -150,10 +175,59 @@ const Profile = () => {
       // Fetch students for this member
       const studentsResponse = await api.get(`api/client/members/${user.member.id}/students`);
       setSelectedRaffleStudents(studentsResponse.data.data || []);
+      
+      // Demo data for students (comment out when real API is ready)
+      setSelectedRaffleStudents([
+        {
+          id: 1,
+          first_name: "María",
+          last_name: "González",
+          school_year: "5° Grado",
+          student_number: "EST-2024-001"
+        },
+        {
+          id: 2,
+          first_name: "Carlos",
+          last_name: "Rodríguez", 
+          school_year: "3° Grado",
+          student_number: "EST-2024-002"
+        },
+        {
+          id: 3,
+          first_name: "Ana",
+          last_name: "López",
+          school_year: "1° Grado",
+          student_number: "EST-2024-003"
+        }
+      ]);
+      
       setShowStudentsModal(true);
     } catch (error) {
       console.error('Error fetching students:', error);
-      setSelectedRaffleStudents([]);
+      // Show demo data even on error for testing
+      setSelectedRaffleStudents([
+        {
+          id: 1,
+          first_name: "María",
+          last_name: "González",
+          school_year: "5° Grado",
+          student_number: "EST-2024-001"
+        },
+        {
+          id: 2,
+          first_name: "Carlos",
+          last_name: "Rodríguez", 
+          school_year: "3° Grado",
+          student_number: "EST-2024-002"
+        },
+        {
+          id: 3,
+          first_name: "Ana",
+          last_name: "López",
+          school_year: "1° Grado",
+          student_number: "EST-2024-003"
+        }
+      ]);
       setShowStudentsModal(true);
     }
   };
@@ -569,15 +643,19 @@ const Profile = () => {
                         </div>
                       ))}
                     </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <Ticket className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                      <h3 className="text-lg font-medium mb-2">No hay rifas disponibles</h3>
-                      <p className="text-muted-foreground">
-                        Actualmente no hay rifas activas disponibles.
-                      </p>
-                    </div>
-                  )}
+                   ) : (
+                     // Vista vacía comentada para ejemplo cuando no hay datos reales de la API
+                     /* 
+                     <div className="text-center py-8">
+                       <Ticket className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                       <h3 className="text-lg font-medium mb-2">No hay rifas disponibles</h3>
+                       <p className="text-muted-foreground">
+                         Actualmente no hay rifas activas disponibles.
+                       </p>
+                     </div>
+                     */
+                     null
+                   )}
                 </CardContent>
               </Card>
             )}
@@ -635,14 +713,18 @@ const Profile = () => {
                   </div>
                 </div>
               ))
-            ) : (
-              <div className="text-center py-8">
-                <Users className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground">
-                  No hay alumnos matriculados para generar links de referido.
-                </p>
-              </div>
-            )}
+             ) : (
+               // Vista vacía comentada para ejemplo cuando no hay alumnos
+               /* 
+               <div className="text-center py-8">
+                 <Users className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+                 <p className="text-sm text-muted-foreground">
+                   No hay alumnos matriculados para generar links de referido.
+                 </p>
+               </div>
+               */
+               null
+             )}
           </div>
         </DialogContent>
       </Dialog>
