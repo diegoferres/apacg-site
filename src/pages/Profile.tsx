@@ -60,6 +60,34 @@ const Profile = () => {
     fetchUser();
   }, [setUser]);
 
+  // Set example data regardless of authentication state
+  useEffect(() => {
+    // Set example raffle data
+    setRaffles([
+      {
+        id: 1,
+        title: "Sorteo de Smartphone Samsung Galaxy S24",
+        draw_date: "2025-08-15",
+        location: "Sede Central APACG",
+        price: "50000"
+      },
+      {
+        id: 2,
+        title: "Rifa de Notebook Dell Inspiron",
+        draw_date: "2025-09-20", 
+        location: "Online - Transmisión en vivo",
+        price: "30000"
+      },
+      {
+        id: 3,
+        title: "Sorteo de Bicicleta Mountain Bike",
+        draw_date: "2025-07-30",
+        location: "Patio del Colegio",
+        price: "25000"
+      }
+    ]);
+  }, []);
+
   // Fetch payments and benefits only after user data is loaded
   useEffect(() => {
     if (!user?.member?.id) return;
@@ -75,31 +103,6 @@ const Profile = () => {
         // Fetch benefits
         const benefitsResponse = await api.get(`api/client/benefits/member/${user.member.id}`);
         setBenefits(benefitsResponse.data.data || []);
-        
-        // Set example raffle data
-        setRaffles([
-          {
-            id: 1,
-            title: "Sorteo de Smartphone Samsung Galaxy S24",
-            draw_date: "2025-08-15",
-            location: "Sede Central APACG",
-            price: "50000"
-          },
-          {
-            id: 2,
-            title: "Rifa de Notebook Dell Inspiron",
-            draw_date: "2025-09-20", 
-            location: "Online - Transmisión en vivo",
-            price: "30000"
-          },
-          {
-            id: 3,
-            title: "Sorteo de Bicicleta Mountain Bike",
-            draw_date: "2025-07-30",
-            location: "Patio del Colegio",
-            price: "25000"
-          }
-        ]);
       } catch (error) {
         console.error('Error fetching data:', error);
       }
