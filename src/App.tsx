@@ -88,14 +88,14 @@ const App = () => {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/perfil" element={
-              <ProtectedWithStudents>
+              /*<ProtectedWithStudents>*/
                 <Profile />
-              </ProtectedWithStudents>
+              /*</ProtectedWithStudents>*/
             } />
             <Route path="/pago-membresia" element={
-              <ProtectedWithStudents>
+              /*<ProtectedWithStudents>*/
                 <PaymentPage />
-              </ProtectedWithStudents>
+              /*</ProtectedWithStudents>*/
             } />
             <Route path="/inscripcion-alumnos" element={<ChildrenEnrollment />} />
             <Route path="*" element={<NotFound />} />

@@ -6,7 +6,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { QrCode, LogOut, User, CreditCard, Gift, Edit, Mail, Phone, Calendar, CheckCircle, XCircle, Receipt, ExternalLink } from "lucide-react";
+import { QrCode, LogOut, User, CreditCard, Gift, Edit, Mail, Phone, Calendar, CheckCircle, XCircle, Receipt, ExternalLink, Ticket, Users, Copy, MapPin } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useStore } from "@/stores/store";
@@ -21,6 +23,10 @@ const Profile = () => {
   const setUser = useStore((state) => state.setUser);
   const [payments, setPayments] = useState([]);
   const [benefits, setBenefits] = useState([]);
+  const [raffles, setRaffles] = useState([]);
+  const [selectedRaffleStudents, setSelectedRaffleStudents] = useState([]);
+  const [showStudentsModal, setShowStudentsModal] = useState(false);
+  const [selectedRaffle, setSelectedRaffle] = useState(null);
   const navigate = useNavigate();
   const [first_name, setFirstName] = useState("");
   const [last_name, setLastName] = useState("");
@@ -53,6 +59,34 @@ const Profile = () => {
 
     fetchUser();
   }, [setUser]);
+
+  // Set example data regardless of authentication state
+  useEffect(() => {
+    // Set example raffle data
+    setRaffles([
+      {
+        id: 1,
+        title: "Sorteo de Smartphone Samsung Galaxy S24",
+        draw_date: "2025-08-15",
+        location: "Sede Central APACG",
+        price: "50000"
+      },
+      {
+        id: 2,
+        title: "Rifa de Notebook Dell Inspiron",
+        draw_date: "2025-09-20", 
+        location: "Online - Transmisión en vivo",
+        price: "30000"
+      },
+      {
+        id: 3,
+        title: "Sorteo de Bicicleta Mountain Bike",
+        draw_date: "2025-07-30",
+        location: "Patio del Colegio",
+        price: "25000"
+      }
+    ]);
+  }, []);
 
   // Fetch payments and benefits only after user data is loaded
   useEffect(() => {
@@ -99,6 +133,8 @@ const Profile = () => {
     setShowEmptyBenefits(!showEmptyBenefits);
   };
 
+  const { toast } = useToast();
+
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
 
@@ -130,7 +166,56 @@ const Profile = () => {
     } catch (error) {
       console.error('Error updating profile:', error);
     }
-  }
+  };
+
+  const handleViewStudents = (raffle) => {
+    setSelectedRaffle(raffle);
+    
+    // Set example student data
+    setSelectedRaffleStudents([
+      {
+        id: 1,
+        first_name: "María",
+        last_name: "González",
+        school_year: "5° Grado",
+        student_number: "EST-2024-001"
+      },
+      {
+        id: 2,
+        first_name: "Carlos",
+        last_name: "Rodríguez", 
+        school_year: "3° Grado",
+        student_number: "EST-2024-002"
+      },
+      {
+        id: 3,
+        first_name: "Ana",
+        last_name: "López",
+        school_year: "1° Grado",
+        student_number: "EST-2024-003"
+      }
+    ]);
+    
+    setShowStudentsModal(true);
+  };
+
+  const copyReferralLink = (studentId, raffleName) => {
+    const baseUrl = window.location.origin;
+    const referralLink = `${baseUrl}/rifa/${selectedRaffle?.id}?ref=${studentId}`;
+    
+    navigator.clipboard.writeText(referralLink).then(() => {
+      toast({
+        title: "Link copiado",
+        description: `Link de referido para ${raffleName} copiado al portapapeles`,
+      });
+    }).catch(() => {
+      toast({
+        title: "Error",
+        description: "No se pudo copiar el link al portapapeles",
+        variant: "destructive",
+      });
+    });
+  };
 
   if (isLoading) {
     return (
@@ -240,6 +325,14 @@ const Profile = () => {
                   >
                     <Edit className="mr-2 h-5 w-5" />
                     Editar Perfil
+                  </Button>
+                  <Button 
+                    variant={activeTab === "raffles" ? "default" : "ghost"} 
+                    className="w-full justify-start rounded-none h-12"
+                    onClick={() => setActiveTab("raffles")}
+                  >
+                    <Ticket className="mr-2 h-5 w-5" />
+                    Rifas
                   </Button>
                   <Button 
                     variant={activeTab === "children" ? "default" : "ghost"} 
@@ -473,6 +566,63 @@ const Profile = () => {
               </Card>
             )}
             
+            {activeTab === "raffles" && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Ticket className="mr-2 h-5 w-5" />
+                    Rifas Disponibles
+                  </CardTitle>
+                  <CardDescription>
+                    Lista de rifas activas para generar links de referidos
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {raffles.length > 0 ? (
+                    <div className="space-y-4">
+                      {raffles.map((raffle) => (
+                        <div key={raffle.id} className="p-6 border rounded-lg">
+                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div className="space-y-2">
+                              <h3 className="text-lg font-semibold">{raffle.title}</h3>
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Calendar className="h-4 w-4" />
+                                <span>Sorteo: {raffle.draw_date}</span>
+                              </div>
+                              {raffle.location && (
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                  <MapPin className="h-4 w-4" />
+                                  <span>{raffle.location}</span>
+                                </div>
+                              )}
+                              <div className="text-lg font-semibold text-primary">
+                                {raffle.price} Gs.
+                              </div>
+                            </div>
+                            <Button 
+                              onClick={() => handleViewStudents(raffle)}
+                              className="md:w-auto w-full"
+                            >
+                              <Users className="mr-2 h-4 w-4" />
+                              Ver Alumnos
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                   ) : (
+                     <div className="text-center py-8">
+                       <Ticket className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                       <h3 className="text-lg font-medium mb-2">No hay rifas disponibles</h3>
+                       <p className="text-muted-foreground">
+                         Actualmente no hay rifas activas disponibles.
+                       </p>
+                     </div>
+                   )}
+                </CardContent>
+              </Card>
+            )}
+
             {activeTab === "children" && (
               <Card>
                 <CardHeader>
@@ -491,6 +641,52 @@ const Profile = () => {
           </div>
         </div>
       </main>
+      
+      {/* Modal para mostrar alumnos y links de referido */}
+      <Dialog open={showStudentsModal} onOpenChange={setShowStudentsModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Alumnos para {selectedRaffle?.title}
+            </DialogTitle>
+            <DialogDescription>
+              Genera links de referido para cada alumno matriculado
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-3 max-h-96 overflow-y-auto">
+            {selectedRaffleStudents.length > 0 ? (
+              selectedRaffleStudents.map((student) => (
+                <div key={student.id} className="p-3 border rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-medium">{student.first_name} {student.last_name}</h4>
+                      <p className="text-sm text-muted-foreground">{student.school_year}</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => copyReferralLink(student.id, `${student.first_name} ${student.last_name}`)}
+                      className="shrink-0"
+                    >
+                      <Copy className="h-4 w-4 mr-1" />
+                      Copiar Link
+                    </Button>
+                  </div>
+                </div>
+              ))
+             ) : (
+               <div className="text-center py-8">
+                 <Users className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+                 <p className="text-sm text-muted-foreground">
+                   No hay alumnos matriculados para generar links de referido.
+                 </p>
+               </div>
+             )}
+          </div>
+        </DialogContent>
+      </Dialog>
       
       <Footer />
     </div>
