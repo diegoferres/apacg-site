@@ -31,6 +31,34 @@ const Checkout = () => {
   const itemSlug = searchParams.get('item');
   const itemTitle = searchParams.get('title') || 'Compra';
   const itemTotal = searchParams.get('total') || '0';
+  const itemQuantity = searchParams.get('quantity') || '1';
+  const itemUnitPrice = searchParams.get('unitPrice') || itemTotal;
+  
+  // Mock data based on type
+  const getItemDetails = () => {
+    if (itemType === 'event') {
+      return {
+        title: itemTitle,
+        type: 'Entrada de Evento',
+        details: `${itemQuantity} entrada(s)`,
+        unitPrice: itemUnitPrice,
+        quantity: parseInt(itemQuantity),
+        image: '/corrida_lauf.jpeg'
+      };
+    } else if (itemType === 'raffle') {
+      return {
+        title: itemTitle,
+        type: 'Números de Rifa',
+        details: `${itemQuantity} número(s)`,
+        unitPrice: itemUnitPrice,
+        quantity: parseInt(itemQuantity),
+        image: '/logo.png'
+      };
+    }
+    return null;
+  };
+  
+  const itemDetails = getItemDetails();
 
   const handleInputChange = (field: keyof CheckoutData) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -81,6 +109,8 @@ const Checkout = () => {
         item: itemSlug || '',
         title: itemTitle,
         total: itemTotal,
+        quantity: itemQuantity,
+        unitPrice: itemUnitPrice,
         ...formData
       });
       
@@ -103,21 +133,24 @@ const Checkout = () => {
       <Navbar />
       
       <div className="pt-24 pb-12">
-        <div className="container mx-auto px-4 md:px-6 max-w-2xl">
+        <div className="container mx-auto px-4 md:px-6 max-w-6xl">
           <Button variant="ghost" onClick={handleGoBack} className="mb-6">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Volver
           </Button>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl">Datos de Compra</CardTitle>
-              <p className="text-muted-foreground">
-                Complete sus datos para continuar con la compra de: <strong>{itemTitle}</strong>
-              </p>
-            </CardHeader>
-            
-            <CardContent>
+          <div className="grid lg:grid-cols-2 gap-8">
+            {/* Formulario */}
+            <div className="lg:col-span-1">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-2xl">Datos de Compra</CardTitle>
+                  <p className="text-muted-foreground">
+                    Complete sus datos para continuar con la compra
+                  </p>
+                </CardHeader>
+                
+                <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="name">Nombre Completo *</Label>
@@ -194,8 +227,55 @@ const Checkout = () => {
                   </Button>
                 </div>
               </form>
+                </CardContent>
+              </Card>
+            </div>
+        
+        {/* Resumen de compra */}
+        <div className="lg:col-span-1">
+          <Card className="sticky top-8">
+            <CardHeader>
+              <CardTitle className="text-lg">Resumen de Compra</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {itemDetails && (
+                <>
+                  <div className="flex gap-3">
+                    <img 
+                      src={itemDetails.image} 
+                      alt={itemDetails.title}
+                      className="w-16 h-16 object-cover rounded-lg"
+                    />
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-sm">{itemDetails.title}</h3>
+                      <p className="text-xs text-muted-foreground">{itemDetails.type}</p>
+                      <p className="text-xs text-muted-foreground">{itemDetails.details}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2 pt-2 border-t">
+                    <div className="flex justify-between text-sm">
+                      <span>Precio unitario:</span>
+                      <span>₲ {parseInt(itemDetails.unitPrice).toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Cantidad:</span>
+                      <span>{itemDetails.quantity}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="pt-2 border-t">
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold">Total:</span>
+                      <span className="text-xl font-bold text-primary">₲ {parseInt(itemTotal).toLocaleString()}</span>
+                    </div>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
+        </div>
+          </div>
         </div>
       </div>
       

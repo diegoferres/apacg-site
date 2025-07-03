@@ -335,6 +335,14 @@ const Profile = () => {
                     Rifas
                   </Button>
                   <Button 
+                    variant={activeTab === "orders" ? "default" : "ghost"} 
+                    className="w-full justify-start rounded-none h-12"
+                    onClick={() => setActiveTab("orders")}
+                  >
+                    <Receipt className="mr-2 h-5 w-5" />
+                    Mis Compras
+                  </Button>
+                  <Button 
                     variant={activeTab === "children" ? "default" : "ghost"} 
                     className="w-full justify-start rounded-none h-12"
                     onClick={() => setActiveTab("children")}
@@ -619,6 +627,105 @@ const Profile = () => {
                        </p>
                      </div>
                    )}
+                </CardContent>
+              </Card>
+            )}
+
+            {activeTab === "orders" && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Receipt className="mr-2 h-5 w-5" />
+                    Mis Compras
+                  </CardTitle>
+                  <CardDescription>
+                    Historial de todas las compras realizadas
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    {/* Ejemplo de orden de evento */}
+                    <div className="border rounded-lg p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex gap-3">
+                          <img 
+                            src="/corrida_lauf.jpeg" 
+                            alt="Evento"
+                            className="w-16 h-16 object-cover rounded-lg"
+                          />
+                          <div>
+                            <h3 className="font-semibold">Corrida Familiar APACG 2025</h3>
+                            <p className="text-sm text-muted-foreground">Entrada de Evento</p>
+                            <p className="text-sm text-muted-foreground">2 entrada(s)</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold">₲ 100.000</p>
+                          <span className="inline-block px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                            Pagado
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        Fecha de compra: 15 de enero, 2025 • Orden #ORD-001
+                      </div>
+                    </div>
+                    
+                    {/* Ejemplo de orden de rifa */}
+                    <div className="border rounded-lg p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex gap-3">
+                          <img 
+                            src="/logo.png" 
+                            alt="Rifa"
+                            className="w-16 h-16 object-cover rounded-lg"
+                          />
+                          <div>
+                            <h3 className="font-semibold">Rifa de Notebook Dell Inspiron</h3>
+                            <p className="text-sm text-muted-foreground">Números de Rifa</p>
+                            <p className="text-sm text-muted-foreground">5 número(s)</p>
+                            <p className="text-xs text-muted-foreground">Números: 0123, 0124, 0125, 0126, 0127</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold">₲ 150.000</p>
+                          <span className="inline-block px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                            Pagado
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        Fecha de compra: 10 de enero, 2025 • Orden #ORD-002
+                      </div>
+                    </div>
+                    
+                    {/* Ejemplo de orden pendiente */}
+                    <div className="border rounded-lg p-4 opacity-75">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex gap-3">
+                          <img 
+                            src="/corrida_lauf.jpeg" 
+                            alt="Evento"
+                            className="w-16 h-16 object-cover rounded-lg"
+                          />
+                          <div>
+                            <h3 className="font-semibold">Evento Intercolegial 2025</h3>
+                            <p className="text-sm text-muted-foreground">Entrada de Evento</p>
+                            <p className="text-sm text-muted-foreground">1 entrada(s)</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold">₲ 75.000</p>
+                          <span className="inline-block px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800">
+                            Pendiente
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        Fecha de compra: 5 de enero, 2025 • Orden #ORD-003
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             )}

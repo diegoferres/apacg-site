@@ -15,8 +15,37 @@ const Payment = () => {
 
   const itemTitle = searchParams.get('title') || 'Compra';
   const itemTotal = searchParams.get('total') || '0';
+  const itemType = searchParams.get('type') || '';
+  const itemQuantity = searchParams.get('quantity') || '1';
+  const itemUnitPrice = searchParams.get('unitPrice') || itemTotal;
   const customerName = searchParams.get('name') || '';
   const customerEmail = searchParams.get('email') || '';
+  
+  // Mock data based on type
+  const getItemDetails = () => {
+    if (itemType === 'event') {
+      return {
+        title: itemTitle,
+        type: 'Entrada de Evento',
+        details: `${itemQuantity} entrada(s)`,
+        unitPrice: itemUnitPrice,
+        quantity: parseInt(itemQuantity),
+        image: '/corrida_lauf.jpeg'
+      };
+    } else if (itemType === 'raffle') {
+      return {
+        title: itemTitle,
+        type: 'Números de Rifa',
+        details: `${itemQuantity} número(s)`,
+        unitPrice: itemUnitPrice,
+        quantity: parseInt(itemQuantity),
+        image: '/logo.png'
+      };
+    }
+    return null;
+  };
+  
+  const itemDetails = getItemDetails();
 
   useEffect(() => {
     // Simular carga del iframe de pago
@@ -61,21 +90,53 @@ const Payment = () => {
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Resumen de compra */}
             <div className="lg:col-span-1">
-              <Card>
+              <Card className="sticky top-8">
                 <CardHeader>
                   <CardTitle className="text-lg">Resumen de Compra</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div>
-                    <p className="font-semibold">{itemTitle}</p>
-                    <p className="text-sm text-muted-foreground">Para: {customerName}</p>
-                    <p className="text-sm text-muted-foreground">{customerEmail}</p>
+                  <div className="space-y-3">
+                    <div className="text-sm">
+                      <span className="font-medium">Comprador:</span>
+                      <p className="text-muted-foreground">{customerName}</p>
+                      <p className="text-muted-foreground">{customerEmail}</p>
+                    </div>
                   </div>
                   
-                  <div className="pt-4 border-t">
+                  {itemDetails && (
+                    <>
+                      <div className="pt-3 border-t">
+                        <div className="flex gap-3">
+                          <img 
+                            src={itemDetails.image} 
+                            alt={itemDetails.title}
+                            className="w-16 h-16 object-cover rounded-lg"
+                          />
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-sm">{itemDetails.title}</h3>
+                            <p className="text-xs text-muted-foreground">{itemDetails.type}</p>
+                            <p className="text-xs text-muted-foreground">{itemDetails.details}</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2 pt-3 border-t">
+                        <div className="flex justify-between text-sm">
+                          <span>Precio unitario:</span>
+                          <span>₲ {parseInt(itemDetails.unitPrice).toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span>Cantidad:</span>
+                          <span>{itemDetails.quantity}</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  
+                  <div className="pt-3 border-t">
                     <div className="flex justify-between items-center">
                       <span className="font-semibold">Total:</span>
-                      <span className="text-xl font-bold text-primary">₲ {itemTotal}</span>
+                      <span className="text-xl font-bold text-primary">₲ {parseInt(itemTotal).toLocaleString()}</span>
                     </div>
                   </div>
                 </CardContent>
