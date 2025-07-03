@@ -53,7 +53,7 @@ const SearchBar = ({ onSearch, categories = [] }: SearchBarProps) => {
           <Search className="w-5 h-5 text-muted-foreground ml-3 mr-2" />
           <Input
             type="text"
-            placeholder="Buscar beneficios, comercios, categorías..."
+            placeholder="Buscar..."
             value={searchTerm}
             onChange={handleSearchChange}
             className="border-none focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none bg-transparent"

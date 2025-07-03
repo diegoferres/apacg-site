@@ -16,56 +16,22 @@ import Footer from '@/components/Footer';
 import SearchBar from '@/components/SearchBar';
 import { Calendar, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import api from '@/services/api';
 
 export interface NewsItem {
   id: number;
   title: string;
   slug: string;
   excerpt: string;
-  content: string;
   date: string;
-  image?: string;
+  date_format: string;
+  cover?: {
+    storage_path_full: string;
+  };
+  content: string;
 }
 
-// Mock data para novedades
-const mockNews: NewsItem[] = [
-  {
-    id: 1,
-    title: "Nueva Alianza con Comercios Locales",
-    slug: "nueva-alianza-comercios-locales",
-    excerpt: "Nos complace anunciar nuevas alianzas comerciales que beneficiarán a todos nuestros socios con descuentos exclusivos.",
-    content: "Contenido completo de la noticia...",
-    date: "2024-01-15",
-    image: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=800&q=80"
-  },
-  {
-    id: 2,
-    title: "Asamblea General Ordinaria 2024",
-    slug: "asamblea-general-ordinaria-2024",
-    excerpt: "Se convoca a todos los socios a la Asamblea General Ordinaria que se realizará el próximo mes.",
-    content: "Contenido completo de la noticia...",
-    date: "2024-01-10",
-    image: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=800&q=80"
-  },
-  {
-    id: 3,
-    title: "Mejoras en la Plataforma Digital",
-    slug: "mejoras-plataforma-digital",
-    excerpt: "Hemos implementado importantes mejoras en nuestra plataforma para brindar una mejor experiencia a nuestros usuarios.",
-    content: "Contenido completo de la noticia...",
-    date: "2024-01-05",
-    image: "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?auto=format&fit=crop&w=800&q=80"
-  },
-  {
-    id: 4,
-    title: "Programa de Becas Estudiantiles",
-    slug: "programa-becas-estudiantiles",
-    excerpt: "Lanzamos un nuevo programa de becas para apoyar la educación de los hijos de nuestros socios.",
-    content: "Contenido completo de la noticia...",
-    date: "2023-12-28",
-    image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80"
-  }
-];
+
 
 const News = () => {
   const [news, setNews] = useState<NewsItem[]>([]);
@@ -81,22 +47,27 @@ const News = () => {
     const page = searchParams.get('page') ? parseInt(searchParams.get('page') || '1') : 1;
     setCurrentPage(page);
     
-    const loadNews = () => {
+    const loadNews = async () => {
       setIsLoading(true);
       
-      // Simular carga de datos
-      setTimeout(() => {
-        setNews(mockNews);
-        setFilteredNews(mockNews);
-        setTotalPages(Math.ceil(mockNews.length / itemsPerPage));
+      try {
+        const response = await api.get('api/client/news');
+        const newsData = response.data.data.data;
+        setNews(newsData);
+        setFilteredNews(newsData);
+        console.log('response.data.data.data', newsData);
+        setTotalPages(Math.ceil(response.data.data.last_page || 1));
+      } catch (error) {
+        console.error('Error fetching news:', error);
+      } finally {
         setIsLoading(false);
-      }, 500);
+      }
     };
     
     loadNews();
   }, [searchParams]);
   
-  const handleSearch = (term: string, categories: string[]) => {
+  const handleSearch = (term: string) => {
     let results = [...news];
     
     if (term) {
@@ -109,6 +80,8 @@ const News = () => {
     
     setFilteredNews(results);
     setTotalPages(Math.ceil(results.length / itemsPerPage));
+    setCurrentPage(1); // Reset to first page when searching
+    setSearchParams({ page: '1' });
   };
   
   const handlePageChange = (page: number) => {
@@ -133,6 +106,16 @@ const News = () => {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedNews = filteredNews.slice(startIndex, startIndex + itemsPerPage);
   
+  console.log('Debug info:', {
+    currentPage,
+    totalPages,
+    itemsPerPage,
+    startIndex,
+    filteredNewsLength: filteredNews.length,
+    paginatedNewsLength: paginatedNews.length,
+    paginatedNews
+  });
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -169,17 +152,17 @@ const News = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {paginatedNews.map((item, index) => (
                 <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 group animate-fade-up" style={{ animationDelay: `${100 + index * 100}ms` }}>
-                  {item.image ? (
+                  {item.cover ? (
                     <div className="relative h-48 overflow-hidden">
                       <img
-                        src={item.image}
+                        src={item.cover?.storage_path_full}
                         alt={item.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                       <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
                         <Calendar className="h-3 w-3 mr-1" />
-                        {formatDate(item.date)}
+                        {formatDate(item.date_format)}
                       </Badge>
                     </div>
                   ) : (
@@ -188,7 +171,7 @@ const News = () => {
                         <FileText className="h-12 w-12 text-primary/60 mx-auto mb-2" />
                         <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
                           <Calendar className="h-3 w-3 mr-1" />
-                          {formatDate(item.date)}
+                          {formatDate(item.date_format)}
                         </Badge>
                       </div>
                     </div>
