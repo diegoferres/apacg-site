@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { formatPrice } from '@/lib/utils';
 
 interface TicketType {
   id: number;
@@ -58,9 +59,7 @@ const EventPurchaseModal = ({ event, isOpen, onClose }: EventPurchaseModalProps)
     }
   };
 
-  const formatPrice = (price: number) => {
-    return `Gs. ${price.toLocaleString('es-ES')}`;
-  };
+
 
   const updateTicketQuantity = (ticketId: number, change: number) => {
     const currentQuantity = selectedTickets[ticketId] || 0;

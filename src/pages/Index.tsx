@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +11,7 @@ import { Store, Tag, ArrowRight, Calendar, Clock, MapPin, Users, Ticket, FileTex
 import api from '@/services/api';
 import CommerceCard, { Commerce } from '@/components/CommerceCard';
 import { useStore } from '@/stores/store';
+import { formatPrice } from '@/lib/utils';
 
 // Mock data para eventos destacados en el home
 const featuredEvents = [
@@ -62,33 +63,43 @@ const featuredRaffles = [
   }
 ];
 
-// Mock data para novedades destacadas en el home
-const featuredNews = [
-  {
-    id: 1,
-    title: "Nueva Alianza con Comercios Locales",
-    slug: "nueva-alianza-comercios-locales",
-    excerpt: "Nos complace anunciar nuevas alianzas comerciales que beneficiarán a todos nuestros socios con descuentos exclusivos.",
-    date: "2024-01-15",
-    image: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=800&q=80"
-  },
-  {
-    id: 2,
-    title: "Asamblea General Ordinaria 2024",
-    slug: "asamblea-general-ordinaria-2024",
-    excerpt: "Se convoca a todos los socios a la Asamblea General Ordinaria que se realizará el próximo mes.",
-    date: "2024-01-10",
-    image: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=800&q=80"
-  },
-  {
-    id: 3,
-    title: "Mejoras en la Plataforma Digital",
-    slug: "mejoras-plataforma-digital",
-    excerpt: "Hemos implementado importantes mejoras en nuestra plataforma para brindar una mejor experiencia a nuestros usuarios.",
-    date: "2024-01-05",
-    image: "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?auto=format&fit=crop&w=800&q=80"
+export interface News {
+  id: number;
+  title: string;
+  slug: string;
+  excerpt: string;
+  date: string;
+  date_format: string;
+  cover?: {
+    storage_path_full: string;
+  };
+}
+
+export interface Events {
+  id: number;
+  title: string;
+  description: string;
+  date_format: string;
+  time: string;
+  location: string;
+  price_from: number;
+  cover: {
+    storage_path_full: string;
   }
-];
+  slug: string;
+}
+
+export interface Raffle {
+  id: number;
+  title: string;
+  short_description: string;
+  end_date: string;
+  price: number;
+  cover: {
+    storage_path_full: string;
+  };
+  slug: string;
+}
 
 const Index = () => {
   const [filteredBenefits, setFilteredBenefits] = useState<Benefit[]>([]);
@@ -96,17 +107,43 @@ const Index = () => {
   const [featuredCommerces, setFeaturedCommerces] = useState<Commerce[]>([]);
   const user = useStore((state) => state.user);
   const setUser = useStore((state) => state.setUser);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [news, setNews] = useState<News[]>([]);
+  const [events, setEvents] = useState<Events[]>([]);
+  const [raffles, setRaffles] = useState<Raffle[]>([]);
 
   useEffect(() => {
-    // const fetchUser = async () => {
-    //   try {
-    //     const response = await api.get('api/user');
-    //     setUser(response.data);
-    //     console.log(user);
-    //   } catch (error) {
-    //     console.error('Error fetching user:', error);
-    //   }
-    // }
+     const fetchNews = async () => {
+      try {
+        const response = await api.get('api/client/news/list');
+        setNews(response.data.data.data);
+        setIsLoaded(true);
+      } catch (error) {
+        console.error('Error fetching news:', error);
+      }
+    };
+
+    const fetchEvents = async () => {
+      try {
+        const response = await api.get('api/client/events/list');
+        setEvents(response.data.data.data);
+        setIsLoaded(true);
+      } catch (error) {
+        console.error('Error fetching events:', error);
+      }
+    };
+
+    const fetchRaffles = async () => {
+      try {
+        const response = await api.get('api/client/raffles/list');
+        setRaffles(response.data.data.data);
+        setIsLoaded(true);
+      } catch (error) {
+        console.error('Error fetching raffles:', error);
+      }
+    };
 
     const fetchBenefits = async () => {
       try {
@@ -131,6 +168,9 @@ const Index = () => {
 
     fetchBenefits();
     fetchCommerces();
+    fetchNews();
+    fetchEvents();
+    fetchRaffles();
   }, []);
 
   // Helper function to strip HTML tags for short descriptions
@@ -157,9 +197,7 @@ const Index = () => {
     }
   };
 
-  const formatPrice = (price: number) => {
-    return `Gs. ${price.toLocaleString('es-ES')}`;
-  };
+
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -223,19 +261,19 @@ const Index = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {featuredNews.map((news, index) => (
+            {news.map((news, index) => (
               <Card key={news.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 group animate-fade-up" style={{ animationDelay: `${100 + index * 100}ms` }}>
-                {news.image ? (
+                {news.cover ? (
                   <div className="relative h-48 overflow-hidden">
                     <img
-                      src={news.image}
+                      src={news.cover?.storage_path_full}
                       alt={news.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                     <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
                       <Calendar className="h-3 w-3 mr-1" />
-                      {formatDate(news.date)}
+                      {formatDate(news.date_format)}
                     </Badge>
                   </div>
                 ) : (
@@ -287,19 +325,19 @@ const Index = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {featuredEvents.map((event, index) => (
+            {events.map((event, index) => (
               <Card key={event.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 group animate-fade-up" style={{ animationDelay: `${100 + index * 100}ms` }}>
-                {event.image ? (
+                {event.cover ? (
                   <div className="relative h-48 overflow-hidden">
                     <img
-                      src={event.image}
+                      src={event.cover?.storage_path_full}
                       alt={event.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                     <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
                       <Calendar className="h-3 w-3 mr-1" />
-                      {formatDate(event.date)}
+                      {formatDate(event.date_format)}
                     </Badge>
                   </div>
                 ) : (
@@ -308,7 +346,7 @@ const Index = () => {
                       <Ticket className="h-12 w-12 text-primary/60 mx-auto mb-2" />
                       <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
                         <Calendar className="h-3 w-3 mr-1" />
-                        {formatDate(event.date)}
+                        {formatDate(event.date_format)}
                       </Badge>
                     </div>
                   </div>
@@ -319,11 +357,12 @@ const Index = () => {
                     {event.title}
                   </CardTitle>
                   <p className="text-muted-foreground text-sm line-clamp-2">
-                    {stripHtml(event.shortDescription)}
+                    {stripHtml(event.description)}
                   </p>
                 </CardHeader>
                 
                 <CardContent className="space-y-3">
+
                   <div className="flex items-center text-sm text-muted-foreground">
                     <Clock className="h-4 w-4 mr-2 text-primary" />
                     {event.time} hrs
@@ -338,12 +377,12 @@ const Index = () => {
                     <div>
                       <span className="text-xs text-muted-foreground">Desde</span>
                       <p className="text-xl font-bold text-primary">
-                        {formatPrice(event.priceFrom)}
+                        {formatPrice(event.price_from)}
                       </p>
                     </div>
                     
                     <Button asChild className="bg-primary hover:bg-primary/90">
-                      <Link to={`/evento/${event.id}`}>
+                      <Link to={`/evento/${event.slug}`}>
                         Ver Detalles
                       </Link>
                     </Button>
@@ -370,32 +409,27 @@ const Index = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {featuredRaffles.map((raffle, index) => (
+            {raffles.map((raffle, index) => (
               <Card key={raffle.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 group animate-fade-up" style={{ animationDelay: `${100 + index * 100}ms` }}>
                 <CardHeader className="pb-4">
                   <div className="flex justify-between items-start mb-2">
                     <Badge className="bg-primary/10 text-primary hover:bg-primary/20">
                       <Calendar className="h-3 w-3 mr-1" />
-                      {formatDate(raffle.drawDate)}
+                      {formatDate(raffle.end_date)}
                     </Badge>
                   </div>
                   <CardTitle className="text-lg font-bold group-hover:text-primary transition-colors">
                     {raffle.title}
                   </CardTitle>
                   <p className="text-muted-foreground text-sm line-clamp-2">
-                    {stripHtml(raffle.shortDescription)}
+                    {stripHtml(raffle.short_description)}
                   </p>
                 </CardHeader>
                 
                 <CardContent className="space-y-3">
                   <div className="flex items-center text-sm text-muted-foreground">
                     <Clock className="h-4 w-4 mr-2 text-primary" />
-                    <span>Sortea el {formatDate(raffle.drawDate)} a las {raffle.drawTime} hrs</span>
-                  </div>
-                  
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <MapPin className="h-4 w-4 mr-2 text-primary" />
-                    <span>Lugar de sorteo: {raffle.isOnline ? "Online" : raffle.drawLocation}</span>
+                    <span>Sortea el {formatDate(raffle.end_date)}</span>
                   </div>
                   
                   <div className="flex items-center justify-between pt-4">
@@ -407,7 +441,7 @@ const Index = () => {
                     </div>
                     
                     <Button asChild className="bg-primary hover:bg-primary/90">
-                      <Link to={`/rifa/${raffle.id}`}>
+                      <Link to={`/rifa/${raffle.slug}`}>
                         Ver Detalles
                       </Link>
                     </Button>

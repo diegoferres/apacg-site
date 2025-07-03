@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { MapPin, Calendar, Clock, Ticket, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,69 +8,72 @@ import { Badge } from '@/components/ui/badge';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useToast } from '@/hooks/use-toast';
+import { formatPrice } from '@/lib/utils';
+import api from '@/services/api';
 
 interface Raffle {
   id: number;
   title: string;
+  short_description: string;
   description: string;
-  shortDescription: string;
-  drawDate: string;
-  drawTime: string;
-  drawLocation: string | null;
-  isOnline: boolean;
+  end_date: string;
   price: number;
-  image: string | null;
+  cover: {
+    storage_path_full: string;
+  };
+  slug: string;
 }
 
-// Mock data para rifas
-const mockRaffles: Raffle[] = [
-  {
-    id: 1,
-    title: "Rifa Benéfica Colegio Goethe",
-    description: "Participa en nuestra rifa anual para ayudar a recaudar fondos para mejoras en la infraestructura escolar. Los premios incluyen electrodomésticos de última generación, un viaje familiar a Europa, experiencias gastronómicas en los mejores restaurantes de la ciudad, y vouchers de compras. Tu participación contribuye directamente al desarrollo educativo de nuestros estudiantes, permitiendo la adquisición de nuevos equipos de laboratorio, mejoras en las aulas y espacios recreativos, y la implementación de programas educativos innovadores que beneficiarán a toda la comunidad estudiantil.",
-    shortDescription: "Rifa anual para mejoras en la infraestructura escolar",
-    drawDate: "2024-08-30",
-    drawTime: "20:00",
-    drawLocation: "Auditorio Principal Colegio Goethe",
-    isOnline: false,
-    price: 5000,
-    image: null
-  },
-  {
-    id: 2,
-    title: "Rifa Virtual Día del Maestro",
-    description: "Celebramos el Día del Maestro con una rifa especial virtual que reconoce la dedicación y esfuerzo de nuestros docentes. Los fondos recaudados serán destinados a la compra de material didáctico actualizado, tecnología educativa de vanguardia, y programas de capacitación profesional para nuestros maestros. Los premios incluyen tablets de última generación, bibliotecas de libros especializados, cursos de capacitación en metodologías innovadoras, y experiencias educativas. Este sorteo se realizará completamente en línea, con transmisión en vivo para que toda la comunidad pueda participar del evento.",
-    shortDescription: "Rifa virtual en celebración del Día del Maestro",
-    drawDate: "2024-09-11",
-    drawTime: "19:00",
-    drawLocation: null,
-    isOnline: true,
-    price: 3000,
-    image: null
-  },
-  {
-    id: 3,
-    title: "Gran Rifa de Fin de Año",
-    description: "Nuestra tradicional rifa de fin de año llega con los mejores premios del año. Esta es la rifa más esperada por toda la comunidad del Colegio Goethe, donde los premios incluyen electrodomésticos de última generación como smart TVs, refrigeradores inteligentes, equipos de sonido premium, un viaje familiar todo incluido a destinos internacionales, experiencias gastronómicas en restaurantes gourmet, y vouchers para compras en las mejores tiendas. Los fondos recaudados apoyan las actividades extracurriculares, programas deportivos, becas estudiantiles para el próximo año lectivo, y proyectos de mejora continua de nuestras instalaciones educativas.",
-    shortDescription: "Rifa tradicional con los mejores premios del año",
-    drawDate: "2024-12-15",
-    drawTime: "21:00",
-    drawLocation: "Salón de Actos Colegio Goethe",
-    isOnline: false,
-    price: 8000,
-    image: null
-  }
-];
-
 const RaffleDetail = () => {
-  const { id } = useParams();
+  const { slug } = useParams<{ slug: string }>();
+  const [raffle, setRaffle] = useState<Raffle>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [quantity, setQuantity] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   
-  const raffle = mockRaffles.find(r => r.id === parseInt(id || ''));
   
+  useEffect(() => {
+    const fetchRaffle = async () => {
+      try {
+        setIsLoading(true);
+        const response = await api.get(`/api/client/raffles/${slug}`);
+        setRaffle(response.data.data);
+      } catch (error) {
+        console.error('Error fetching raffle:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchRaffle();
+  }, [slug]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="pt-24 pb-12">
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="grid lg:grid-cols-2 gap-12">
+              <div className="h-96 bg-muted/30 animate-pulse rounded-lg"></div>
+              <div className="space-y-6">
+                <div className="h-8 bg-muted/30 animate-pulse rounded w-3/4"></div>
+                <div className="h-12 bg-muted/30 animate-pulse rounded w-full"></div>
+                <div className="space-y-3">
+                  <div className="h-4 bg-muted/30 animate-pulse rounded w-full"></div>
+                  <div className="h-4 bg-muted/30 animate-pulse rounded w-5/6"></div>
+                  <div className="h-4 bg-muted/30 animate-pulse rounded w-4/6"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
   if (!raffle) {
     return (
       <div className="min-h-screen bg-background">
@@ -105,9 +108,7 @@ const RaffleDetail = () => {
     }
   };
 
-  const formatPrice = (price: number) => {
-    return `Gs. ${price.toLocaleString('es-ES')}`;
-  };
+
 
   const updateQuantity = (change: number) => {
     const newQuantity = Math.max(0, quantity + change);
@@ -170,7 +171,7 @@ const RaffleDetail = () => {
                 <div>
                   <Badge className="mb-3 bg-primary/10 text-primary hover:bg-primary/20">
                     <Calendar className="h-3 w-3 mr-1" />
-                    {formatDate(raffle.drawDate)}
+                    {formatDate(raffle.end_date)}
                   </Badge>
                   <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground mb-2">
                     {raffle.title}
@@ -180,12 +181,7 @@ const RaffleDetail = () => {
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div className="flex items-center text-muted-foreground">
                     <Clock className="h-5 w-5 mr-3 text-primary flex-shrink-0" />
-                    <span>Sortea el {formatDate(raffle.drawDate)} a las {raffle.drawTime} hrs</span>
-                  </div>
-                  
-                  <div className="flex items-center text-muted-foreground">
-                    <MapPin className="h-5 w-5 mr-3 text-primary flex-shrink-0" />
-                    <span className="truncate">Lugar de sorteo: {raffle.isOnline ? "Online" : raffle.drawLocation}</span>
+                    <span>Sortea el {formatDate(raffle.end_date)}</span>
                   </div>
                 </div>
               </div>
@@ -263,12 +259,20 @@ const RaffleDetail = () => {
                       </div>
                       
                       <Button
-                        onClick={handlePurchase}
+                        onClick={() => {
+                          const checkoutParams = new URLSearchParams({
+                            type: 'raffle',
+                            item: raffle.slug,
+                            title: `${raffle.title} - ${quantity} número(s)`,
+                            total: getTotalPrice().toString()
+                          });
+                          window.location.href = `/checkout?${checkoutParams.toString()}`;
+                        }}
                         disabled={isLoading}
                         className="w-full bg-primary hover:bg-primary/90"
                         size="lg"
                       >
-                        {isLoading ? "Procesando..." : "Comprar ahora"}
+                        Comprar números
                       </Button>
                     </div>
                   )}

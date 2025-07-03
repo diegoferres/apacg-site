@@ -18,81 +18,60 @@ import {
   PaginationPrevious 
 } from '@/components/ui/pagination';
 import { useToast } from '@/components/ui/use-toast';
+import { formatPrice } from '@/lib/utils';
+import api from '@/services/api';
 
-// Mock data para rifas
-const mockRaffles = [
-  {
-    id: 1,
-    title: "Rifa Benéfica Colegio Goethe",
-    description: "Participa en nuestra rifa anual para ayudar a recaudar fondos para mejoras en la infraestructura escolar. Los premios incluyen electrodomésticos, viajes y experiencias únicas. Tu participación contribuye directamente al desarrollo educativo de nuestros estudiantes.",
-    shortDescription: "Rifa anual para mejoras en la infraestructura escolar",
-    drawDate: "2024-08-30",
-    drawTime: "20:00",
-    drawLocation: "Auditorio Principal Colegio Goethe",
-    isOnline: false,
-    price: 5000
-  },
-  {
-    id: 2,
-    title: "Rifa Virtual Día del Maestro",
-    description: "Celebramos el Día del Maestro con una rifa especial virtual. Los fondos recaudados serán destinados a la compra de material didáctico y tecnología educativa para nuestros docentes. Premios incluyen tablets, libros y cursos de capacitación.",
-    shortDescription: "Rifa virtual en celebración del Día del Maestro",
-    drawDate: "2024-09-11",
-    drawTime: "19:00",
-    drawLocation: null,
-    isOnline: true,
-    price: 3000
-  },
-  {
-    id: 3,
-    title: "Gran Rifa de Fin de Año",
-    description: "Nuestra tradicional rifa de fin de año con los mejores premios del año. Incluye electrodomésticos de última generación, un viaje familiar y experiencias gastronómicas. Los fondos recaudados apoyan las actividades extracurriculares y becas estudiantiles para el próximo año lectivo.",
-    shortDescription: "Rifa tradicional con los mejores premios del año",
-    drawDate: "2024-12-15",
-    drawTime: "21:00",
-    drawLocation: "Salón de Actos Colegio Goethe",
-    isOnline: false,
-    price: 8000
-  }
-];
+export interface Raffle {
+  id: number;
+  title: string;
+  short_description: string;
+  description: string;
+  end_date: string;
+  price: number;
+  cover: {
+    storage_path_full: string;
+  };
+  slug: string;
+}
 
 const Raffles = () => {
-  const [raffles, setRaffles] = useState(mockRaffles);
-  const [filteredRaffles, setFilteredRaffles] = useState(mockRaffles);
+  const [raffles, setRaffles] = useState<Raffle[]>([]);
+  const [filteredRaffles, setFilteredRaffles] = useState<Raffle[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
+  const itemsPerPage = 6;
 
   useEffect(() => {
     const page = searchParams.get('page') ? parseInt(searchParams.get('page') || '1') : 1;
     setCurrentPage(page);
     
     // En el futuro, aquí se haría la llamada al API
-    // const fetchRaffles = async () => {
-    //   setIsLoading(true);
-    //   try {
-    //     const response = await api.get('api/client/raffles/list', {
-    //       params: { page }
-    //     });
-    //     setRaffles(response.data.data.data);
-    //     setFilteredRaffles(response.data.data.data);
-    //     setTotalPages(response.data.data.last_page || 1);
-    //   } catch (error) {
-    //     console.error('Error fetching raffles:', error);
-    //     toast({
-    //       title: "Error",
-    //       description: "No se pudieron cargar las rifas. Intente nuevamente más tarde.",
-    //       variant: "destructive",
-    //     });
-    //   } finally {
-    //     setIsLoading(false);
-    //   }
-    // };
-    // fetchRaffles();
+    const fetchRaffles = async () => {
+      setIsLoading(true);
+      try {
+        const response = await api.get('api/client/raffles', {
+          params: { page }
+        });
+        const rafflesData = response.data.data.data;
+        setRaffles(rafflesData);
+        setFilteredRaffles(rafflesData);
+        setTotalPages(Math.ceil(response.data.data.last_page || 1));
+      } catch (error) {
+        console.error('Error fetching raffles:', error);
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar las rifas. Intente nuevamente más tarde.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchRaffles();
     
-    setFilteredRaffles(mockRaffles);
     setIsLoading(false);
   }, [searchParams, toast]);
 
@@ -110,14 +89,15 @@ const Raffles = () => {
       results = results.filter(raffle => 
         raffle.title.toLowerCase().includes(searchTerm) ||
         raffle.description.toLowerCase().includes(searchTerm) ||
-        raffle.shortDescription.toLowerCase().includes(searchTerm) ||
-        (raffle.drawLocation && raffle.drawLocation.toLowerCase().includes(searchTerm))
+        raffle.short_description.toLowerCase().includes(searchTerm)
       );
     }
     
     // Las rifas no tienen categorías por ahora, pero se puede agregar en el futuro
-    
     setFilteredRaffles(results);
+    setTotalPages(Math.ceil(results.length / itemsPerPage));
+    setCurrentPage(1);
+    setSearchParams({ page: '1' });
   };
 
   const handlePageChange = (page: number) => {
@@ -143,9 +123,7 @@ const Raffles = () => {
     }
   };
 
-  const formatPrice = (price: number) => {
-    return `Gs. ${price.toLocaleString('es-ES')}`;
-  };
+
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -187,26 +165,21 @@ const Raffles = () => {
                   <div className="flex justify-between items-start mb-2">
                     <Badge className="bg-primary/10 text-primary hover:bg-primary/20">
                       <Calendar className="h-3 w-3 mr-1" />
-                      {formatDate(raffle.drawDate)}
+                      {formatDate(raffle.end_date)}
                     </Badge>
                   </div>
                   <CardTitle className="text-lg font-bold group-hover:text-primary transition-colors">
                     {raffle.title}
                   </CardTitle>
                   <p className="text-muted-foreground text-sm line-clamp-3">
-                    {stripHtml(raffle.shortDescription)}
+                    {stripHtml(raffle.short_description)}
                   </p>
                 </CardHeader>
                 
                 <CardContent className="space-y-3">
                   <div className="flex items-center text-sm text-muted-foreground">
                     <Clock className="h-4 w-4 mr-2 text-primary" />
-                    <span>Sortea el {formatDate(raffle.drawDate)} a las {raffle.drawTime} hrs</span>
-                  </div>
-                  
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <MapPin className="h-4 w-4 mr-2 text-primary" />
-                    <span>Lugar de sorteo: {raffle.isOnline ? "Online" : raffle.drawLocation}</span>
+                    <span>Sortea el {formatDate(raffle.end_date)}</span>
                   </div>
                   
                   <div className="flex items-center justify-between pt-4">
@@ -218,7 +191,7 @@ const Raffles = () => {
                     </div>
                     
                     <Button asChild className="bg-primary hover:bg-primary/90">
-                      <Link to={`/rifa/${raffle.id}`}>
+                      <Link to={`/rifa/${raffle.slug}`}>
                         Ver Detalles
                       </Link>
                     </Button>

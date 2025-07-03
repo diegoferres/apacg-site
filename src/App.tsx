@@ -23,6 +23,9 @@ import NewsDetail from "./pages/NewsDetail";
 import { ChildrenManager } from "./components/ChildrenManager";
 import ProtectedWithStudents from "./components/ProtectedWithStudents";
 import ChildrenEnrollment from "./pages/ChildrenEnrollment";
+import Checkout from "./pages/Checkout";
+import Payment from "./pages/Payment";
+import PaymentSuccess from "./pages/PaymentSuccess";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useStore } from "./stores/store";
 import { useEffect } from "react";
@@ -80,9 +83,9 @@ const App = () => {
               /*</ProtectedWithStudents>*/
             } />
             <Route path="/eventos" element={<Events />} />
-            <Route path="/evento/:id" element={<EventDetail />} />
+            <Route path="/evento/:slug" element={<EventDetail />} />
             <Route path="/rifas" element={<Raffles />} />
-            <Route path="/rifa/:id" element={<RaffleDetail />} />
+            <Route path="/rifa/:slug" element={<RaffleDetail />} />
             <Route path="/novedades" element={<News />} />
             <Route path="/novedad/:slug" element={<NewsDetail />} />
             <Route path="/login" element={<Login />} />
@@ -98,6 +101,9 @@ const App = () => {
               /*</ProtectedWithStudents>*/
             } />
             <Route path="/inscripcion-alumnos" element={<ChildrenEnrollment />} />
+            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/pago" element={<Payment />} />
+            <Route path="/pago-exitoso" element={<PaymentSuccess />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
