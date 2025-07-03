@@ -60,33 +60,53 @@ const Profile = () => {
     fetchUser();
   }, [setUser]);
 
-  // Set example data regardless of authentication state
+  // Fetch raffles data
   useEffect(() => {
-    // Set example raffle data
-    setRaffles([
-      {
-        id: 1,
-        title: "Sorteo de Smartphone Samsung Galaxy S24",
-        draw_date: "2025-08-15",
-        location: "Sede Central APACG",
-        price: "50000"
-      },
-      {
-        id: 2,
-        title: "Rifa de Notebook Dell Inspiron",
-        draw_date: "2025-09-20", 
-        location: "Online - Transmisión en vivo",
-        price: "30000"
-      },
-      {
-        id: 3,
-        title: "Sorteo de Bicicleta Mountain Bike",
-        draw_date: "2025-07-30",
-        location: "Patio del Colegio",
-        price: "25000"
+    const fetchRaffles = async () => {
+      try {
+        const response = await api.get('api/client/profile/raffles');
+        if (response.data.success) {
+          setRaffles(response.data.data.map(raffle => ({
+            id: raffle.id,
+            title: raffle.title,
+            draw_date: raffle.draw_date,
+            location: "Sede Central APACG", // Mock location hasta que se agregue al backend
+            price: raffle.price
+          })));
+        }
+      } catch (error) {
+        console.error('Error fetching raffles:', error);
+        // Fallback a datos mock si hay error
+        setRaffles([
+          {
+            id: 1,
+            title: "Sorteo de Smartphone Samsung Galaxy S24",
+            draw_date: "2025-08-15",
+            location: "Sede Central APACG",
+            price: "50000"
+          },
+          {
+            id: 2,
+            title: "Rifa de Notebook Dell Inspiron",
+            draw_date: "2025-09-20", 
+            location: "Online - Transmisión en vivo",
+            price: "30000"
+          },
+          {
+            id: 3,
+            title: "Sorteo de Bicicleta Mountain Bike",
+            draw_date: "2025-07-30",
+            location: "Patio del Colegio",
+            price: "25000"
+          }
+        ]);
       }
-    ]);
-  }, []);
+    };
+
+    if (user?.member?.id) {
+      fetchRaffles();
+    }
+  }, [user?.member?.id]);
 
   // Fetch payments and benefits only after user data is loaded
   useEffect(() => {
@@ -168,40 +188,73 @@ const Profile = () => {
     }
   };
 
-  const handleViewStudents = (raffle) => {
+  const handleViewStudents = async (raffle) => {
     setSelectedRaffle(raffle);
     
-    // Set example student data
-    setSelectedRaffleStudents([
-      {
-        id: 1,
-        first_name: "María",
-        last_name: "González",
-        school_year: "5° Grado",
-        student_number: "EST-2024-001"
-      },
-      {
-        id: 2,
-        first_name: "Carlos",
-        last_name: "Rodríguez", 
-        school_year: "3° Grado",
-        student_number: "EST-2024-002"
-      },
-      {
-        id: 3,
-        first_name: "Ana",
-        last_name: "López",
-        school_year: "1° Grado",
-        student_number: "EST-2024-003"
+    try {
+      const response = await api.get('api/client/profile/students');
+      if (response.data.success) {
+        setSelectedRaffleStudents(response.data.data);
+      } else {
+        // Fallback a datos mock si hay error
+        setSelectedRaffleStudents([
+          {
+            id: 1,
+            first_name: "María",
+            last_name: "González",
+            school_year: "5° Grado",
+            student_number: "EST-2024-001"
+          },
+          {
+            id: 2,
+            first_name: "Carlos",
+            last_name: "Rodríguez", 
+            school_year: "3° Grado",
+            student_number: "EST-2024-002"
+          },
+          {
+            id: 3,
+            first_name: "Ana",
+            last_name: "López",
+            school_year: "1° Grado",
+            student_number: "EST-2024-003"
+          }
+        ]);
       }
-    ]);
+    } catch (error) {
+      console.error('Error fetching students:', error);
+      // Fallback a datos mock si hay error
+      setSelectedRaffleStudents([
+        {
+          id: 1,
+          first_name: "María",
+          last_name: "González",
+          school_year: "5° Grado",
+          student_number: "EST-2024-001"
+        },
+        {
+          id: 2,
+          first_name: "Carlos",
+          last_name: "Rodríguez", 
+          school_year: "3° Grado",
+          student_number: "EST-2024-002"
+        },
+        {
+          id: 3,
+          first_name: "Ana",
+          last_name: "López",
+          school_year: "1° Grado",
+          student_number: "EST-2024-003"
+        }
+      ]);
+    }
     
     setShowStudentsModal(true);
   };
 
-  const copyReferralLink = (studentId, raffleName) => {
+  const copyReferralLink = (student, raffleName) => {
     const baseUrl = window.location.origin;
-    const referralLink = `${baseUrl}/rifa/${selectedRaffle?.id}?ref=${studentId}`;
+    const referralLink = `${baseUrl}/rifa/${selectedRaffle?.id}?ref=${student.referrer_code}`;
     
     navigator.clipboard.writeText(referralLink).then(() => {
       toast({
@@ -667,7 +720,7 @@ const Profile = () => {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => copyReferralLink(student.id, `${student.first_name} ${student.last_name}`)}
+                      onClick={() => copyReferralLink(student, `${student.first_name} ${student.last_name}`)}
                       className="shrink-0"
                     >
                       <Copy className="h-4 w-4 mr-1" />

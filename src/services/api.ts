@@ -23,12 +23,12 @@ api.interceptors.response.use(
         const user = useStore.getState().user;
 
         // Validar si el usuario está logueado y si el array students está vacío o no existe
-        if (user?.member && (!('students' in user.member) || !(user.member as any).students?.length)) {
+        /* if (user?.member && (!('students' in user.member) || !(user.member as any).students?.length)) {
             const currentPath = window.location.pathname;
             if (currentPath !== '/inscripcion-alumnos') {
                 window.location.href = '/inscripcion-alumnos';
             }
-        }
+        } */
 
         return response;
     },
