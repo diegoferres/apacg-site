@@ -23,6 +23,9 @@ import NewsDetail from "./pages/NewsDetail";
 import { ChildrenManager } from "./components/ChildrenManager";
 import ProtectedWithStudents from "./components/ProtectedWithStudents";
 import ChildrenEnrollment from "./pages/ChildrenEnrollment";
+import Checkout from "./pages/Checkout";
+import Payment from "./pages/Payment";
+import PaymentSuccess from "./pages/PaymentSuccess";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useStore } from "./stores/store";
 import { useEffect } from "react";
@@ -98,6 +101,9 @@ const App = () => {
               /*</ProtectedWithStudents>*/
             } />
             <Route path="/inscripcion-alumnos" element={<ChildrenEnrollment />} />
+            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/pago" element={<Payment />} />
+            <Route path="/pago-exitoso" element={<PaymentSuccess />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

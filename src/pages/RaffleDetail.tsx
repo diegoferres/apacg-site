@@ -259,12 +259,20 @@ const RaffleDetail = () => {
                       </div>
                       
                       <Button
-                        onClick={handlePurchase}
+                        onClick={() => {
+                          const checkoutParams = new URLSearchParams({
+                            type: 'raffle',
+                            item: raffle.slug,
+                            title: `${raffle.title} - ${quantity} número(s)`,
+                            total: getTotalPrice().toString()
+                          });
+                          window.location.href = `/checkout?${checkoutParams.toString()}`;
+                        }}
                         disabled={isLoading}
                         className="w-full bg-primary hover:bg-primary/90"
                         size="lg"
                       >
-                        {isLoading ? "Procesando..." : "Comprar ahora"}
+                        Comprar números
                       </Button>
                     </div>
                   )}
