@@ -6,69 +6,128 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ArrowLeft, CreditCard } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { formatPrice } from '@/lib/utils';
+
+interface TicketDetail {
+  id: number;
+  name: string;
+  quantity: number;
+  price: number;
+  total: number;
+}
+
+interface CustomerData {
+  name: string;
+  email: string;
+  phone: string;
+  cedula: string;
+}
+
+interface PaymentData {
+  type: 'event' | 'raffle';
+  eventId?: number;
+  eventSlug?: string;
+  eventTitle?: string;
+  tickets?: TicketDetail[];
+  totalAmount: number;
+  totalTickets: number;
+  customerData: CustomerData;
+}
 
 const Payment = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const itemTitle = searchParams.get('title') || 'Compra';
-  const itemTotal = searchParams.get('total') || '0';
-  const itemType = searchParams.get('type') || '';
-  const itemQuantity = searchParams.get('quantity') || '1';
-  const itemUnitPrice = searchParams.get('unitPrice') || itemTotal;
-  const customerName = searchParams.get('name') || '';
-  const customerEmail = searchParams.get('email') || '';
-  
-  // Mock data based on type
-  const getItemDetails = () => {
-    if (itemType === 'event') {
-      return {
-        title: itemTitle,
-        type: 'Entrada de Evento',
-        details: `${itemQuantity} entrada(s)`,
-        unitPrice: itemUnitPrice,
-        quantity: parseInt(itemQuantity),
-        image: '/corrida_lauf.jpeg'
-      };
-    } else if (itemType === 'raffle') {
-      return {
-        title: itemTitle,
-        type: 'Números de Rifa',
-        details: `${itemQuantity} número(s)`,
-        unitPrice: itemUnitPrice,
-        quantity: parseInt(itemQuantity),
-        image: '/logo.png'
-      };
-    }
-    return null;
-  };
-  
-  const itemDetails = getItemDetails();
+  const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
 
   useEffect(() => {
+    // Intentar leer datos del localStorage
+    const savedData = localStorage.getItem('payment_data');
+    if (savedData) {
+      try {
+        const parsedData = JSON.parse(savedData);
+        setPaymentData(parsedData);
+      } catch (error) {
+        console.error('Error parsing payment data:', error);
+        setError('Error al cargar los datos de pago');
+      }
+    } else {
+      // Fallback a URLSearchParams para compatibilidad
+      const itemTitle = searchParams.get('title') || 'Compra';
+      const itemTotal = searchParams.get('total') || '0';
+      const itemType = searchParams.get('type') as 'event' | 'raffle' || 'event';
+      const itemQuantity = searchParams.get('quantity') || '1';
+      const itemUnitPrice = searchParams.get('unitPrice') || itemTotal;
+      const customerName = searchParams.get('name') || '';
+      const customerEmail = searchParams.get('email') || '';
+      const customerPhone = searchParams.get('phone') || '';
+      const customerCedula = searchParams.get('cedula') || '';
+      
+      if (itemTitle && itemTotal) {
+        setPaymentData({
+          type: itemType,
+          eventTitle: itemTitle,
+          totalAmount: parseInt(itemTotal),
+          totalTickets: parseInt(itemQuantity),
+          tickets: [{
+            id: 1,
+            name: itemType === 'event' ? 'Entrada General' : 'Número de Rifa',
+            quantity: parseInt(itemQuantity),
+            price: parseInt(itemUnitPrice),
+            total: parseInt(itemTotal)
+          }],
+          customerData: {
+            name: customerName,
+            email: customerEmail,
+            phone: customerPhone,
+            cedula: customerCedula
+          }
+        });
+      } else {
+        setError('No se encontraron datos de pago');
+      }
+    }
+
     // Simular carga del iframe de pago
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [searchParams]);
 
   const handleGoBack = () => {
-    navigate(-1);
+    navigate('/checkout');
   };
 
   const handlePaymentSuccess = () => {
-    // Simular pago exitoso
-    navigate('/pago-exitoso?title=' + encodeURIComponent(itemTitle));
+    if (paymentData) {
+      // Limpiar datos del localStorage
+      localStorage.removeItem('payment_data');
+      localStorage.removeItem('checkout_data');
+      
+      // Redirigir a página de éxito
+      navigate('/pago-exitoso?title=' + encodeURIComponent(paymentData.eventTitle || 'Compra'));
+    }
   };
 
   const handlePaymentError = () => {
-    // Simular error de pago
     setError('Hubo un problema procesando el pago. Por favor, verifique sus datos e intente nuevamente.');
   };
+
+  if (!paymentData) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="pt-24 pb-12 text-center">
+          <h1 className="text-2xl font-bold mb-4">No se encontraron datos de pago</h1>
+          <Button onClick={() => navigate('/')}>Volver a Inicio</Button>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -98,45 +157,42 @@ const Payment = () => {
                   <div className="space-y-3">
                     <div className="text-sm">
                       <span className="font-medium">Comprador:</span>
-                      <p className="text-muted-foreground">{customerName}</p>
-                      <p className="text-muted-foreground">{customerEmail}</p>
+                      <p className="text-muted-foreground">{paymentData.customerData.name}</p>
+                      <p className="text-muted-foreground">{paymentData.customerData.email}</p>
+                      <p className="text-muted-foreground">{paymentData.customerData.phone}</p>
+                      <p className="text-muted-foreground">C.I. {paymentData.customerData.cedula}</p>
                     </div>
                   </div>
                   
-                  {itemDetails && (
-                    <>
-                      <div className="pt-3 border-t">
-                        <div className="flex gap-3">
-                          <img 
-                            src={itemDetails.image} 
-                            alt={itemDetails.title}
-                            className="w-16 h-16 object-cover rounded-lg"
-                          />
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-sm">{itemDetails.title}</h3>
-                            <p className="text-xs text-muted-foreground">{itemDetails.type}</p>
-                            <p className="text-xs text-muted-foreground">{itemDetails.details}</p>
+                  <div className="pt-3 border-t">
+                    <h3 className="font-semibold text-sm mb-2">{paymentData.eventTitle}</h3>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      {paymentData.type === 'event' ? 'Entrada de Evento' : 'Números de Rifa'}
+                    </p>
+                    
+                    {paymentData.tickets && paymentData.tickets.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="font-medium text-sm">Detalle:</h4>
+                        {paymentData.tickets.map((ticket, index) => (
+                          <div key={index} className="flex justify-between items-center text-sm">
+                            <span>{ticket.quantity}x {ticket.name}</span>
+                            <span>{formatPrice(ticket.total)}</span>
                           </div>
-                        </div>
+                        ))}
                       </div>
-                      
-                      <div className="space-y-2 pt-3 border-t">
-                        <div className="flex justify-between text-sm">
-                          <span>Precio unitario:</span>
-                          <span>₲ {parseInt(itemDetails.unitPrice).toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span>Cantidad:</span>
-                          <span>{itemDetails.quantity}</span>
-                        </div>
-                      </div>
-                    </>
-                  )}
+                    )}
+                  </div>
                   
                   <div className="pt-3 border-t">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm">Total de entradas:</span>
+                      <span className="text-sm font-medium">{paymentData.totalTickets}</span>
+                    </div>
                     <div className="flex justify-between items-center">
                       <span className="font-semibold">Total:</span>
-                      <span className="text-xl font-bold text-primary">₲ {parseInt(itemTotal).toLocaleString()}</span>
+                      <span className="text-xl font-bold text-primary">
+                        {formatPrice(paymentData.totalAmount)}
+                      </span>
                     </div>
                   </div>
                 </CardContent>
@@ -168,7 +224,10 @@ const Payment = () => {
                           <CreditCard className="h-16 w-16 text-primary mx-auto" />
                           <h3 className="text-lg font-semibold">Iframe del Procesador de Pagos</h3>
                           <p className="text-muted-foreground">
-                            Aquí se mostraría el formulario de la procesadora de pagos
+                            Aquí se mostraría el formulario de la procesadora de pagos (Bancard)
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Total a pagar: {formatPrice(paymentData.totalAmount)}
                           </p>
                           
                           {/* Botones de simulación */}
@@ -186,6 +245,7 @@ const Payment = () => {
                       {/* Información de seguridad */}
                       <div className="text-center text-sm text-muted-foreground">
                         <p>🔒 Conexión segura. Sus datos están protegidos.</p>
+                        <p>Procesador de pagos: Bancard</p>
                       </div>
                     </div>
                   )}

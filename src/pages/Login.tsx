@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -39,6 +39,7 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isEmail, setIsEmail] = useState(true);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { setUser, setIsLoggedIn, setIsLoading: setGlobalLoading } = useStore();
   const { user } = useStore();
 
@@ -77,10 +78,17 @@ const Login = () => {
           title: `¡Bienvenido, ${userData.name}!`,
         });
 
+        // Verificar si hay un parámetro de retorno
+        const returnTo = searchParams.get('returnTo');
+        
         setTimeout(() => {
-          window.location = redirect_to;
+          if (returnTo) {
+            navigate(returnTo);
+          } else {
+            window.location = redirect_to;
+          }
         }, 500);
-        console.log('user', user);
+        console.log('user', userData);
       } catch (error) {
         console.log('Error capturado');
         console.log(error.response?.data);

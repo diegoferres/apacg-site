@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ArrowLeft } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { formatPrice } from '@/lib/utils';
 
 interface CheckoutData {
   name: string;
@@ -16,9 +17,28 @@ interface CheckoutData {
   cedula: string;
 }
 
+interface TicketDetail {
+  id: number;
+  name: string;
+  quantity: number;
+  price: number;
+  total: number;
+}
+
+interface CheckoutEventData {
+  type: 'event' | 'raffle';
+  eventId?: number;
+  eventSlug?: string;
+  eventTitle?: string;
+  tickets?: TicketDetail[];
+  totalAmount: number;
+  totalTickets: number;
+}
+
 const Checkout = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const [eventData, setEventData] = useState<CheckoutEventData | null>(null);
   const [formData, setFormData] = useState<CheckoutData>({
     name: '',
     email: '',
@@ -27,38 +47,43 @@ const Checkout = () => {
   });
   const [errors, setErrors] = useState<Partial<CheckoutData>>({});
 
-  const itemType = searchParams.get('type'); // 'event' or 'raffle'
-  const itemSlug = searchParams.get('item');
-  const itemTitle = searchParams.get('title') || 'Compra';
-  const itemTotal = searchParams.get('total') || '0';
-  const itemQuantity = searchParams.get('quantity') || '1';
-  const itemUnitPrice = searchParams.get('unitPrice') || itemTotal;
-  
-  // Mock data based on type
-  const getItemDetails = () => {
-    if (itemType === 'event') {
-      return {
-        title: itemTitle,
-        type: 'Entrada de Evento',
-        details: `${itemQuantity} entrada(s)`,
-        unitPrice: itemUnitPrice,
-        quantity: parseInt(itemQuantity),
-        image: '/corrida_lauf.jpeg'
-      };
-    } else if (itemType === 'raffle') {
-      return {
-        title: itemTitle,
-        type: 'Números de Rifa',
-        details: `${itemQuantity} número(s)`,
-        unitPrice: itemUnitPrice,
-        quantity: parseInt(itemQuantity),
-        image: '/logo.png'
-      };
+  useEffect(() => {
+    // Intentar leer datos del localStorage primero
+    const savedData = localStorage.getItem('checkout_data');
+    if (savedData) {
+      try {
+        const parsedData = JSON.parse(savedData);
+        setEventData(parsedData);
+      } catch (error) {
+        console.error('Error parsing checkout data:', error);
+      }
+    } else {
+      // Fallback a URLSearchParams para compatibilidad
+      const itemType = searchParams.get('type') as 'event' | 'raffle';
+      const itemSlug = searchParams.get('item');
+      const itemTitle = searchParams.get('title') || 'Compra';
+      const itemTotal = searchParams.get('total') || '0';
+      const itemQuantity = searchParams.get('quantity') || '1';
+      const itemUnitPrice = searchParams.get('unitPrice') || itemTotal;
+      
+      if (itemType && itemSlug) {
+        setEventData({
+          type: itemType,
+          eventSlug: itemSlug,
+          eventTitle: itemTitle,
+          totalAmount: parseInt(itemTotal),
+          totalTickets: parseInt(itemQuantity),
+          tickets: [{
+            id: 1,
+            name: itemType === 'event' ? 'Entrada General' : 'Número de Rifa',
+            quantity: parseInt(itemQuantity),
+            price: parseInt(itemUnitPrice),
+            total: parseInt(itemTotal)
+          }]
+        });
+      }
     }
-    return null;
-  };
-  
-  const itemDetails = getItemDetails();
+  }, [searchParams]);
 
   const handleInputChange = (field: keyof CheckoutData) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -102,31 +127,42 @@ const Checkout = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (validateForm()) {
-      // Navegar a la página de pago con los datos
-      const paymentParams = new URLSearchParams({
-        type: itemType || '',
-        item: itemSlug || '',
-        title: itemTitle,
-        total: itemTotal,
-        quantity: itemQuantity,
-        unitPrice: itemUnitPrice,
-        ...formData
-      });
+    if (validateForm() && eventData) {
+      // Preparar datos para la página de pago
+      const paymentData = {
+        ...eventData,
+        customerData: formData
+      };
       
-      navigate(`/pago?${paymentParams.toString()}`);
+      // Guardar datos del pago
+      localStorage.setItem('payment_data', JSON.stringify(paymentData));
+      
+      navigate('/pago');
     }
   };
 
   const handleGoBack = () => {
-    if (itemType === 'event') {
-      navigate(`/evento/${itemSlug}`);
-    } else if (itemType === 'raffle') {
-      navigate(`/rifa/${itemSlug}`);
+    if (eventData?.type === 'event') {
+      navigate(`/evento/${eventData.eventSlug}`);
+    } else if (eventData?.type === 'raffle') {
+      navigate(`/rifa/${eventData.eventSlug}`);
     } else {
       navigate('/');
     }
   };
+
+  if (!eventData) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="pt-24 pb-12 text-center">
+          <h1 className="text-2xl font-bold mb-4">No se encontraron datos de compra</h1>
+          <Button onClick={() => navigate('/')}>Volver a Inicio</Button>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -151,130 +187,136 @@ const Checkout = () => {
                 </CardHeader>
                 
                 <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nombre Completo *</Label>
-                  <Input
-                    id="name"
-                    type="text"
-                    value={formData.name}
-                    onChange={handleInputChange('name')}
-                    placeholder="Ingrese su nombre completo"
-                  />
-                  {errors.name && (
-                    <Alert variant="destructive">
-                      <AlertDescription>{errors.name}</AlertDescription>
-                    </Alert>
-                  )}
-                </div>
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Nombre Completo *</Label>
+                      <Input
+                        id="name"
+                        type="text"
+                        value={formData.name}
+                        onChange={handleInputChange('name')}
+                        placeholder="Ingrese su nombre completo"
+                      />
+                      {errors.name && (
+                        <Alert variant="destructive">
+                          <AlertDescription>{errors.name}</AlertDescription>
+                        </Alert>
+                      )}
+                    </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="email">Correo Electrónico *</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={handleInputChange('email')}
-                    placeholder="ejemplo@correo.com"
-                  />
-                  {errors.email && (
-                    <Alert variant="destructive">
-                      <AlertDescription>{errors.email}</AlertDescription>
-                    </Alert>
-                  )}
-                </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Correo Electrónico *</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={handleInputChange('email')}
+                        placeholder="ejemplo@correo.com"
+                      />
+                      {errors.email && (
+                        <Alert variant="destructive">
+                          <AlertDescription>{errors.email}</AlertDescription>
+                        </Alert>
+                      )}
+                    </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Teléfono *</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    value={formData.phone}
-                    onChange={handleInputChange('phone')}
-                    placeholder="Ej: 0981123456"
-                  />
-                  {errors.phone && (
-                    <Alert variant="destructive">
-                      <AlertDescription>{errors.phone}</AlertDescription>
-                    </Alert>
-                  )}
-                </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Teléfono *</Label>
+                      <Input
+                        id="phone"
+                        type="tel"
+                        value={formData.phone}
+                        onChange={handleInputChange('phone')}
+                        placeholder="Ej: 0981123456"
+                      />
+                      {errors.phone && (
+                        <Alert variant="destructive">
+                          <AlertDescription>{errors.phone}</AlertDescription>
+                        </Alert>
+                      )}
+                    </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="cedula">Cédula de Identidad *</Label>
-                  <Input
-                    id="cedula"
-                    type="text"
-                    value={formData.cedula}
-                    onChange={handleInputChange('cedula')}
-                    placeholder="Ej: 1234567"
-                  />
-                  {errors.cedula && (
-                    <Alert variant="destructive">
-                      <AlertDescription>{errors.cedula}</AlertDescription>
-                    </Alert>
-                  )}
-                </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="cedula">Cédula de Identidad *</Label>
+                      <Input
+                        id="cedula"
+                        type="text"
+                        value={formData.cedula}
+                        onChange={handleInputChange('cedula')}
+                        placeholder="Ej: 1234567"
+                      />
+                      {errors.cedula && (
+                        <Alert variant="destructive">
+                          <AlertDescription>{errors.cedula}</AlertDescription>
+                        </Alert>
+                      )}
+                    </div>
 
-                <div className="pt-4 border-t">
-                  <div className="flex justify-between items-center mb-4">
-                    <span className="text-lg font-semibold">Total:</span>
-                    <span className="text-2xl font-bold text-primary">₲ {itemTotal}</span>
-                  </div>
-                  
-                  <Button type="submit" className="w-full" size="lg">
-                    Continuar al Pago
-                  </Button>
-                </div>
-              </form>
+                    <div className="pt-4 border-t">
+                      <div className="flex justify-between items-center mb-4">
+                        <span className="text-lg font-semibold">Total:</span>
+                        <span className="text-2xl font-bold text-primary">
+                          {formatPrice(eventData.totalAmount)}
+                        </span>
+                      </div>
+                      
+                      <Button type="submit" className="w-full" size="lg">
+                        Continuar al Pago
+                      </Button>
+                    </div>
+                  </form>
                 </CardContent>
               </Card>
             </div>
         
-        {/* Resumen de compra */}
-        <div className="lg:col-span-1">
-          <Card className="sticky top-8">
-            <CardHeader>
-              <CardTitle className="text-lg">Resumen de Compra</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {itemDetails && (
-                <>
-                  <div className="flex gap-3">
-                    <img 
-                      src={itemDetails.image} 
-                      alt={itemDetails.title}
-                      className="w-16 h-16 object-cover rounded-lg"
-                    />
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-sm">{itemDetails.title}</h3>
-                      <p className="text-xs text-muted-foreground">{itemDetails.type}</p>
-                      <p className="text-xs text-muted-foreground">{itemDetails.details}</p>
-                    </div>
+            {/* Resumen de compra */}
+            <div className="lg:col-span-1">
+              <Card className="sticky top-8">
+                <CardHeader>
+                  <CardTitle className="text-lg">Resumen de Compra</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="border-b pb-4">
+                    <h3 className="font-semibold text-lg mb-2">{eventData.eventTitle}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {eventData.type === 'event' ? 'Entrada de Evento' : 'Números de Rifa'}
+                    </p>
                   </div>
-                  
-                  <div className="space-y-2 pt-2 border-t">
-                    <div className="flex justify-between text-sm">
-                      <span>Precio unitario:</span>
-                      <span>₲ {parseInt(itemDetails.unitPrice).toLocaleString()}</span>
+
+                  {eventData.tickets && eventData.tickets.length > 0 && (
+                    <div className="space-y-3">
+                      <h4 className="font-medium">Detalle de entradas:</h4>
+                      {eventData.tickets.map((ticket, index) => (
+                        <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100">
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">{ticket.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {ticket.quantity} × {formatPrice(ticket.price)}
+                            </p>
+                          </div>
+                          <span className="font-semibold">
+                            {formatPrice(ticket.total)}
+                          </span>
+                        </div>
+                      ))}
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span>Cantidad:</span>
-                      <span>{itemDetails.quantity}</span>
-                    </div>
-                  </div>
+                  )}
                   
-                  <div className="pt-2 border-t">
+                  <div className="pt-4 border-t">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm">Total de entradas:</span>
+                      <span className="text-sm font-medium">{eventData.totalTickets}</span>
+                    </div>
                     <div className="flex justify-between items-center">
                       <span className="font-semibold">Total:</span>
-                      <span className="text-xl font-bold text-primary">₲ {parseInt(itemTotal).toLocaleString()}</span>
+                      <span className="text-xl font-bold text-primary">
+                        {formatPrice(eventData.totalAmount)}
+                      </span>
                     </div>
                   </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
       </div>

@@ -1,7 +1,6 @@
-
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { MapPin, Calendar, Clock, Ticket, ArrowLeft } from 'lucide-react';
+import { MapPin, Calendar, Clock, Ticket, ArrowLeft, Plus, Minus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +8,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useToast } from '@/hooks/use-toast';
 import { formatPrice } from '@/lib/utils';
+import { useStore } from '@/stores/store';
 import api from '@/services/api';
 
 interface Raffle {
@@ -26,12 +26,12 @@ interface Raffle {
 
 const RaffleDetail = () => {
   const { slug } = useParams<{ slug: string }>();
-  const [raffle, setRaffle] = useState<Raffle>();
   const navigate = useNavigate();
+  const [raffle, setRaffle] = useState<Raffle>();
   const { toast } = useToast();
   const [quantity, setQuantity] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
-  
+  const { user, isLoggedIn } = useStore();
   
   useEffect(() => {
     const fetchRaffle = async () => {
@@ -48,6 +48,22 @@ const RaffleDetail = () => {
 
     fetchRaffle();
   }, [slug]);
+
+  // Restaurar selección guardada al volver del login
+  useEffect(() => {
+    if (isLoggedIn && raffle) {
+      const savedSelection = localStorage.getItem(`raffle_selection_${raffle.slug}`);
+      if (savedSelection) {
+        try {
+          const parsedSelection = JSON.parse(savedSelection);
+          setQuantity(parsedSelection.quantity || 0);
+          localStorage.removeItem(`raffle_selection_${raffle.slug}`);
+        } catch (error) {
+          console.error('Error parsing saved raffle selection:', error);
+        }
+      }
+    }
+  }, [isLoggedIn, raffle]);
 
   if (isLoading) {
     return (
@@ -108,8 +124,6 @@ const RaffleDetail = () => {
     }
   };
 
-
-
   const updateQuantity = (change: number) => {
     const newQuantity = Math.max(0, quantity + change);
     setQuantity(newQuantity);
@@ -129,17 +143,48 @@ const RaffleDetail = () => {
       return;
     }
 
-    setIsLoading(true);
-    
-    // Simular proceso de compra
-    setTimeout(() => {
+    // Verificar autenticación
+    if (!isLoggedIn || !user) {
+      // Guardar selección en localStorage
+      if (raffle) {
+        localStorage.setItem(`raffle_selection_${raffle.slug}`, JSON.stringify({
+          quantity: quantity
+        }));
+      }
+      
       toast({
-        title: "¡Compra exitosa!",
-        description: `Has comprado ${quantity} número(s) para ${raffle.title}. Recibirás un correo de confirmación.`
+        title: "Inicia sesión para continuar",
+        description: "Debes iniciar sesión para comprar números de rifa. Tu selección se guardará.",
+        variant: "default"
       });
-      setIsLoading(false);
-      setQuantity(0);
-    }, 2000);
+      
+      // Redirigir al login con parámetro de retorno
+      navigate(`/login?returnTo=${encodeURIComponent(window.location.pathname)}`);
+      return;
+    }
+
+    // Proceder al checkout con datos detallados
+    const checkoutData = {
+      type: 'raffle' as const,
+      eventId: raffle.id,
+      eventSlug: raffle.slug,
+      eventTitle: raffle.title,
+      tickets: [{
+        id: 1,
+        name: 'Número de Rifa',
+        quantity: quantity,
+        price: raffle.price,
+        total: getTotalPrice()
+      }],
+      totalAmount: getTotalPrice(),
+      totalTickets: quantity
+    };
+
+    // Guardar datos del checkout en localStorage
+    localStorage.setItem('checkout_data', JSON.stringify(checkoutData));
+
+    // Navegar al checkout
+    navigate('/checkout');
   };
 
   return (
@@ -259,15 +304,7 @@ const RaffleDetail = () => {
                       </div>
                       
                       <Button
-                        onClick={() => {
-                          const checkoutParams = new URLSearchParams({
-                            type: 'raffle',
-                            item: raffle.slug,
-                            title: `${raffle.title} - ${quantity} número(s)`,
-                            total: getTotalPrice().toString()
-                          });
-                          window.location.href = `/checkout?${checkoutParams.toString()}`;
-                        }}
+                        onClick={handlePurchase}
                         disabled={isLoading}
                         className="w-full bg-primary hover:bg-primary/90"
                         size="lg"

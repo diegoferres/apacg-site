@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { MapPin, Calendar, Clock, Ticket, ArrowLeft, Plus, Minus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +8,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useToast } from '@/hooks/use-toast';
 import { formatPrice } from '@/lib/utils';
+import { useStore } from '@/stores/store';
 import api from '@/services/api';
 
 interface TicketType {
@@ -36,10 +37,12 @@ interface Event {
 
 const EventDetail = () => {
   const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
   const [event, setEvent] = useState<Event>();
   const { toast } = useToast();
   const [selectedTickets, setSelectedTickets] = useState<Record<number, number>>({});
   const [isLoading, setIsLoading] = useState(false);
+  const { user, isLoggedIn } = useStore();
   
   useEffect(() => {
     const fetchEvent = async () => {
@@ -56,6 +59,22 @@ const EventDetail = () => {
 
     fetchEvent();
   }, [slug]);
+
+  // Restaurar selección guardada al volver del login
+  useEffect(() => {
+    if (isLoggedIn && event) {
+      const savedSelection = localStorage.getItem(`event_selection_${event.slug}`);
+      if (savedSelection) {
+        try {
+          const parsedSelection = JSON.parse(savedSelection);
+          setSelectedTickets(parsedSelection);
+          localStorage.removeItem(`event_selection_${event.slug}`);
+        } catch (error) {
+          console.error('Error parsing saved selection:', error);
+        }
+      }
+    }
+  }, [isLoggedIn, event]);
 
   if (isLoading) {
     return (
@@ -116,8 +135,6 @@ const EventDetail = () => {
     }
   };
 
-
-
   const updateTicketQuantity = (ticketId: number, change: number) => {
     const currentQuantity = selectedTickets[ticketId] || 0;
     const newQuantity = Math.max(0, currentQuantity + change);
@@ -152,17 +169,53 @@ const EventDetail = () => {
       return;
     }
 
-    setIsLoading(true);
-    
-    // Simular proceso de compra
-    setTimeout(() => {
+    // Verificar autenticación
+    if (!isLoggedIn || !user) {
+      // Guardar selección en localStorage
+      if (event) {
+        localStorage.setItem(`event_selection_${event.slug}`, JSON.stringify(selectedTickets));
+      }
+      
       toast({
-        title: "¡Compra exitosa!",
-        description: `Has comprado ${getTotalTickets()} entrada(s) para ${event.title}. Recibirás un correo de confirmación.`
+        title: "Inicia sesión para continuar",
+        description: "Debes iniciar sesión para comprar entradas. Tu selección se guardará.",
+        variant: "default"
       });
-      setIsLoading(false);
-      setSelectedTickets({});
-    }, 2000);
+      
+      // Redirigir al login con parámetro de retorno
+      navigate(`/login?returnTo=${encodeURIComponent(window.location.pathname)}`);
+      return;
+    }
+
+    // Proceder al checkout con datos detallados
+    const ticketDetails = Object.entries(selectedTickets)
+      .filter(([_, quantity]) => quantity > 0)
+      .map(([ticketId, quantity]) => {
+        const ticketType = event.ticket_types.find(t => t.id === parseInt(ticketId));
+        return {
+          id: parseInt(ticketId),
+          name: ticketType?.name || '',
+          quantity: quantity,
+          price: ticketType?.price || 0,
+          total: (ticketType?.price || 0) * quantity
+        };
+      });
+
+    const checkoutData = {
+      type: 'event',
+      eventId: event.id,
+      eventSlug: event.slug,
+      eventTitle: event.title,
+      tickets: ticketDetails,
+      totalAmount: getTotalPrice(),
+      totalTickets: getTotalTickets()
+    };
+
+    // Guardar datos del checkout en localStorage
+    localStorage.setItem('checkout_data', JSON.stringify(checkoutData));
+
+    // Navegar al checkout
+    navigate('/checkout');
   };
 
   return (
@@ -288,15 +341,7 @@ const EventDetail = () => {
                     </div>
                     
                     <Button
-                      onClick={() => {
-                        const checkoutParams = new URLSearchParams({
-                          type: 'event',
-                          item: event.slug,
-                          title: event.title,
-                          total: getTotalPrice().toString()
-                        });
-                        window.location.href = `/checkout?${checkoutParams.toString()}`;
-                      }}
+                      onClick={handlePurchase}
                       disabled={isLoading}
                       className="w-full bg-primary hover:bg-primary/90"
                       size="lg"
