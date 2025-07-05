@@ -17,9 +17,9 @@ export default defineConfig(({ mode }) => {
   const isLocalDevelopment = isDevelopment && fs.existsSync('C:/Users/diego/.config/herd/config/valet/Certificates/180-apacg.test.key');
   
   return {
-    //base: '/react', // 👈 importante para que los assets carguen desde la ruta correcta
+    base: '/react', // 👈 importante para que los assets carguen desde la ruta correcta
     //base: '/', // 👈 importante para que los assets carguen desde la ruta correcta
-    base: !isLocalDevelopment ? '/react' : '/',
+    //base: !isLocalDevelopment ? '/react' : '/',
     server: {
       host: "0.0.0.0",
       port: 8080,
