@@ -24,10 +24,7 @@ export default defineConfig(({ mode }) => {
       return process.env.VITE_BUILD_OUTPUT_DIR;
     }
     
-    if (isProduction) {
-      return 'dist';
-    }
-    
+    // Mantener el comportamiento original: siempre compilar a la ruta de Laravel
     return '../apacg.com.py/public/react';
   };
   
