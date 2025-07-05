@@ -9,6 +9,7 @@ import { ArrowLeft } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { formatPrice } from '@/lib/utils';
+import { useStore } from '@/stores/store';
 
 interface CheckoutData {
   name: string;
@@ -38,6 +39,7 @@ interface CheckoutEventData {
 const Checkout = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const user = useStore((state) => state.user);
   const [eventData, setEventData] = useState<CheckoutEventData | null>(null);
   const [formData, setFormData] = useState<CheckoutData>({
     name: '',
@@ -46,8 +48,29 @@ const Checkout = () => {
     cedula: ''
   });
   const [errors, setErrors] = useState<Partial<CheckoutData>>({});
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+
+  // Precargar datos del usuario autenticado
+  useEffect(() => {
+    if (user?.member) {
+      setFormData({
+        name: `${user.member.first_name || ''} ${user.member.last_name || ''}`.trim() || user.name || '',
+        email: user.email || '',
+        phone: user.member.phone || '',
+        cedula: user.member.ci || ''
+      });
+    }
+  }, [user]);
 
   useEffect(() => {
+    // Verificar si hay error de pago en los parámetros de URL
+    const errorParam = searchParams.get('error');
+    if (errorParam) {
+      setPaymentError(errorParam);
+      // Limpiar el parámetro de error de la URL sin recargar la página
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    }
     // Intentar leer datos del localStorage primero
     const savedData = localStorage.getItem('checkout_data');
     if (savedData) {
@@ -61,14 +84,16 @@ const Checkout = () => {
       // Fallback a URLSearchParams para compatibilidad
       const itemType = searchParams.get('type') as 'event' | 'raffle';
       const itemSlug = searchParams.get('item');
+      const itemId = searchParams.get('id'); // Capturar el ID del item
       const itemTitle = searchParams.get('title') || 'Compra';
       const itemTotal = searchParams.get('total') || '0';
       const itemQuantity = searchParams.get('quantity') || '1';
       const itemUnitPrice = searchParams.get('unitPrice') || itemTotal;
       
-      if (itemType && itemSlug) {
+      if (itemType && itemSlug && itemId) {
         setEventData({
           type: itemType,
+          eventId: parseInt(itemId),
           eventSlug: itemSlug,
           eventTitle: itemTitle,
           totalAmount: parseInt(itemTotal),
@@ -81,6 +106,8 @@ const Checkout = () => {
             total: parseInt(itemTotal)
           }]
         });
+      } else {
+        console.warn('Missing required checkout parameters:', { itemType, itemSlug, itemId });
       }
     }
   }, [searchParams]);
@@ -187,6 +214,14 @@ const Checkout = () => {
                 </CardHeader>
                 
                 <CardContent>
+                  {/* Mostrar error de pago si existe */}
+                  {paymentError && (
+                    <Alert className="mb-6 border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/50">
+                      <AlertDescription className="text-red-800 dark:text-red-200">
+                        <strong>Error en el pago:</strong> {paymentError}
+                      </AlertDescription>
+                    </Alert>
+                  )}
                   <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="space-y-2">
                       <Label htmlFor="name">Nombre Completo *</Label>

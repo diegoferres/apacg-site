@@ -170,7 +170,8 @@ const Events = () => {
           ) : filteredEvents?.length > 0 ? (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredEvents?.map((event) => (
-              <Card key={event.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 group">
+              <Link key={event.id} to={`/evento/${event.slug}`} className="block">
+                <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 group cursor-pointer">
                 {event.cover ? (
                   <div className="relative h-48 overflow-hidden">
                     <img
@@ -224,14 +225,16 @@ const Events = () => {
                       </p>
                     </div>
                     
-                    <Button asChild className="bg-primary hover:bg-primary/90">
-                      <Link to={`/evento/${event.slug}`}>
-                        Ver Detalles
-                      </Link>
+                    <Button 
+                      className="bg-primary hover:bg-primary/90"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      Ver Detalles
                     </Button>
                   </div>
                 </CardContent>
-              </Card>
+                </Card>
+              </Link>
               ))}
             </div>
           ) : (

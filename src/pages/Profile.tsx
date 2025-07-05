@@ -9,6 +9,7 @@ import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, Tabl
 import { QrCode, LogOut, User, CreditCard, Gift, Edit, Mail, Phone, Calendar, CheckCircle, XCircle, Receipt, ExternalLink, Ticket, Users, Copy, MapPin } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { formatPrice } from "@/lib/utils";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useStore } from "@/stores/store";
@@ -24,6 +25,7 @@ const Profile = () => {
   const [payments, setPayments] = useState([]);
   const [benefits, setBenefits] = useState([]);
   const [raffles, setRaffles] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [selectedRaffleStudents, setSelectedRaffleStudents] = useState([]);
   const [showStudentsModal, setShowStudentsModal] = useState(false);
   const [selectedRaffle, setSelectedRaffle] = useState(null);
@@ -108,7 +110,7 @@ const Profile = () => {
     }
   }, [user?.member?.id]);
 
-  // Fetch payments and benefits only after user data is loaded
+  // Fetch payments, benefits and orders only after user data is loaded
   useEffect(() => {
     if (!user?.member?.id) return;
     
@@ -122,7 +124,13 @@ const Profile = () => {
         
         // Fetch benefits
         const benefitsResponse = await api.get(`api/client/benefits/member/${user.member.id}`);
-        setBenefits(benefitsResponse.data.data || []);
+        setBenefits(benefitsResponse.data.data.data || []);
+        
+        // Fetch orders
+        const ordersResponse = await api.get('api/client/profile/orders');
+        if (ordersResponse.data.success) {
+          setOrders(ordersResponse.data.data.data || []);
+        }
       } catch (error) {
         console.error('Error fetching data:', error);
       }
@@ -435,7 +443,7 @@ const Profile = () => {
                           <CreditCard className="h-5 w-5 text-muted-foreground" />
                           <span className="font-medium">Monto pagado:</span>
                         </div>
-                        <span>90.000 Gs.</span>
+                        <span>{formatPrice(90000)}</span>
                       </div>
                       
                       <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
@@ -489,7 +497,7 @@ const Profile = () => {
                           {payments.map((payment) => (
                             <TableRow key={payment.id}>
                               <TableCell>{payment.payment_date}</TableCell>
-                              <TableCell>{payment.amount}</TableCell>
+                              <TableCell>{formatPrice(payment.amount)}</TableCell>
                               <TableCell>
                                 <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                   {payment.status}
@@ -516,17 +524,15 @@ const Profile = () => {
                     <Gift className="mr-2 h-5 w-5" />
                     Beneficios Reclamados
                   </CardTitle>
-                  <CardDescription className="flex justify-between items-center">
-                    <span>Listado de beneficios que has utilizado</span>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={toggleBenefitsView}
-                      className="ml-auto text-xs"
-                    >
-                      Demo: {showEmptyBenefits ? "Mostrar con datos" : "Mostrar vacío"}
-                    </Button>
-                  </CardDescription>
+                  <CardDescription>Listado de beneficios que has utilizado</CardDescription>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={toggleBenefitsView}
+                    className="ml-auto text-xs mt-2"
+                  >
+                    Demo: {showEmptyBenefits ? "Mostrar con datos" : "Mostrar vacío"}
+                  </Button>
                 </CardHeader>
                 <CardContent>
                   {benefits.length > 0 && !showEmptyBenefits ? (
@@ -657,7 +663,7 @@ const Profile = () => {
                                 </div>
                               )}
                               <div className="text-lg font-semibold text-primary">
-                                {raffle.price} Gs.
+                                {formatPrice(raffle.price)}
                               </div>
                             </div>
                             <Button 
@@ -696,89 +702,68 @@ const Profile = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-6">
-                    {/* Ejemplo de orden de evento */}
-                    <div className="border rounded-lg p-4">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex gap-3">
-                          <img 
-                            src="/corrida_lauf.jpeg" 
-                            alt="Evento"
-                            className="w-16 h-16 object-cover rounded-lg"
-                          />
-                          <div>
-                            <h3 className="font-semibold">Corrida Familiar APACG 2025</h3>
-                            <p className="text-sm text-muted-foreground">Entrada de Evento</p>
-                            <p className="text-sm text-muted-foreground">2 entrada(s)</p>
+                  {orders.length > 0 ? (
+                    <div className="space-y-6">
+                      {orders.map((order) => (
+                        <div key={order.id} className={`border rounded-lg p-4 ${order.status === 'pending' ? 'opacity-75' : ''}`}>
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex gap-3">
+                              <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center">
+                                {order.items[0]?.type === 'Event' ? (
+                                  <Calendar className="h-8 w-8 text-muted-foreground" />
+                                ) : (
+                                  <Ticket className="h-8 w-8 text-muted-foreground" />
+                                )}
+                              </div>
+                              <div>
+                                <h3 className="font-semibold">{order.items[0]?.name || 'Item'}</h3>
+                                <p className="text-sm text-muted-foreground">
+                                  {order.items[0]?.type === 'Event' ? 'Entrada de Evento' : 
+                                   order.items[0]?.type === 'Raffle' ? 'Números de Rifa' : 'Item'}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  {order.items.reduce((total, item) => total + item.quantity, 0)} {
+                                    order.items[0]?.type === 'Event' ? 'entrada(s)' : 
+                                    order.items[0]?.type === 'Raffle' ? 'número(s)' : 'item(s)'
+                                  }
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-semibold">{formatPrice(order.total_amount)}</p>
+                              <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                                order.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {order.status_label}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            Fecha de compra: {order.created_at_formatted} • Orden #{order.order_number}
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p className="font-semibold">₲ 100.000</p>
-                          <span className="inline-block px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
-                            Pagado
-                          </span>
-                        </div>
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        Fecha de compra: 15 de enero, 2025 • Orden #ORD-001
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <Receipt className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-medium mb-2">No hay compras registradas</h3>
+                      <p className="text-muted-foreground">
+                        Aún no has realizado ninguna compra. Explora eventos y rifas disponibles.
+                      </p>
+                      <div className="flex gap-2 mt-4 justify-center">
+                        <Button asChild variant="outline">
+                          <a href="/eventos">Ver Eventos</a>
+                        </Button>
+                        <Button asChild>
+                          <a href="/rifas">Ver Rifas</a>
+                        </Button>
                       </div>
                     </div>
-                    
-                    {/* Ejemplo de orden de rifa */}
-                    <div className="border rounded-lg p-4">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex gap-3">
-                          <img 
-                            src="/logo.png" 
-                            alt="Rifa"
-                            className="w-16 h-16 object-cover rounded-lg"
-                          />
-                          <div>
-                            <h3 className="font-semibold">Rifa de Notebook Dell Inspiron</h3>
-                            <p className="text-sm text-muted-foreground">Números de Rifa</p>
-                            <p className="text-sm text-muted-foreground">5 número(s)</p>
-                            <p className="text-xs text-muted-foreground">Números: 0123, 0124, 0125, 0126, 0127</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold">₲ 150.000</p>
-                          <span className="inline-block px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
-                            Pagado
-                          </span>
-                        </div>
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        Fecha de compra: 10 de enero, 2025 • Orden #ORD-002
-                      </div>
-                    </div>
-                    
-                    {/* Ejemplo de orden pendiente */}
-                    <div className="border rounded-lg p-4 opacity-75">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex gap-3">
-                          <img 
-                            src="/corrida_lauf.jpeg" 
-                            alt="Evento"
-                            className="w-16 h-16 object-cover rounded-lg"
-                          />
-                          <div>
-                            <h3 className="font-semibold">Evento Intercolegial 2025</h3>
-                            <p className="text-sm text-muted-foreground">Entrada de Evento</p>
-                            <p className="text-sm text-muted-foreground">1 entrada(s)</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold">₲ 75.000</p>
-                          <span className="inline-block px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800">
-                            Pendiente
-                          </span>
-                        </div>
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        Fecha de compra: 5 de enero, 2025 • Orden #ORD-003
-                      </div>
-                    </div>
-                  </div>
+                  )}
                 </CardContent>
               </Card>
             )}

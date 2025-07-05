@@ -18,7 +18,8 @@ export default defineConfig(({ mode }) => {
   
   return {
     //base: '/react', // 👈 importante para que los assets carguen desde la ruta correcta
-    base: '/', // 👈 importante para que los assets carguen desde la ruta correcta
+    //base: '/', // 👈 importante para que los assets carguen desde la ruta correcta
+    base: !isLocalDevelopment ? '/react' : '/',
     server: {
       host: "0.0.0.0",
       port: 8080,
@@ -33,6 +34,7 @@ export default defineConfig(({ mode }) => {
         "180-apacg.test",
         "localhost",
         "127.0.0.1",
+        "drugs-performs-delivering-curriculum.trycloudflare.com"
       ],
     },
   plugins: [

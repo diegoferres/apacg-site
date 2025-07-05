@@ -151,7 +151,8 @@ const News = () => {
           ) : paginatedNews.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {paginatedNews.map((item, index) => (
-                <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 group animate-fade-up" style={{ animationDelay: `${100 + index * 100}ms` }}>
+                <Link key={item.id} to={`/novedad/${item.slug}`} className="block">
+                  <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 group animate-fade-up cursor-pointer" style={{ animationDelay: `${100 + index * 100}ms` }}>
                   {item.cover ? (
                     <div className="relative h-48 overflow-hidden">
                       <img
@@ -187,14 +188,12 @@ const News = () => {
                   </CardHeader>
                   
                   <CardContent className="pt-0">
-                    <Link 
-                      to={`/novedad/${item.slug}`}
-                      className="inline-flex items-center text-primary hover:text-primary/80 font-medium text-sm"
-                    >
+                    <span className="inline-flex items-center text-primary hover:text-primary/80 font-medium text-sm">
                       Leer más
-                    </Link>
+                    </span>
                   </CardContent>
-                </Card>
+                  </Card>
+                </Link>
               ))}
             </div>
           ) : (

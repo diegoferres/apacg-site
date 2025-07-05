@@ -67,11 +67,12 @@ const BenefitCard = ({ benefit, delay = 0 }: BenefitCardProps) => {
   };
 
   return (
-    <Card 
-      className={`overflow-hidden transition-all duration-500 transform hover:shadow-md hover:-translate-y-1 ${
-        isVisible ? 'opacity-100' : 'opacity-0 translate-y-4'
-      }`}
-    >
+    <Link to={`/beneficio/${benefit.slug}`} className="block">
+      <Card 
+        className={`overflow-hidden transition-all duration-500 transform hover:shadow-md hover:-translate-y-1 cursor-pointer ${
+          isVisible ? 'opacity-100' : 'opacity-0 translate-y-4'
+        }`}
+      >
       {benefit.cover && !imageError ? (
         <div className="relative w-full h-48 overflow-hidden">
           <img
@@ -105,19 +106,18 @@ const BenefitCard = ({ benefit, delay = 0 }: BenefitCardProps) => {
         </div>
         <p className="text-sm line-clamp-2 mt-2">{removeHTMLTags(benefit.description)}</p>
       </CardContent>
-      <CardFooter className="p-4 pt-2 flex justify-between items-center border-t border-border/40">
-        {benefit.claim_count !== undefined && (
-          <span className="text-xs text-muted-foreground">
-            {benefit.claim_count} personas usaron este beneficio
-          </span>
-        )}
-        <Button asChild variant="ghost" size="sm" className="ml-auto">
-          <Link to={`/beneficio/${benefit.slug}`} className="flex items-center">
-            Ver más <ChevronRight className="h-4 w-4 ml-1" />
-          </Link>
+      <CardFooter className="p-4 pt-2 flex justify-end items-center border-t border-border/40">
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={(e) => e.stopPropagation()}
+          className="flex items-center"
+        >
+          Ver más <ChevronRight className="h-4 w-4 ml-1" />
         </Button>
       </CardFooter>
     </Card>
+    </Link>
   );
 };
 

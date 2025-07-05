@@ -26,6 +26,7 @@ import ChildrenEnrollment from "./pages/ChildrenEnrollment";
 import Checkout from "./pages/Checkout";
 import Payment from "./pages/Payment";
 import PaymentSuccess from "./pages/PaymentSuccess";
+import PaymentConfirmation from "./pages/PaymentConfirmation";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useStore } from "./stores/store";
 import { useEffect } from "react";
@@ -59,7 +60,12 @@ const App = () => {
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
+        <BrowserRouter 
+          future={{
+            v7_startTransition: true,
+            v7_relativeSplatPath: true
+          }}
+        >
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/beneficios" element={
@@ -103,7 +109,8 @@ const App = () => {
             <Route path="/inscripcion-alumnos" element={<ChildrenEnrollment />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/pago" element={<Payment />} />
-            <Route path="/pago-exitoso" element={<PaymentSuccess />} />
+                            <Route path="/pago-exitoso" element={<PaymentSuccess />} />
+                <Route path="/checkout/confirm/:paymentId" element={<PaymentConfirmation />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

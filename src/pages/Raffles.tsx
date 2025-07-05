@@ -160,7 +160,8 @@ const Raffles = () => {
           ) : filteredRaffles.length > 0 ? (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredRaffles.map((raffle) => (
-              <Card key={raffle.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 group">
+              <Link key={raffle.id} to={`/rifa/${raffle.slug}`} className="block">
+                <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 group cursor-pointer">
                 <CardHeader className="pb-4">
                   <div className="flex justify-between items-start mb-2">
                     <Badge className="bg-primary/10 text-primary hover:bg-primary/20">
@@ -190,14 +191,16 @@ const Raffles = () => {
                       </p>
                     </div>
                     
-                    <Button asChild className="bg-primary hover:bg-primary/90">
-                      <Link to={`/rifa/${raffle.slug}`}>
-                        Ver Detalles
-                      </Link>
+                    <Button 
+                      className="bg-primary hover:bg-primary/90"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      Ver Detalles
                     </Button>
                   </div>
                 </CardContent>
-              </Card>
+                </Card>
+              </Link>
               ))}
             </div>
           ) : (
