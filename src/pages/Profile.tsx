@@ -525,14 +525,14 @@ const Profile = () => {
                     Beneficios Reclamados
                   </CardTitle>
                   <CardDescription>Listado de beneficios que has utilizado</CardDescription>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={toggleBenefitsView}
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={toggleBenefitsView}
                     className="ml-auto text-xs mt-2"
-                  >
-                    Demo: {showEmptyBenefits ? "Mostrar con datos" : "Mostrar vacío"}
-                  </Button>
+                    >
+                      Demo: {showEmptyBenefits ? "Mostrar con datos" : "Mostrar vacío"}
+                    </Button>
                 </CardHeader>
                 <CardContent>
                   {benefits.length > 0 && !showEmptyBenefits ? (
@@ -703,11 +703,11 @@ const Profile = () => {
                 </CardHeader>
                 <CardContent>
                   {orders.length > 0 ? (
-                    <div className="space-y-6">
+                  <div className="space-y-6">
                       {orders.map((order) => (
                         <div key={order.id} className={`border rounded-lg p-4 ${order.status === 'pending' ? 'opacity-75' : ''}`}>
-                          <div className="flex items-start justify-between mb-3">
-                            <div className="flex gap-3">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex gap-3">
                               <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center">
                                 {order.items[0]?.type === 'Event' ? (
                                   <Calendar className="h-8 w-8 text-muted-foreground" />
@@ -715,7 +715,7 @@ const Profile = () => {
                                   <Ticket className="h-8 w-8 text-muted-foreground" />
                                 )}
                               </div>
-                              <div>
+                          <div>
                                 <h3 className="font-semibold">{order.items[0]?.name || 'Item'}</h3>
                                 <p className="text-sm text-muted-foreground">
                                   {order.items[0]?.type === 'Event' ? 'Entrada de Evento' : 
@@ -727,9 +727,9 @@ const Profile = () => {
                                     order.items[0]?.type === 'Raffle' ? 'número(s)' : 'item(s)'
                                   }
                                 </p>
-                              </div>
-                            </div>
-                            <div className="text-right">
+                          </div>
+                        </div>
+                        <div className="text-right">
                               <p className="font-semibold">{formatPrice(order.total_amount)}</p>
                               <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
                                 order.status === 'completed' ? 'bg-green-100 text-green-800' :
@@ -738,10 +738,10 @@ const Profile = () => {
                                 'bg-gray-100 text-gray-800'
                               }`}>
                                 {order.status_label}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="text-xs text-muted-foreground">
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
                             Fecha de compra: {order.created_at_formatted} • Orden #{order.order_number}
                           </div>
                         </div>

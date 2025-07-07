@@ -117,6 +117,17 @@ const PaymentPage = () => {
       return;
     }
 
+    // DEBUG: Verificar estado de autenticación
+    try {
+      const authCheck = await api.get('/api/user');
+      console.log('Usuario autenticado:', authCheck.data);
+    } catch (authError) {
+      console.error('Error de autenticación:', authError);
+      setError('Sesión expirada. Por favor, inicie sesión nuevamente.');
+      setTimeout(() => navigate('/login'), 2000);
+      return;
+    }
+
     setIsCreatingPayment(true);
     setError(null);
 

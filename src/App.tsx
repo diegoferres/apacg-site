@@ -109,7 +109,7 @@ const App = () => {
             <Route path="/inscripcion-alumnos" element={<ChildrenEnrollment />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/pago" element={<Payment />} />
-                            <Route path="/pago-exitoso" element={<PaymentSuccess />} />
+            <Route path="/pago-exitoso" element={<PaymentSuccess />} />
                 <Route path="/checkout/confirm/:paymentId" element={<PaymentConfirmation />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

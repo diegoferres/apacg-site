@@ -192,7 +192,7 @@ const News = () => {
                       Leer más
                     </span>
                   </CardContent>
-                  </Card>
+                </Card>
                 </Link>
               ))}
             </div>

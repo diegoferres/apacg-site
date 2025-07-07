@@ -68,11 +68,11 @@ const BenefitCard = ({ benefit, delay = 0 }: BenefitCardProps) => {
 
   return (
     <Link to={`/beneficio/${benefit.slug}`} className="block">
-      <Card 
+    <Card 
         className={`overflow-hidden transition-all duration-500 transform hover:shadow-md hover:-translate-y-1 cursor-pointer ${
-          isVisible ? 'opacity-100' : 'opacity-0 translate-y-4'
-        }`}
-      >
+        isVisible ? 'opacity-100' : 'opacity-0 translate-y-4'
+      }`}
+    >
       {benefit.cover && !imageError ? (
         <div className="relative w-full h-48 overflow-hidden">
           <img
@@ -113,7 +113,7 @@ const BenefitCard = ({ benefit, delay = 0 }: BenefitCardProps) => {
           onClick={(e) => e.stopPropagation()}
           className="flex items-center"
         >
-          Ver más <ChevronRight className="h-4 w-4 ml-1" />
+            Ver más <ChevronRight className="h-4 w-4 ml-1" />
         </Button>
       </CardFooter>
     </Card>

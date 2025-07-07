@@ -195,11 +195,11 @@ const Raffles = () => {
                       className="bg-primary hover:bg-primary/90"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      Ver Detalles
+                        Ver Detalles
                     </Button>
                   </div>
                 </CardContent>
-                </Card>
+              </Card>
               </Link>
               ))}
             </div>
