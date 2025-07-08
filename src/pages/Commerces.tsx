@@ -32,7 +32,7 @@ const Commerces = () => {
     const fetchCommerces = async () => {
       setIsLoading(true);
       try {
-        const response = await api.get('api/client/commerces/list', {
+        const response = await api.get('api/client/commerces', {
           params: { page }
         });
         

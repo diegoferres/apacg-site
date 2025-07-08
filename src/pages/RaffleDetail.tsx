@@ -143,26 +143,6 @@ const RaffleDetail = () => {
       return;
     }
 
-    // Verificar autenticación
-    if (!isLoggedIn || !user) {
-      // Guardar selección en localStorage
-      if (raffle) {
-        localStorage.setItem(`raffle_selection_${raffle.slug}`, JSON.stringify({
-          quantity: quantity
-        }));
-      }
-      
-      toast({
-        title: "Inicia sesión para continuar",
-        description: "Debes iniciar sesión para comprar números de rifa. Tu selección se guardará.",
-        variant: "default"
-      });
-      
-      // Redirigir al login con parámetro de retorno
-      navigate(`/login?returnTo=${encodeURIComponent(window.location.pathname)}`);
-      return;
-    }
-
     // Proceder al checkout con datos detallados
     const checkoutData = {
       type: 'raffle' as const,

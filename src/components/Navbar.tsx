@@ -61,7 +61,7 @@ const Navbar = () => {
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-2 animate-fade-in">
             <div className="flex items-center gap-2 text-primary">
-              <img src={import.meta.env.VITE_API_BASE_URL + "/react/logo.png"} alt="Logo" className="h-14 w-12" />
+              <img src="/favicon-96x96.png" alt="Logo" className="h-14 w-12" />
             </div>
           </Link>
 

@@ -45,8 +45,14 @@ const App = () => {
           setUser(response.data);
           setIsLoggedIn(true);
         }
-      } catch (error) {
-        console.log('No hay sesión activa');
+      } catch (error: any) {
+        // No registrar error 401 (Unauthorized) ya que simplemente significa que no hay sesión activa
+        if (error.response?.status !== 401) {
+          console.log('Error verificando autenticación:', error);
+        }
+        // Para cualquier error (incluyendo 401), simplemente no hay sesión activa
+        setIsLoggedIn(false);
+        setUser(null);
       } finally {
         setIsLoading(false);
       }

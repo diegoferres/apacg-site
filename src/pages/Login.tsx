@@ -127,7 +127,7 @@ const Login = () => {
         <div className="text-center mb-6">
           <Link to="/">
             <div className="flex items-center justify-center gap-2 text-primary">
-              <img src={import.meta.env.VITE_API_BASE_URL + "/react/logo.png"} alt="Logo" className="h-20 w-18" />
+              <img src="/favicon-96x96.png" alt="Logo" className="h-20 w-18" />
             </div>
           </Link>
         </div>

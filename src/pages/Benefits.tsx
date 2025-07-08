@@ -32,7 +32,7 @@ const Benefits = () => {
     const fetchBenefits = async () => {
       setIsLoading(true);
       try {
-        const response = await api.get('api/client/benefits/list', {
+        const response = await api.get('api/client/benefits', {
           params: { page }
         });
         

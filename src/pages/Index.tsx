@@ -113,64 +113,77 @@ const Index = () => {
   const [news, setNews] = useState<News[]>([]);
   const [events, setEvents] = useState<Events[]>([]);
   const [raffles, setRaffles] = useState<Raffle[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
      const fetchNews = async () => {
       try {
         const response = await api.get('api/client/news/list');
-        setNews(response.data.data.data);
+        setNews(response.data.data.data || []);
         setIsLoaded(true);
       } catch (error) {
         console.error('Error fetching news:', error);
+        setNews([]);
       }
     };
 
     const fetchEvents = async () => {
       try {
         const response = await api.get('api/client/events/list');
-        setEvents(response.data.data.data);
+        setEvents(response.data.data.data || []);
         setIsLoaded(true);
       } catch (error) {
         console.error('Error fetching events:', error);
+        setEvents([]);
       }
     };
 
     const fetchRaffles = async () => {
       try {
         const response = await api.get('api/client/raffles/list');
-        setRaffles(response.data.data.data);
+        setRaffles(response.data.data.data || []);
         setIsLoaded(true);
       } catch (error) {
         console.error('Error fetching raffles:', error);
+        setRaffles([]);
       }
     };
 
     const fetchBenefits = async () => {
       try {
         const response = await api.get('api/client/benefits/list');
-
-        setFilteredBenefits(response.data.data.data);
+        setFilteredBenefits(response.data.data.data || []);
         setIsLoaded(true);
       } catch (error) {
         console.error('Error fetching benefits:', error);
+        setFilteredBenefits([]);
       }
     }
 
     const fetchCommerces = async () => {
       try {
         const response = await api.get('api/client/commerces/list');
-        setFeaturedCommerces(response.data.data.data);
+        setFeaturedCommerces(response.data.data.data || []);
         setIsLoaded(true);  
       } catch (error) {
         console.error('Error fetching commerces:', error);
+        setFeaturedCommerces([]);
       }
     }
 
-    fetchBenefits();
-    fetchCommerces();
-    fetchNews();
-    fetchEvents();
-    fetchRaffles();
+    const fetchAllData = async () => {
+      setIsLoading(true);
+      await Promise.all([
+        fetchBenefits(),
+        fetchCommerces(), 
+        fetchNews(),
+        fetchEvents(),
+        fetchRaffles()
+      ]);
+      setIsLoading(false);
+    };
+
+    fetchAllData();
   }, []);
 
   // Helper function to strip HTML tags for short descriptions
@@ -235,77 +248,13 @@ const Index = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredBenefits.map((benefit, index) => (
+            {filteredBenefits?.map((benefit, index) => (
               <BenefitCard 
                 key={benefit.slug} 
                 benefit={benefit} 
                 delay={100 + index * 50} 
               />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* News Section */}
-      <section className="py-16 px-4 bg-muted/30">
-        <div className="container mx-auto max-w-6xl">
-          <div className="flex justify-between items-center mb-8">
-            <h2 className="text-2xl md:text-3xl font-bold animate-fade-up">
-              Últimas Novedades
-            </h2>
-            <Button variant="ghost" asChild className="gap-1 animate-fade-up">
-              <Link to="/novedades">
-                Ver todas <ArrowRight className="h-4 w-4 ml-1" />
-              </Link>
-            </Button>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {news.map((news, index) => (
-              <Card key={news.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 group animate-fade-up" style={{ animationDelay: `${100 + index * 100}ms` }}>
-                {news.cover ? (
-                  <div className="relative h-48 overflow-hidden">
-                    <img
-                      src={news.cover?.storage_path_full}
-                      alt={news.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-                    <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
-                      <Calendar className="h-3 w-3 mr-1" />
-                      {formatDate(news.date_format)}
-                    </Badge>
-                  </div>
-                ) : (
-                  <div className="relative h-48 bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center">
-                    <div className="text-center">
-                      <FileText className="h-12 w-12 text-primary/60 mx-auto mb-2" />
-                      <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
-                        <Calendar className="h-3 w-3 mr-1" />
-                        {formatDate(news.date)}
-                      </Badge>
-                    </div>
-                  </div>
-                )}
-                
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-xl font-bold group-hover:text-primary transition-colors line-clamp-2">
-                    {news.title}
-                  </CardTitle>
-                  <p className="text-muted-foreground text-sm line-clamp-3">
-                    {stripHtml(news.excerpt)}
-                  </p>
-                </CardHeader>
-                
-                <CardContent className="pt-0">
-                  <Button asChild className="w-full bg-primary hover:bg-primary/90">
-                    <Link to={`/novedad/${news.slug}`}>
-                      Leer Más
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+            )) || []}
           </div>
         </div>
       </section>
@@ -325,7 +274,7 @@ const Index = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {events.map((event, index) => (
+            {events?.map((event, index) => (
               <Card key={event.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 group animate-fade-up" style={{ animationDelay: `${100 + index * 100}ms` }}>
                 {event.cover ? (
                   <div className="relative h-48 overflow-hidden">
@@ -389,7 +338,7 @@ const Index = () => {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+            )) || []}
           </div>
         </div>
       </section>
@@ -409,7 +358,7 @@ const Index = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {raffles.map((raffle, index) => (
+            {raffles?.map((raffle, index) => (
               <Card key={raffle.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 group animate-fade-up" style={{ animationDelay: `${100 + index * 100}ms` }}>
                 <CardHeader className="pb-4">
                   <div className="flex justify-between items-start mb-2">
@@ -448,7 +397,7 @@ const Index = () => {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+            )) || []}
           </div>
         </div>
       </section>
@@ -468,13 +417,77 @@ const Index = () => {
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {featuredCommerces.map((commerce, index) => (            
+            {featuredCommerces?.map((commerce, index) => (            
               <CommerceCard
                 key={commerce.slug}
                 commerce={commerce} 
                 delay={100 + index * 50}
               />
-            ))}
+            )) || []}
+          </div>
+        </div>
+      </section>
+
+      {/* News Section */}
+      <section className="py-16 px-4 bg-muted/30">
+        <div className="container mx-auto max-w-6xl">
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-2xl md:text-3xl font-bold animate-fade-up">
+              Últimas Novedades
+            </h2>
+            <Button variant="ghost" asChild className="gap-1 animate-fade-up">
+              <Link to="/novedades">
+                Ver todas <ArrowRight className="h-4 w-4 ml-1" />
+              </Link>
+            </Button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {news?.map((newsItem, index) => (
+              <Card key={newsItem.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 group animate-fade-up" style={{ animationDelay: `${100 + index * 100}ms` }}>
+                {newsItem.cover ? (
+                  <div className="relative h-48 overflow-hidden">
+                    <img
+                      src={newsItem.cover?.storage_path_full}
+                      alt={newsItem.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                    <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
+                      <Calendar className="h-3 w-3 mr-1" />
+                      {formatDate(newsItem.date_format)}
+                    </Badge>
+                  </div>
+                ) : (
+                  <div className="relative h-48 bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center">
+                    <div className="text-center">
+                      <FileText className="h-12 w-12 text-primary/60 mx-auto mb-2" />
+                      <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
+                        <Calendar className="h-3 w-3 mr-1" />
+                        {formatDate(newsItem.date)}
+                      </Badge>
+                    </div>
+                  </div>
+                )}
+                
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-xl font-bold group-hover:text-primary transition-colors line-clamp-2">
+                    {newsItem.title}
+                  </CardTitle>
+                  <p className="text-muted-foreground text-sm line-clamp-3">
+                    {stripHtml(newsItem.excerpt)}
+                  </p>
+                </CardHeader>
+                
+                <CardContent className="pt-0">
+                  <Button asChild className="w-full bg-primary hover:bg-primary/90">
+                    <Link to={`/novedad/${newsItem.slug}`}>
+                      Leer Más
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            )) || []}
           </div>
         </div>
       </section>

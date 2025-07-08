@@ -169,24 +169,6 @@ const EventDetail = () => {
       return;
     }
 
-    // Verificar autenticación
-    if (!isLoggedIn || !user) {
-      // Guardar selección en localStorage
-      if (event) {
-        localStorage.setItem(`event_selection_${event.slug}`, JSON.stringify(selectedTickets));
-      }
-      
-      toast({
-        title: "Inicia sesión para continuar",
-        description: "Debes iniciar sesión para comprar entradas. Tu selección se guardará.",
-        variant: "default"
-      });
-      
-      // Redirigir al login con parámetro de retorno
-      navigate(`/login?returnTo=${encodeURIComponent(window.location.pathname)}`);
-      return;
-    }
-
     // Proceder al checkout con datos detallados
     const ticketDetails = Object.entries(selectedTickets)
       .filter(([_, quantity]) => quantity > 0)

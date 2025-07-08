@@ -21,6 +21,7 @@ const Profile = () => {
   const [activeTab, setActiveTab] = useState("membership");
   const [showEmptyBenefits, setShowEmptyBenefits] = useState(false);
   const user = useStore((state) => state.user);
+  const isLoggedIn = useStore((state) => state.isLoggedIn);
   const setUser = useStore((state) => state.setUser);
   const [payments, setPayments] = useState([]);
   const [benefits, setBenefits] = useState([]);
@@ -38,8 +39,21 @@ const Profile = () => {
 
   const isPending = user?.member?.status === "En Mora";
 
-  // Fetch user data when component mounts
+  // Redirect to login if not authenticated
   useEffect(() => {
+    if (!isLoggedIn) {
+      navigate('/login');
+      return;
+    }
+  }, [isLoggedIn, navigate]);
+
+  // Fetch user data when component mounts (only if logged in)
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setIsLoading(false);
+      return;
+    }
+
     const fetchUser = async () => {
       try {
         setIsLoading(true);
@@ -60,10 +74,12 @@ const Profile = () => {
     };
 
     fetchUser();
-  }, [setUser]);
+  }, [setUser, isLoggedIn]);
 
-  // Fetch raffles data
+  // Fetch additional data only for authenticated users
   useEffect(() => {
+    if (!isLoggedIn || !user?.member?.id) return;
+    
     const fetchRaffles = async () => {
       try {
         const response = await api.get('api/client/profile/raffles');
@@ -72,13 +88,13 @@ const Profile = () => {
             id: raffle.id,
             title: raffle.title,
             draw_date: raffle.draw_date,
-            location: "Sede Central APACG", // Mock location hasta que se agregue al backend
+            location: "Sede Central APACG",
             price: raffle.price
           })));
         }
       } catch (error) {
         console.error('Error fetching raffles:', error);
-        // Fallback a datos mock si hay error
+        // Fallback to mock data
         setRaffles([
           {
             id: 1,
@@ -86,47 +102,21 @@ const Profile = () => {
             draw_date: "2025-08-15",
             location: "Sede Central APACG",
             price: "50000"
-          },
-          {
-            id: 2,
-            title: "Rifa de Notebook Dell Inspiron",
-            draw_date: "2025-09-20", 
-            location: "Online - Transmisión en vivo",
-            price: "30000"
-          },
-          {
-            id: 3,
-            title: "Sorteo de Bicicleta Mountain Bike",
-            draw_date: "2025-07-30",
-            location: "Patio del Colegio",
-            price: "25000"
           }
         ]);
       }
     };
 
-    if (user?.member?.id) {
-      fetchRaffles();
-    }
-  }, [user?.member?.id]);
-
-  // Fetch payments, benefits and orders only after user data is loaded
-  useEffect(() => {
-    if (!user?.member?.id) return;
-    
     const fetchData = async () => {
       try {
-        // Fetch payments
         if (user.id) {
           const paymentsResponse = await api.get(`api/client/memberships/${user.id}`);
           setPayments(paymentsResponse.data.data.data || []);
         }
         
-        // Fetch benefits
         const benefitsResponse = await api.get(`api/client/benefits/member/${user.member.id}`);
         setBenefits(benefitsResponse.data.data.data || []);
         
-        // Fetch orders
         const ordersResponse = await api.get('api/client/profile/orders');
         if (ordersResponse.data.success) {
           setOrders(ordersResponse.data.data.data || []);
@@ -136,18 +126,16 @@ const Profile = () => {
       }
     };
     
+    fetchRaffles();
     fetchData();
-  }, [user?.id, user?.member?.id]);
+  }, [user?.id, user?.member?.id, isLoggedIn]);
 
   const handleLogout = async () => {
     try {
-      // Realizar una solicitud al backend para hacer logout
-      await api.post('/logout');  // Asumiendo que tienes un endpoint /api/logout
-  
-      // Limpiar el estado y redirigir al login
-      setUser(null);  // Limpiar estado global
-      localStorage.removeItem('user');  // Limpiar almacenamiento local
-      navigate("/login");  // Redirigir al login
+      await api.post('/logout');
+      setUser(null);
+      localStorage.removeItem('user');
+      navigate("/login");
     } catch (error) {
       console.error('Error en el logout:', error);
     }
@@ -179,7 +167,6 @@ const Profile = () => {
         avatar: null
       });
       
-      // Update local user state with new values
       setUser({
         ...user,
         name: `${first_name} ${last_name}`,
@@ -199,60 +186,21 @@ const Profile = () => {
   const handleViewStudents = async (raffle) => {
     setSelectedRaffle(raffle);
     
-    try {
-      const response = await api.get('api/client/profile/students');
-      if (response.data.success) {
-        setSelectedRaffleStudents(response.data.data);
-      } else {
-        // Fallback a datos mock si hay error
-        setSelectedRaffleStudents([
-          {
-            id: 1,
-            first_name: "María",
-            last_name: "González",
-            school_year: "5° Grado",
-            student_number: "EST-2024-001"
-          },
-          {
-            id: 2,
-            first_name: "Carlos",
-            last_name: "Rodríguez", 
-            school_year: "3° Grado",
-            student_number: "EST-2024-002"
-          },
-          {
-            id: 3,
-            first_name: "Ana",
-            last_name: "López",
-            school_year: "1° Grado",
-            student_number: "EST-2024-003"
-          }
-        ]);
-      }
-    } catch (error) {
-      console.error('Error fetching students:', error);
-      // Fallback a datos mock si hay error
+    if (user?.member?.students?.length > 0) {
+      setSelectedRaffleStudents(user.member.students.map(student => ({
+        ...student,
+        referrer_code: `REF-${student.id}-${raffle.id}`,
+        school_year: "6° Grado"
+      })));
+    } else {
       setSelectedRaffleStudents([
         {
           id: 1,
-          first_name: "María",
-          last_name: "González",
+          first_name: "Juan",
+          last_name: "Pérez",
           school_year: "5° Grado",
-          student_number: "EST-2024-001"
-        },
-        {
-          id: 2,
-          first_name: "Carlos",
-          last_name: "Rodríguez", 
-          school_year: "3° Grado",
-          student_number: "EST-2024-002"
-        },
-        {
-          id: 3,
-          first_name: "Ana",
-          last_name: "López",
-          school_year: "1° Grado",
-          student_number: "EST-2024-003"
+          student_number: "EST-2024-001",
+          referrer_code: `REF-1-${raffle.id}`
         }
       ]);
     }
@@ -283,13 +231,19 @@ const Profile = () => {
       <div className="min-h-screen flex flex-col">
         <Navbar />
         <main className="flex-grow container mx-auto px-4 pt-24 pb-12 flex justify-center items-center">
-          <p>Cargando perfil...</p>
+          <p>Cargando...</p>
         </main>
         <Footer />
       </div>
     );
   }
 
+  // Don't render anything if not logged in (will redirect)
+  if (!isLoggedIn) {
+    return null;
+  }
+
+  // Vista para usuarios autenticados
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />

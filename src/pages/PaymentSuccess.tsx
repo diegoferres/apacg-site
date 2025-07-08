@@ -6,6 +6,7 @@ import { CheckCircle, Download, Mail, Home, Loader2, CreditCard, Calendar, Hash,
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { formatPrice } from '@/lib/utils';
+import { useStore } from '@/stores/store';
 import api from '@/services/api';
 
 interface PaymentDetails {
@@ -39,6 +40,7 @@ const PaymentSuccess = () => {
   const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { isLoggedIn } = useStore();
 
   const orderId = searchParams.get('order_id');
   const paymentId = searchParams.get('payment_id');
@@ -58,7 +60,65 @@ const PaymentSuccess = () => {
   const fetchPaymentDetails = async () => {
     try {
       setIsLoading(true);
-      const response = await api.get(`/api/client/payments/${paymentId}/details`);
+      
+      // Construir URL base
+      let url = `/api/client/payments/${paymentId}/details`;
+      let email = null;
+      
+      console.log('PaymentSuccess Debug:', {
+        isLoggedIn,
+        paymentId,
+        hasCheckoutData: !!localStorage.getItem('checkout_data'),
+        hasPaymentData: !!localStorage.getItem('payment_data')
+      });
+      
+      // Siempre intentar obtener email de localStorage (tanto para guests como para usuarios con token expirado)
+      // Buscar en payment_data primero (datos más recientes del checkout)
+      const paymentData = localStorage.getItem('payment_data');
+      if (paymentData) {
+        try {
+          const parsedPaymentData = JSON.parse(paymentData);
+          // Corregir estructura: en checkout se guarda como customerData (camelCase)
+          email = parsedPaymentData.customerData?.email || parsedPaymentData.customer_data?.email;
+          console.log('Email found in payment_data:', email);
+        } catch (e) {
+          console.warn('Could not parse payment_data for email');
+        }
+      }
+      
+      // Si no encontramos en payment_data, buscar en checkout_data (fallback)
+      if (!email) {
+        const checkoutData = localStorage.getItem('checkout_data');
+        if (checkoutData) {
+          try {
+            const parsedData = JSON.parse(checkoutData);
+            // Buscar en todas las posibles estructuras
+            email = parsedData.customerData?.email ||      // Checkout structure
+                    parsedData.customer_data?.email ||     // API structure  
+                    parsedData.customerEmail ||            // Alternative structure
+                    parsedData.email;                      // Direct email
+            console.log('Email found in checkout_data:', email);
+          } catch (e) {
+            console.warn('Could not parse checkout_data for email');
+          }
+        }
+      }
+      
+      // Si no encontramos email en localStorage, intentar obtenerlo de searchParams
+      if (!email) {
+        email = searchParams.get('email');
+        console.log('Email found in searchParams:', email);
+      }
+      
+      // Si tenemos email, agregarlo como parámetro (tanto para guests como para posibles tokens expirados)
+      if (email) {
+        url += `?email=${encodeURIComponent(email)}`;
+        console.log('Final URL with email:', url);
+      } else {
+        console.log('No email found, URL without email:', url);
+      }
+      
+      const response = await api.get(url);
       
       if (response.data.success) {
         setPaymentDetails(response.data.data);
@@ -67,7 +127,69 @@ const PaymentSuccess = () => {
       }
     } catch (error: any) {
       console.error('Error fetching payment details:', error);
-      setError('Error al cargar los detalles del pago');
+      
+      // Si obtenemos 401 Unauthorized y no habíamos incluido email, intentar como guest
+      if (error.response?.status === 401 && !url.includes('email=')) {
+        console.log('Got 401, trying to fetch email for guest access...');
+        
+        // Repetir la lógica de búsqueda de email más exhaustiva
+        let fallbackEmail = null;
+        
+        // Buscar en todos los posibles lugares
+        const sources = [
+          localStorage.getItem('payment_data'),
+          localStorage.getItem('checkout_data'),
+          searchParams.get('email')
+        ];
+        
+        for (const source of sources) {
+          if (typeof source === 'string') {
+            if (source.includes('@') && !source.includes('{')) {
+              // Es directamente un email
+              fallbackEmail = source;
+              break;
+            } else if (source.includes('{')) {
+              // Es JSON
+              try {
+                const parsed = JSON.parse(source);
+                // Buscar en todas las posibles estructuras
+                fallbackEmail = parsed.customerData?.email ||     // Checkout structure
+                               parsed.customer_data?.email ||    // API structure
+                               parsed.customerEmail ||           // Alternative structure
+                               parsed.email;                     // Direct email
+                if (fallbackEmail) break;
+              } catch (e) {
+                // Ignorar errores de parsing
+              }
+            }
+          }
+        }
+        
+        if (fallbackEmail) {
+          console.log('Retrying with fallback email:', fallbackEmail);
+          const retryUrl = `/api/client/payments/${paymentId}/details?email=${encodeURIComponent(fallbackEmail)}`;
+          try {
+            const retryResponse = await api.get(retryUrl);
+            if (retryResponse.data.success) {
+              setPaymentDetails(retryResponse.data.data);
+              return;
+            }
+          } catch (retryError) {
+            console.error('Retry with email also failed:', retryError);
+          }
+        }
+      }
+      
+      // Manejar errores específicos para guests
+      if (error.response?.status === 400 && error.response?.data?.error === 'EMAIL_REQUIRED') {
+        setError('Se requiere validación de email para ver los detalles del pago');
+      } else if (error.response?.status === 403) {
+        setError('No tiene permisos para ver los detalles de este pago');
+      } else if (error.response?.status === 401) {
+        setError('Sesión expirada. Por favor, inicie sesión nuevamente para ver los detalles.');
+      } else {
+        setError('Error al cargar los detalles del pago');
+      }
     } finally {
       setIsLoading(false);
     }
