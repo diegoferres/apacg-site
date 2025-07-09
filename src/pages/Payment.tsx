@@ -33,6 +33,7 @@ interface PaymentData {
   totalAmount: number;
   totalTickets: number;
   customerData: CustomerData;
+  referralCode?: string;
 }
 
 interface BancardData {
@@ -125,7 +126,8 @@ const PaymentPage = () => {
       const requestData: any = {
         type: data.type,
         item_id: data.eventId,
-        customer_data: data.customerData
+        customer_data: data.customerData,
+        referral_code: data.referralCode // Incluir código de referido si existe
       };
 
       if (data.type === 'event') {
@@ -241,6 +243,7 @@ const PaymentPage = () => {
     localStorage.removeItem('payment_data');
     localStorage.removeItem('checkout_data');
     localStorage.removeItem('current_payment');
+    localStorage.removeItem('referral_code'); // Limpiar código de referido usado
     
     // Redirigir a página de éxito con datos
     navigate(`/pago-exitoso?title=${encodeURIComponent(paymentData?.eventTitle || 'Compra')}&order=${orderId}`);

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { MapPin, Calendar, Clock, Ticket, ArrowLeft, Plus, Minus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,11 +38,28 @@ interface Event {
 const EventDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [event, setEvent] = useState<Event>();
   const { toast } = useToast();
   const [selectedTickets, setSelectedTickets] = useState<Record<number, number>>({});
   const [isLoading, setIsLoading] = useState(false);
   const { user, isLoggedIn } = useStore();
+  
+  // Detectar y almacenar código de referido
+  useEffect(() => {
+    const referralCode = searchParams.get('ref');
+    if (referralCode) {
+      console.log('Código de referido detectado:', referralCode);
+      localStorage.setItem('referral_code', referralCode);
+      
+      // Opcional: mostrar toast informando al usuario
+      toast({
+        title: "¡Link de referido activado!",
+        description: "Esta compra será acreditada al estudiante referente.",
+        className: "bg-green-50 border-green-200",
+      });
+    }
+  }, [searchParams, toast]);
   
   useEffect(() => {
     const fetchEvent = async () => {
@@ -169,6 +186,9 @@ const EventDetail = () => {
       return;
     }
 
+    // Obtener código de referido si existe
+    const referralCode = localStorage.getItem('referral_code');
+
     // Proceder al checkout con datos detallados
     const ticketDetails = Object.entries(selectedTickets)
       .filter(([_, quantity]) => quantity > 0)
@@ -190,7 +210,8 @@ const EventDetail = () => {
       eventTitle: event.title,
       tickets: ticketDetails,
       totalAmount: getTotalPrice(),
-      totalTickets: getTotalTickets()
+      totalTickets: getTotalTickets(),
+      referralCode: referralCode // Incluir código de referido
     };
 
     // Guardar datos del checkout en localStorage

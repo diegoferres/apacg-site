@@ -87,23 +87,16 @@ const Profile = () => {
           setRaffles(response.data.data.map(raffle => ({
             id: raffle.id,
             title: raffle.title,
+            slug: raffle.slug,
             draw_date: raffle.draw_date,
-            location: "Sede Central APACG",
+            location: null, // No hay campo de ubicación en el modelo actual
             price: raffle.price
           })));
         }
       } catch (error) {
         console.error('Error fetching raffles:', error);
-        // Fallback to mock data
-        setRaffles([
-          {
-            id: 1,
-            title: "Sorteo de Smartphone Samsung Galaxy S24",
-            draw_date: "2025-08-15",
-            location: "Sede Central APACG",
-            price: "50000"
-          }
-        ]);
+        // Si hay error, mostrar array vacío en lugar de datos mock
+        setRaffles([]);
       }
     };
 
@@ -189,33 +182,43 @@ const Profile = () => {
     if (user?.member?.students?.length > 0) {
       setSelectedRaffleStudents(user.member.students.map(student => ({
         ...student,
-        referrer_code: `REF-${student.id}-${raffle.id}`,
-        school_year: "6° Grado"
+        school_year: student.school_year || "N/A"
       })));
     } else {
-      setSelectedRaffleStudents([
-        {
-          id: 1,
-          first_name: "Juan",
-          last_name: "Pérez",
-          school_year: "5° Grado",
-          student_number: "EST-2024-001",
-          referrer_code: `REF-1-${raffle.id}`
-        }
-      ]);
+      // Si no hay estudiantes reales, mostrar array vacío
+      setSelectedRaffleStudents([]);
     }
     
     setShowStudentsModal(true);
   };
 
   const copyReferralLink = (student, raffleName) => {
+    // Validar que tenemos todos los datos necesarios
+    if (!selectedRaffle?.slug) {
+      toast({
+        title: "Error",
+        description: "No se puede generar el link: información de rifa incompleta",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!student?.referrer_code) {
+      toast({
+        title: "Error",
+        description: "No se puede generar el link: código de referido no disponible",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const baseUrl = window.location.origin;
-    const referralLink = `${baseUrl}/rifa/${selectedRaffle?.id}?ref=${student.referrer_code}`;
+    const referralLink = `${baseUrl}/rifa/${selectedRaffle.slug}?ref=${student.referrer_code}`;
     
     navigator.clipboard.writeText(referralLink).then(() => {
       toast({
         title: "Link copiado",
-        description: `Link de referido para ${raffleName} copiado al portapapeles`,
+        description: `Link de referido para "${raffleName || 'la rifa'}" copiado al portapapeles`,
       });
     }).catch(() => {
       toast({
@@ -766,7 +769,7 @@ const Profile = () => {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => copyReferralLink(student, `${student.first_name} ${student.last_name}`)}
+                      onClick={() => copyReferralLink(student, selectedRaffle?.title)}
                       className="shrink-0"
                     >
                       <Copy className="h-4 w-4 mr-1" />

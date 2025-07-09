@@ -34,6 +34,7 @@ interface CheckoutEventData {
   tickets?: TicketDetail[];
   totalAmount: number;
   totalTickets: number;
+  referralCode?: string;
 }
 
 const Checkout = () => {
