@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { QrCode, LogOut, User, CreditCard, Gift, Edit, Mail, Phone, Calendar, CheckCircle, XCircle, Receipt, ExternalLink, Ticket, Users, Copy, MapPin } from "lucide-react";
+import { QrCode, LogOut, User, CreditCard, Gift, Edit, Mail, Phone, Calendar, CheckCircle, XCircle, Receipt, ExternalLink, Ticket, Users, Copy, MapPin, Store, Tag } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { formatPrice } from "@/lib/utils";
@@ -19,7 +19,6 @@ import { ChildrenManager } from "@/components/ChildrenManager";
 
 const Profile = () => {
   const [activeTab, setActiveTab] = useState("membership");
-  const [showEmptyBenefits, setShowEmptyBenefits] = useState(false);
   const user = useStore((state) => state.user);
   const isLoggedIn = useStore((state) => state.isLoggedIn);
   const setUser = useStore((state) => state.setUser);
@@ -136,10 +135,6 @@ const Profile = () => {
 
   const handlePayMembership = () => {
     navigate("/pago-membresia");
-  };
-
-  const toggleBenefitsView = () => {
-    setShowEmptyBenefits(!showEmptyBenefits);
   };
 
   const { toast } = useToast();
@@ -482,26 +477,35 @@ const Profile = () => {
                     Beneficios Reclamados
                   </CardTitle>
                   <CardDescription>Listado de beneficios que has utilizado</CardDescription>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={toggleBenefitsView}
-                    className="ml-auto text-xs mt-2"
-                    >
-                      Demo: {showEmptyBenefits ? "Mostrar con datos" : "Mostrar vacío"}
-                    </Button>
                 </CardHeader>
                 <CardContent>
-                  {benefits.length > 0 && !showEmptyBenefits ? (
+                  {benefits.length > 0 ? (
                     <div className="space-y-4">
                       {benefits.map((benefit) => (
-                        <div key={benefit.id} className="p-4 border rounded-lg">
-                          <div className="flex justify-between mb-2">
-                            <h3 className="font-medium">{benefit.title}</h3>
+                        <div key={benefit.id} className="p-4 border rounded-lg hover:bg-muted/30 transition-colors">
+                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-3">
+                            <h3 className="font-medium text-lg">{benefit.benefit?.title}</h3>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <Calendar className="h-4 w-4" />
+                              <span>Reclamado el {new Date(benefit.verification_date).toLocaleDateString('es-PY', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                              })}</span>
+                            </div>
                           </div>
-                          <p className="text-sm text-muted-foreground mb-2">
-                            Comercio: {benefit.commerce?.name}
-                          </p>
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <Store className="h-4 w-4" />
+                              <span>Comercio: {benefit.benefit?.commerce?.name}</span>
+                            </div>
+                            {benefit.benefit?.category?.name && (
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Tag className="h-4 w-4" />
+                                <span>Categoría: {benefit.benefit?.category?.name}</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>

@@ -273,73 +273,83 @@ const Index = () => {
             </Button>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {events?.map((event, index) => (
-              <Card key={event.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 group animate-fade-up" style={{ animationDelay: `${100 + index * 100}ms` }}>
-                {event.cover ? (
-                  <div className="relative h-48 overflow-hidden">
-                    <img
-                      src={event.cover?.storage_path_full}
-                      alt={event.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-                    <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
-                      <Calendar className="h-3 w-3 mr-1" />
-                      {formatDate(event.date_format)}
-                    </Badge>
-                  </div>
-                ) : (
-                  <div className="relative h-48 bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center">
-                    <div className="text-center">
-                      <Ticket className="h-12 w-12 text-primary/60 mx-auto mb-2" />
+          {events && events.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {events?.map((event, index) => (
+                <Card key={event.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 group animate-fade-up" style={{ animationDelay: `${100 + index * 100}ms` }}>
+                  {event.cover ? (
+                    <div className="relative h-48 overflow-hidden">
+                      <img
+                        src={event.cover?.storage_path_full}
+                        alt={event.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                       <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
                         <Calendar className="h-3 w-3 mr-1" />
                         {formatDate(event.date_format)}
                       </Badge>
                     </div>
-                  </div>
-                )}
-                
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-xl font-bold group-hover:text-primary transition-colors">
-                    {event.title}
-                  </CardTitle>
-                  <p className="text-muted-foreground text-sm line-clamp-2">
-                    {stripHtml(event.description)}
-                  </p>
-                </CardHeader>
-                
-                <CardContent className="space-y-3">
+                  ) : (
+                    <div className="relative h-48 bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center">
+                      <div className="text-center">
+                        <Ticket className="h-12 w-12 text-primary/60 mx-auto mb-2" />
+                        <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
+                          <Calendar className="h-3 w-3 mr-1" />
+                          {formatDate(event.date_format)}
+                        </Badge>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-xl font-bold group-hover:text-primary transition-colors">
+                      {event.title}
+                    </CardTitle>
+                    <p className="text-muted-foreground text-sm line-clamp-2">
+                      {stripHtml(event.description)}
+                    </p>
+                  </CardHeader>
+                  
+                  <CardContent className="space-y-3">
 
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <Clock className="h-4 w-4 mr-2 text-primary" />
-                    {event.time} hrs
-                  </div>
-                  
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <MapPin className="h-4 w-4 mr-2 text-primary" />
-                    {event.location}
-                  </div>
-                  
-                  <div className="flex items-center justify-between pt-4">
-                    <div>
-                      <span className="text-xs text-muted-foreground">Desde</span>
-                      <p className="text-xl font-bold text-primary">
-                        {formatPrice(event.price_from)}
-                      </p>
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <Clock className="h-4 w-4 mr-2 text-primary" />
+                      {event.time} hrs
                     </div>
                     
-                    <Button asChild className="bg-primary hover:bg-primary/90">
-                      <Link to={`/evento/${event.slug}`}>
-                        Ver Detalles
-                      </Link>
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )) || []}
-          </div>
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <MapPin className="h-4 w-4 mr-2 text-primary" />
+                      {event.location}
+                    </div>
+                    
+                    <div className="flex items-center justify-between pt-4">
+                      <div>
+                        <span className="text-xs text-muted-foreground">Desde</span>
+                        <p className="text-xl font-bold text-primary">
+                          {formatPrice(event.price_from)}
+                        </p>
+                      </div>
+                      
+                      <Button asChild className="bg-primary hover:bg-primary/90">
+                        <Link to={`/evento/${event.slug}`}>
+                          Ver Detalles
+                        </Link>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )) || []}
+            </div>
+          ) : (
+            <div className="text-center py-2">
+              <Calendar className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium mb-2">No hay eventos disponibles</h3>
+              <p className="text-muted-foreground">
+                Actualmente no hay eventos programados. Mantente atento para próximas actividades.
+              </p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -357,48 +367,58 @@ const Index = () => {
             </Button>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {raffles?.map((raffle, index) => (
-              <Card key={raffle.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 group animate-fade-up" style={{ animationDelay: `${100 + index * 100}ms` }}>
-                <CardHeader className="pb-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <Badge className="bg-primary/10 text-primary hover:bg-primary/20">
-                      <Calendar className="h-3 w-3 mr-1" />
-                      {formatDate(raffle.end_date)}
-                    </Badge>
-                  </div>
-                  <CardTitle className="text-lg font-bold group-hover:text-primary transition-colors">
-                    {raffle.title}
-                  </CardTitle>
-                  <p className="text-muted-foreground text-sm line-clamp-2">
-                    {stripHtml(raffle.short_description)}
-                  </p>
-                </CardHeader>
-                
-                <CardContent className="space-y-3">
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <Clock className="h-4 w-4 mr-2 text-primary" />
-                    <span>Sortea el {formatDate(raffle.end_date)}</span>
-                  </div>
+          {raffles && raffles.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {raffles?.map((raffle, index) => (
+                <Card key={raffle.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 group animate-fade-up" style={{ animationDelay: `${100 + index * 100}ms` }}>
+                  <CardHeader className="pb-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <Badge className="bg-primary/10 text-primary hover:bg-primary/20">
+                        <Calendar className="h-3 w-3 mr-1" />
+                        {formatDate(raffle.end_date)}
+                      </Badge>
+                    </div>
+                    <CardTitle className="text-lg font-bold group-hover:text-primary transition-colors">
+                      {raffle.title}
+                    </CardTitle>
+                    <p className="text-muted-foreground text-sm line-clamp-2">
+                      {stripHtml(raffle.short_description)}
+                    </p>
+                  </CardHeader>
                   
-                  <div className="flex items-center justify-between pt-4">
-                    <div>
-                      <span className="text-xs text-muted-foreground">Precio</span>
-                      <p className="text-xl font-bold text-primary">
-                        {formatPrice(raffle.price)}
-                      </p>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <Clock className="h-4 w-4 mr-2 text-primary" />
+                      <span>Sortea el {formatDate(raffle.end_date)}</span>
                     </div>
                     
-                    <Button asChild className="bg-primary hover:bg-primary/90">
-                      <Link to={`/rifa/${raffle.slug}`}>
-                        Ver Detalles
-                      </Link>
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )) || []}
-          </div>
+                    <div className="flex items-center justify-between pt-4">
+                      <div>
+                        <span className="text-xs text-muted-foreground">Precio</span>
+                        <p className="text-xl font-bold text-primary">
+                          {formatPrice(raffle.price)}
+                        </p>
+                      </div>
+                      
+                      <Button asChild className="bg-primary hover:bg-primary/90">
+                        <Link to={`/rifa/${raffle.slug}`}>
+                          Ver Detalles
+                        </Link>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )) || []}
+            </div>
+          ) : (
+            <div className="text-center py-2">
+              <Ticket className="mx-auto h-12 w-12 text-muted-foreground" />
+              <h3 className="text-lg font-medium mb-2">No hay rifas disponibles</h3>
+              <p className="text-muted-foreground">
+                Actualmente no hay rifas activas. Mantente atento para futuras rifas benéficas.
+              </p>
+            </div>
+          )}
         </div>
       </section>
       
@@ -442,53 +462,63 @@ const Index = () => {
             </Button>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {news?.map((newsItem, index) => (
-              <Card key={newsItem.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 group animate-fade-up" style={{ animationDelay: `${100 + index * 100}ms` }}>
-                {newsItem.cover ? (
-                  <div className="relative h-48 overflow-hidden">
-                    <img
-                      src={newsItem.cover?.storage_path_full}
-                      alt={newsItem.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-                    <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
-                      <Calendar className="h-3 w-3 mr-1" />
-                      {formatDate(newsItem.date_format)}
-                    </Badge>
-                  </div>
-                ) : (
-                  <div className="relative h-48 bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center">
-                    <div className="text-center">
-                      <FileText className="h-12 w-12 text-primary/60 mx-auto mb-2" />
+          {news && news.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {news?.map((newsItem, index) => (
+                <Card key={newsItem.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 group animate-fade-up" style={{ animationDelay: `${100 + index * 100}ms` }}>
+                  {newsItem.cover ? (
+                    <div className="relative h-48 overflow-hidden">
+                      <img
+                        src={newsItem.cover?.storage_path_full}
+                        alt={newsItem.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                       <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
                         <Calendar className="h-3 w-3 mr-1" />
-                        {formatDate(newsItem.date)}
+                        {formatDate(newsItem.date_format)}
                       </Badge>
                     </div>
-                  </div>
-                )}
-                
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-xl font-bold group-hover:text-primary transition-colors line-clamp-2">
-                    {newsItem.title}
-                  </CardTitle>
-                  <p className="text-muted-foreground text-sm line-clamp-3">
-                    {stripHtml(newsItem.excerpt)}
-                  </p>
-                </CardHeader>
-                
-                <CardContent className="pt-0">
-                  <Button asChild className="w-full bg-primary hover:bg-primary/90">
-                    <Link to={`/novedad/${newsItem.slug}`}>
-                      Leer Más
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            )) || []}
-          </div>
+                  ) : (
+                    <div className="relative h-48 bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center">
+                      <div className="text-center">
+                        <FileText className="h-12 w-12 text-primary/60 mx-auto mb-2" />
+                        <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
+                          <Calendar className="h-3 w-3 mr-1" />
+                          {formatDate(newsItem.date)}
+                        </Badge>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-xl font-bold group-hover:text-primary transition-colors line-clamp-2">
+                      {newsItem.title}
+                    </CardTitle>
+                    <p className="text-muted-foreground text-sm line-clamp-3">
+                      {stripHtml(newsItem.excerpt)}
+                    </p>
+                  </CardHeader>
+                  
+                  <CardContent className="pt-0">
+                    <Button asChild className="w-full bg-primary hover:bg-primary/90">
+                      <Link to={`/novedad/${newsItem.slug}`}>
+                        Leer Más
+                      </Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              )) || []}
+            </div>
+          ) : (
+            <div className="text-center py-2">
+              <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
+              <h3 className="text-lg font-medium mb-2">No hay novedades disponibles</h3>
+              <p className="text-muted-foreground">
+                Actualmente no hay novedades publicadas. Mantente informado de las últimas noticias.
+              </p>
+            </div>
+          )}
         </div>
       </section>
       

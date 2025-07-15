@@ -17,13 +17,15 @@ import {
   Calendar, 
   Clock, 
   Tag, 
-  Image 
+  Image,
+  QrCode
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import BenefitCard, { Benefit } from '@/components/BenefitCard';
 import api from '@/services/api';
 import { format } from 'date-fns';
+import { useStore } from '@/stores/store';
 
 interface BenefitDetail {
   id: string;
@@ -51,6 +53,7 @@ const BenefitDetail = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const [imageError, setImageError] = useState(false);
+  const { isLoggedIn } = useStore();
 
   useEffect(() => {
     const fetchBenefit = async () => {
@@ -101,6 +104,16 @@ const BenefitDetail = () => {
 
   const handleImageError = () => {
     setImageError(true);
+  };
+
+  const handleClaimBenefit = () => {
+    if (isLoggedIn) {
+      // Si está logueado, llevar directamente al perfil
+      navigate('/perfil');
+    } else {
+      // Si no está logueado, ir al login con parámetro de redirección
+      navigate('/login?returnTo=/perfil');
+    }
   };
 
   const formatDateSafe = (dateString: string | null | undefined): string => {
@@ -195,6 +208,24 @@ const BenefitDetail = () => {
                     </span>
                   </div>
                 )}
+              </div>
+              
+              {/* Call to Action Button */}
+              <div className="pt-6">
+                <Button 
+                  onClick={handleClaimBenefit}
+                  size="lg"
+                  className="w-full md:w-auto bg-primary hover:bg-primary/90 text-white font-semibold"
+                >
+                  <QrCode className="h-5 w-5 mr-2" />
+                  Reclamar mi beneficio
+                </Button>
+                <p className="text-sm text-muted-foreground mt-2">
+                  {isLoggedIn 
+                    ? "Ve a tu perfil para mostrar tu código QR de socio" 
+                    : "Inicia sesión para acceder a tu código QR de socio"
+                  }
+                </p>
               </div>
             </div>
           </div>
