@@ -20,6 +20,9 @@ import Raffles from "./pages/Raffles";
 import RaffleDetail from "./pages/RaffleDetail";
 import News from "./pages/News";
 import NewsDetail from "./pages/NewsDetail";
+import Courses from "./pages/Courses";
+import CourseDetail from "./pages/CourseDetail";
+import CourseEnrollment from "./pages/CourseEnrollment";
 import { ChildrenManager } from "./components/ChildrenManager";
 import ProtectedWithStudents from "./components/ProtectedWithStudents";
 import ChildrenEnrollment from "./pages/ChildrenEnrollment";
@@ -98,6 +101,9 @@ const App = () => {
             <Route path="/evento/:slug" element={<EventDetail />} />
             <Route path="/rifas" element={<Raffles />} />
             <Route path="/rifa/:slug" element={<RaffleDetail />} />
+            <Route path="/cursos" element={<Courses />} />
+            <Route path="/curso/:slug" element={<CourseDetail />} />
+            <Route path="/inscripcion-curso" element={<CourseEnrollment />} />
             <Route path="/novedades" element={<News />} />
             <Route path="/novedad/:slug" element={<NewsDetail />} />
             <Route path="/login" element={<Login />} />

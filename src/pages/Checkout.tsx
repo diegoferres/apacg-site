@@ -58,7 +58,7 @@ const Checkout = () => {
         name: `${user.member.first_name || ''} ${user.member.last_name || ''}`.trim() || user.name || '',
         email: user.email || '',
         phone: user.member.phone || '',
-        cedula: user.member.ci || ''
+        cedula: '12345678' // Valor temporal por ahora
       });
     }
   }, [user]);
