@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import CourseEnrollmentModal from '@/components/CourseEnrollmentModal';
 import { Clock, Users, MapPin, Calendar, GraduationCap, ArrowLeft } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 
@@ -13,6 +14,8 @@ const CourseDetail = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
   const [selectedGroup, setSelectedGroup] = useState<number | null>(null);
+  const [isEnrollmentModalOpen, setIsEnrollmentModalOpen] = useState(false);
+  const [enrollmentGroup, setEnrollmentGroup] = useState<any>(null);
 
   // Datos de ejemplo del curso (en una app real vendría de una API)
   const course = {
@@ -72,13 +75,8 @@ const CourseDetail = () => {
   const handleEnroll = (groupId: number) => {
     const group = course.groups.find(g => g.id === groupId);
     if (group) {
-      navigate('/inscripcion-curso', { 
-        state: { 
-          course: course,
-          group: group,
-          type: 'course'
-        } 
-      });
+      setEnrollmentGroup(group);
+      setIsEnrollmentModalOpen(true);
     }
   };
 
@@ -103,11 +101,13 @@ const CourseDetail = () => {
             <div className="lg:col-span-2 space-y-6">
               {/* Hero image */}
               <div className="relative rounded-xl overflow-hidden">
-                <img 
-                  src={course.image} 
-                  alt={course.title}
-                  className="w-full h-64 md:h-80 object-cover"
-                />
+                <div className="w-full h-64 md:h-80 bg-muted flex items-center justify-center">
+                  <img 
+                    src={course.image} 
+                    alt={course.title}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                 <div className="absolute bottom-4 left-4 text-white">
                   <Badge className="mb-2 bg-primary text-primary-foreground">
@@ -261,6 +261,16 @@ const CourseDetail = () => {
       </div>
 
       <Footer />
+      
+      {/* Enrollment Modal */}
+      {enrollmentGroup && (
+        <CourseEnrollmentModal
+          isOpen={isEnrollmentModalOpen}
+          onClose={() => setIsEnrollmentModalOpen(false)}
+          course={course}
+          group={enrollmentGroup}
+        />
+      )}
     </div>
   );
 };
