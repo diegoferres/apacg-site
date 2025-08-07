@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,17 +8,39 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CourseEnrollmentModal from '@/components/CourseEnrollmentModal';
 import { Clock, Users, MapPin, Calendar, GraduationCap, ArrowLeft } from 'lucide-react';
-import { formatPrice } from '@/lib/utils';
+import { formatPrice, toNumber, renderSafeHtml } from '@/lib/utils';
+import api from '@/services/api';
 
 const CourseDetail = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const [course, setCourse] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedGroup, setSelectedGroup] = useState<number | null>(null);
   const [isEnrollmentModalOpen, setIsEnrollmentModalOpen] = useState(false);
   const [enrollmentGroup, setEnrollmentGroup] = useState<any>(null);
 
-  // Datos de ejemplo del curso (en una app real vendría de una API)
-  const course = {
+  useEffect(() => {
+    const fetchCourse = async () => {
+      if (!slug) return;
+      
+      setIsLoading(true);
+      try {
+        const response = await api.get(`api/client/courses/${slug}`);
+        setCourse(response.data.data);
+      } catch (error) {
+        console.error('Error fetching course:', error);
+        // Redirigir a 404 o mostrar error
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCourse();
+  }, [slug]);
+
+  // Mock data structure for reference
+  const mockCourse = {
     id: 1,
     slug: 'robotica-educativa-lego',
     title: 'Robótica Educativa con LEGO',
@@ -72,13 +94,50 @@ const CourseDetail = () => {
     ]
   };
 
-  const handleEnroll = (groupId: number) => {
-    const group = course.groups.find(g => g.id === groupId);
-    if (group) {
-      setEnrollmentGroup(group);
+  const handleEnroll = (groupId: number | null) => {
+    if (groupId === null) {
+      // Inscripción general (sin grupo específico)
+      setEnrollmentGroup(null);
       setIsEnrollmentModalOpen(true);
+    } else if (course?.groups) {
+      const group = course.groups.find((g: any) => g.id === groupId);
+      if (group) {
+        setEnrollmentGroup(group);
+        setIsEnrollmentModalOpen(true);
+      }
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="pt-24 pb-16 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Cargando curso...</p>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (!course) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="pt-24 pb-16 flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-4">Curso no encontrado</h1>
+            <p className="text-muted-foreground mb-6">El curso que buscas no existe o no está disponible.</p>
+            <Button onClick={() => navigate('/cursos')}>Volver a Cursos</Button>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -102,19 +161,25 @@ const CourseDetail = () => {
               {/* Hero image */}
               <div className="relative rounded-xl overflow-hidden">
                 <div className="w-full h-64 md:h-80 bg-muted flex items-center justify-center">
-                  <img 
-                    src={course.image} 
-                    alt={course.title}
-                    className="w-full h-full object-cover"
-                  />
+                  {course.cover_image_url ? (
+                    <img 
+                      src={course.cover_image_url} 
+                      alt={course.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center">
+                      <GraduationCap className="h-16 w-16 text-primary/60" />
+                    </div>
+                  )}
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                 <div className="absolute bottom-4 left-4 text-white">
                   <Badge className="mb-2 bg-primary text-primary-foreground">
-                    {course.status}
+                    {course.status === 'active' ? 'Activo' : course.status}
                   </Badge>
                   <h1 className="text-2xl md:text-3xl font-bold">{course.title}</h1>
-                  <p className="text-lg opacity-90">{course.academy}</p>
+                  <p className="text-lg opacity-90">{course.commerce?.name || 'APAC'}</p>
                 </div>
               </div>
 
@@ -124,9 +189,10 @@ const CourseDetail = () => {
                   <CardTitle>Descripción del Curso</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground leading-relaxed">
-                    {course.description}
-                  </p>
+                  <div 
+                    className="text-muted-foreground leading-relaxed prose prose-sm max-w-none"
+                    dangerouslySetInnerHTML={renderSafeHtml(course.description)}
+                  />
                 </CardContent>
               </Card>
 
@@ -141,7 +207,7 @@ const CourseDetail = () => {
                       <Clock className="h-5 w-5 text-primary" />
                       <div>
                         <p className="font-medium">Duración</p>
-                        <p className="text-sm text-muted-foreground">{course.duration}</p>
+                        <p className="text-sm text-muted-foreground">{course.formatted_duration}</p>
                       </div>
                     </div>
                     
@@ -150,7 +216,7 @@ const CourseDetail = () => {
                       <div>
                         <p className="font-medium">Período</p>
                         <p className="text-sm text-muted-foreground">
-                          {course.startDate} - {course.endDate}
+                          {course.start_date_format} - {course.end_date_format}
                         </p>
                       </div>
                     </div>
@@ -168,7 +234,7 @@ const CourseDetail = () => {
                       <div>
                         <p className="font-medium">Edad</p>
                         <p className="text-sm text-muted-foreground">
-                          {course.minAge} - {course.maxAge} años
+                          {course.age_range}
                         </p>
                       </div>
                     </div>
@@ -181,80 +247,149 @@ const CourseDetail = () => {
             <div className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Grupos Disponibles</CardTitle>
+                  <CardTitle>
+                    {course.groups && course.groups.length > 0 ? 'Grupos Disponibles' : 'Información de Inscripción'}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {course.groups.map((group, index) => (
-                    <div key={group.id}>
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h4 className="font-semibold">{group.name}</h4>
-                            <p className="text-sm text-muted-foreground">
-                              {group.schedule}
-                            </p>
+                  {course.groups && course.groups.length > 0 ? (
+                    // Mostrar grupos específicos
+                    course.groups.map((group: any, index: number) => (
+                      <div key={group.id}>
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h4 className="font-semibold">{group.name}</h4>
+                              <p className="text-sm text-muted-foreground">
+                                {group.schedule}
+                              </p>
+                              {group.age_range && (
+                                <p className="text-xs text-muted-foreground">
+                                  {group.age_range}
+                                </p>
+                              )}
+                            </div>
+                            <Badge variant="outline" className="text-xs">
+                              {group.confirmed_enrollments_count}/{group.capacity} alumnos
+                            </Badge>
                           </div>
-                          <Badge variant="outline" className="text-xs">
-                            {group.enrolled}/{group.capacity} alumnos
-                          </Badge>
-                        </div>
 
-                        <p className="text-sm text-muted-foreground">
-                          {group.description}
-                        </p>
+                          {group.description && (
+                            <p className="text-sm text-muted-foreground">
+                              {group.description}
+                            </p>
+                          )}
 
-                        <div className="space-y-2">
-                          {group.enrollment > 0 && (
+                          <div className="space-y-2">
+                            {(group.enrollment_fee_member > 0 || group.enrollment_fee_non_member > 0) && (
+                              <div>
+                                <div className="flex justify-between">
+                                  <span className="text-sm">Matrícula socios:</span>
+                                  <span className="text-sm font-medium">
+                                    {formatPrice(toNumber(group.enrollment_fee_member))}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-sm">Matrícula no socios:</span>
+                                  <span className="text-sm font-medium">
+                                    {formatPrice(toNumber(group.enrollment_fee_non_member))}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
                             <div className="flex justify-between">
-                              <span className="text-sm">Matrícula:</span>
+                              <span className="text-sm">Socios:</span>
                               <span className="text-sm font-medium">
-                                {formatPrice(group.enrollment)}
+                                {formatPrice(toNumber(group.monthly_fee_member) || toNumber(course.monthly_fee_member))}/mes
                               </span>
                             </div>
-                          )}
-                          <div className="flex justify-between">
-                            <span className="text-sm">Socios:</span>
-                            <span className="text-sm font-medium">
-                              {formatPrice(group.memberPrice)}/mes
-                            </span>
+                            <div className="flex justify-between">
+                              <span className="text-sm">No socios:</span>
+                              <span className="text-sm font-medium">
+                                {formatPrice(toNumber(group.monthly_fee_non_member) || toNumber(course.monthly_fee_non_member))}/mes
+                              </span>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              {group.available_spots} cupos disponibles
+                            </p>
                           </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm">No socios:</span>
-                            <span className="text-sm font-medium">
-                              {formatPrice(group.nonMemberPrice)}/mes
-                            </span>
-                          </div>
+
+                          <Button 
+                            onClick={() => handleEnroll(group.id)}
+                            className="w-full"
+                            disabled={group.is_full}
+                          >
+                            {group.is_full ? 'Grupo Completo' : 'Inscribirse'}
+                          </Button>
                         </div>
-
-                        <Button 
-                          onClick={() => handleEnroll(group.id)}
-                          className="w-full"
-                          disabled={group.enrolled >= group.capacity}
-                        >
-                          {group.enrolled >= group.capacity ? 'Grupo Completo' : 'Inscribirse'}
-                        </Button>
+                        
+                        {index < course.groups.length - 1 && (
+                          <Separator className="mt-4" />
+                        )}
                       </div>
-                      
-                      {index < course.groups.length - 1 && (
-                        <Separator className="mt-4" />
-                      )}
+                    ))
+                  ) : (
+                    // Mostrar información del curso principal cuando no hay grupos
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-semibold">Inscripción General</h4>
+                          <p className="text-sm text-muted-foreground">
+                            {course.schedule}
+                          </p>
+                        </div>
+                        <Badge variant="outline" className="text-xs">
+                          {course.confirmed_enrollments_count || 0}/{course.capacity} alumnos
+                        </Badge>
+                      </div>
+
+                      <div className="space-y-2">
+                        {course.requires_enrollment_fee && (
+                          <div>
+                            <div className="flex justify-between">
+                              <span className="text-sm">Matrícula socios:</span>
+                              <span className="text-sm font-medium">
+                                {formatPrice(toNumber(course.enrollment_fee_member))}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-sm">Matrícula no socios:</span>
+                              <span className="text-sm font-medium">
+                                {formatPrice(toNumber(course.enrollment_fee_non_member))}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                        <div className="flex justify-between">
+                          <span className="text-sm">Socios:</span>
+                          <span className="text-sm font-medium">
+                            {formatPrice(toNumber(course.monthly_fee_member))}/mes
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm">No socios:</span>
+                          <span className="text-sm font-medium">
+                            {formatPrice(toNumber(course.monthly_fee_non_member))}/mes
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {course.available_spots} cupos disponibles
+                        </p>
+                      </div>
+
+                      <Button 
+                        onClick={() => handleEnroll(null)}
+                        className="w-full"
+                        disabled={!course.is_available}
+                      >
+                        {!course.is_available ? 'No Disponible' : 'Inscribirse'}
+                      </Button>
                     </div>
-                  ))}
+                  )}
                 </CardContent>
               </Card>
 
-              {/* Info adicional */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Información Importante</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm text-muted-foreground">
-                  <p>• Los materiales están incluidos en el precio del curso</p>
-                  <p>• Se requiere pago de matrícula al momento de la inscripción</p>
-                  <p>• Las mensualidades se cobran por adelantado</p>
-                  <p>• Certificado de participación al finalizar el curso</p>
-                </CardContent>
-              </Card>
+
             </div>
           </div>
         </div>
@@ -263,14 +398,12 @@ const CourseDetail = () => {
       <Footer />
       
       {/* Enrollment Modal */}
-      {enrollmentGroup && (
-        <CourseEnrollmentModal
-          isOpen={isEnrollmentModalOpen}
-          onClose={() => setIsEnrollmentModalOpen(false)}
-          course={course}
-          group={enrollmentGroup}
-        />
-      )}
+      <CourseEnrollmentModal
+        isOpen={isEnrollmentModalOpen}
+        onClose={() => setIsEnrollmentModalOpen(false)}
+        course={course}
+        group={enrollmentGroup}
+      />
     </div>
   );
 };

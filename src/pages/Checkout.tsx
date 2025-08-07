@@ -26,12 +26,20 @@ interface TicketDetail {
   total: number;
 }
 
+interface StudentData {
+  name: string;
+  cedula: string;
+  is_member: boolean;
+}
+
 interface CheckoutEventData {
-  type: 'event' | 'raffle';
+  type: 'event' | 'raffle' | 'course';
   eventId?: number;
   eventSlug?: string;
   eventTitle?: string;
   tickets?: TicketDetail[];
+  courseGroupId?: number | null;
+  studentData?: StudentData;
   totalAmount: number;
   totalTickets: number;
   referralCode?: string;
@@ -174,6 +182,8 @@ const Checkout = () => {
       navigate(`/evento/${eventData.eventSlug}`);
     } else if (eventData?.type === 'raffle') {
       navigate(`/rifa/${eventData.eventSlug}`);
+    } else if (eventData?.type === 'course') {
+      navigate(`/curso/${eventData.eventSlug}`);
     } else {
       navigate('/');
     }
@@ -315,11 +325,35 @@ const Checkout = () => {
                   <div className="border-b pb-4">
                     <h3 className="font-semibold text-lg mb-2">{eventData.eventTitle}</h3>
                     <p className="text-sm text-muted-foreground">
-                      {eventData.type === 'event' ? 'Entrada de Evento' : 'Números de Rifa'}
+                      {eventData.type === 'event' && 'Entrada de Evento'}
+                      {eventData.type === 'raffle' && 'Números de Rifa'}
+                      {eventData.type === 'course' && 'Inscripción al Curso'}
                     </p>
+                    {eventData.type === 'course' && eventData.studentData && (
+                      <div className="mt-2 text-sm">
+                        <p><strong>Estudiante:</strong> {eventData.studentData.name}</p>
+                        <p><strong>Cédula:</strong> {eventData.studentData.cedula}</p>
+                        <p><strong>Tipo:</strong> {eventData.studentData.is_member ? 'Socio' : 'No Socio'}</p>
+                      </div>
+                    )}
                   </div>
 
-                  {eventData.tickets && eventData.tickets.length > 0 && (
+                  {eventData.type === 'course' ? (
+                    <div className="space-y-3">
+                      <h4 className="font-medium">Detalle de inscripción:</h4>
+                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <div className="flex-1">
+                          <p className="font-medium text-sm">Inscripción al curso</p>
+                          <p className="text-xs text-muted-foreground">
+                            {eventData.studentData?.is_member ? 'Tarifa de socio' : 'Tarifa regular'}
+                          </p>
+                        </div>
+                        <span className="font-semibold">
+                          {formatPrice(eventData.totalAmount)}
+                        </span>
+                      </div>
+                    </div>
+                  ) : eventData.tickets && eventData.tickets.length > 0 && (
                     <div className="space-y-3">
                       <h4 className="font-medium">Detalle de entradas:</h4>
                       {eventData.tickets.map((ticket, index) => (
@@ -340,7 +374,9 @@ const Checkout = () => {
                   
                   <div className="pt-4 border-t">
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm">Total de entradas:</span>
+                      <span className="text-sm">
+                        {eventData.type === 'course' ? 'Total de inscripciones:' : 'Total de entradas:'}
+                      </span>
                       <span className="text-sm font-medium">{eventData.totalTickets}</span>
                     </div>
                     <div className="flex justify-between items-center">

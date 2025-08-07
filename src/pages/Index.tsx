@@ -11,7 +11,7 @@ import { Store, Tag, ArrowRight, Calendar, Clock, MapPin, Users, Ticket, FileTex
 import api from '@/services/api';
 import CommerceCard, { Commerce } from '@/components/CommerceCard';
 import { useStore } from '@/stores/store';
-import { formatPrice } from '@/lib/utils';
+import { formatPrice, toNumber } from '@/lib/utils';
 
 // Mock data para eventos destacados en el home
 const featuredEvents = [
@@ -174,58 +174,15 @@ const Index = () => {
 
     const fetchCourses = async () => {
       try {
-        // Mock data por ahora
-        const mockCourses = [
-          {
-            id: 1,
-            title: "Robótica Educativa con LEGO",
-            academy: "APAC",
-            shortDescription: "Curso de robótica educativa para niños usando tecnología LEGO",
-            duration: 4,
-            startDate: "05/09/2025",
-            endDate: "05/01/2026",
-            location: "APAC - Sede Central",
-            minAge: 7,
-            maxAge: 18,
-            image: "https://images.unsplash.com/photo-1546776310-eef45dd6d63a?auto=format&fit=crop&w=800&q=80",
-            groups: [
-              {
-                id: 1,
-                name: "Kids (7-9 años)",
-                schedule: "Martes y Jueves 16:00-17:30",
-                capacity: 15,
-                enrollmentFee: 0,
-                monthlyFeeSocio: 350000,
-                monthlyFeeNoSocio: 500000
-              }
-            ]
-          },
-          {
-            id: 2,
-            title: "Programación para Adolescentes",
-            academy: "APAC",
-            shortDescription: "Aprende a programar con Python y desarrolla tus primeras aplicaciones",
-            duration: 6,
-            startDate: "15/09/2025",
-            endDate: "15/03/2026",
-            location: "APAC - Sede Central",
-            minAge: 13,
-            maxAge: 17,
-            image: "https://images.unsplash.com/photo-1517077304055-6e89abbf09b0?auto=format&fit=crop&w=800&q=80",
-            groups: [
-              {
-                id: 1,
-                name: "Teens (13-17 años)",
-                schedule: "Miércoles y Viernes 17:00-18:30",
-                capacity: 12,
-                enrollmentFee: 300000,
-                monthlyFeeSocio: 400000,
-                monthlyFeeNoSocio: 550000
-              }
-            ]
+        const response = await api.get('api/client/courses', {
+          params: { 
+            per_page: 6,
+            sort_by: 'start_date',
+            sort_order: 'asc'
           }
-        ];
-        setCourses(mockCourses);
+        });
+        const coursesData = response.data.data.data || [];
+        setCourses(coursesData);
         setIsLoaded(true);
       } catch (error) {
         console.error('Error fetching courses:', error);
@@ -434,17 +391,17 @@ const Index = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {courses?.map((course, index) => (
                 <Card key={course.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 group animate-fade-up" style={{ animationDelay: `${100 + index * 100}ms` }}>
-                  {course.image ? (
+                  {course.cover_image_url ? (
                     <div className="relative h-48 overflow-hidden">
                       <img
-                        src={course.image}
+                        src={course.cover_image_url}
                         alt={course.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                       <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
                         <GraduationCap className="h-3 w-3 mr-1" />
-                        {course.duration}m
+                        {course.formatted_duration || course.duration_months + 'm'}
                       </Badge>
                     </div>
                   ) : (
@@ -453,7 +410,7 @@ const Index = () => {
                         <GraduationCap className="h-12 w-12 text-primary/60 mx-auto mb-2" />
                         <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
                           <GraduationCap className="h-3 w-3 mr-1" />
-                          {course.duration}m
+                          {course.formatted_duration || course.duration_months + 'm'}
                         </Badge>
                       </div>
                     </div>
@@ -462,24 +419,24 @@ const Index = () => {
                   <CardHeader className="pb-3">
                     <div className="flex items-center gap-2 mb-2">
                       <Badge variant="secondary" className="text-xs">
-                        {course.academy}
+                        {course.commerce?.name || 'APAC'}
                       </Badge>
                       <Badge variant="outline" className="text-xs">
-                        {course.minAge}-{course.maxAge} años
+                        {course.age_range}
                       </Badge>
                     </div>
                     <CardTitle className="text-xl font-bold group-hover:text-primary transition-colors line-clamp-2">
                       {course.title}
                     </CardTitle>
                     <p className="text-muted-foreground text-sm line-clamp-2">
-                      {course.shortDescription}
+                      {course.short_description || course.description}
                     </p>
                   </CardHeader>
                   
                   <CardContent className="space-y-3">
                     <div className="flex items-center text-sm text-muted-foreground">
                       <Calendar className="h-4 w-4 mr-2 text-primary" />
-                      {course.startDate} - {course.endDate}
+                      {course.start_date_format} - {course.end_date_format}
                     </div>
                     
                     <div className="flex items-center text-sm text-muted-foreground">
@@ -491,12 +448,12 @@ const Index = () => {
                       <div>
                         <span className="text-xs text-muted-foreground">Desde</span>
                         <p className="text-xl font-bold text-primary">
-                          {formatPrice(course.groups[0]?.monthlyFeeSocio || 0)}
+                          {formatPrice(toNumber(course.monthly_fee_member))}
                         </p>
                       </div>
                       
                       <Button asChild className="bg-primary hover:bg-primary/90">
-                        <Link to={`/curso/${course.id}`}>
+                        <Link to={`/curso/${course.slug}`}>
                           Ver Detalles
                         </Link>
                       </Button>
