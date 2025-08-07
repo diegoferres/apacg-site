@@ -129,7 +129,7 @@ const PaymentSuccess = () => {
       console.error('Error fetching payment details:', error);
       
       // Si obtenemos 401 Unauthorized y no habíamos incluido email, intentar como guest
-      if (error.response?.status === 401 && !url.includes('email=')) {
+      if (error.response?.status === 401 && !location.search.includes('email=')) {
         console.log('Got 401, trying to fetch email for guest access...');
         
         // Repetir la lógica de búsqueda de email más exhaustiva

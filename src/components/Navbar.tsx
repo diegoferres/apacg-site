@@ -98,6 +98,12 @@ const Navbar = () => {
               Rifas
             </Link>
             <Link
+              to="/cursos"
+              className="text-foreground/90 hover:text-foreground font-medium transition-colors"
+            >
+              Cursos
+            </Link>
+            <Link
               to="/novedades"
               className="text-foreground/90 hover:text-foreground font-medium transition-colors"
             >
@@ -178,6 +184,13 @@ const Navbar = () => {
                 onClick={() => setIsMenuOpen(false)}
               >
                 Rifas
+              </Link>
+              <Link
+                to="/cursos"
+                className="text-foreground/90 hover:text-foreground font-medium transition-colors py-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Cursos
               </Link>
               <Link
                 to="/novedades"

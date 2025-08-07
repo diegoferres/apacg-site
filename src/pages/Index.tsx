@@ -7,11 +7,11 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import SearchBar from '@/components/SearchBar';
 import BenefitCard, { Benefit } from '@/components/BenefitCard';
-import { Store, Tag, ArrowRight, Calendar, Clock, MapPin, Users, Ticket, FileText } from 'lucide-react';
+import { Store, Tag, ArrowRight, Calendar, Clock, MapPin, Users, Ticket, FileText, GraduationCap } from 'lucide-react';
 import api from '@/services/api';
 import CommerceCard, { Commerce } from '@/components/CommerceCard';
 import { useStore } from '@/stores/store';
-import { formatPrice } from '@/lib/utils';
+import { formatPrice, toNumber } from '@/lib/utils';
 
 // Mock data para eventos destacados en el home
 const featuredEvents = [
@@ -113,6 +113,7 @@ const Index = () => {
   const [news, setNews] = useState<News[]>([]);
   const [events, setEvents] = useState<Events[]>([]);
   const [raffles, setRaffles] = useState<Raffle[]>([]);
+  const [courses, setCourses] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -171,6 +172,24 @@ const Index = () => {
       }
     }
 
+    const fetchCourses = async () => {
+      try {
+        const response = await api.get('api/client/courses', {
+          params: { 
+            per_page: 6,
+            sort_by: 'start_date',
+            sort_order: 'asc'
+          }
+        });
+        const coursesData = response.data.data.data || [];
+        setCourses(coursesData);
+        setIsLoaded(true);
+      } catch (error) {
+        console.error('Error fetching courses:', error);
+        setCourses([]);
+      }
+    }
+
     const fetchAllData = async () => {
       setIsLoading(true);
       await Promise.all([
@@ -178,7 +197,8 @@ const Index = () => {
         fetchCommerces(), 
         fetchNews(),
         fetchEvents(),
-        fetchRaffles()
+        fetchRaffles(),
+        fetchCourses()
       ]);
       setIsLoading(false);
     };
@@ -353,8 +373,109 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Raffles Section */}
+      {/* Courses Section */}
       <section className="py-16 px-4">
+        <div className="container mx-auto max-w-6xl">
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-2xl md:text-3xl font-bold animate-fade-up">
+              Cursos Disponibles
+            </h2>
+            <Button variant="ghost" asChild className="gap-1 animate-fade-up">
+              <Link to="/cursos">
+                Ver todos <ArrowRight className="h-4 w-4 ml-1" />
+              </Link>
+            </Button>
+          </div>
+          
+          {courses && courses.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {courses?.map((course, index) => (
+                <Card key={course.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 group animate-fade-up" style={{ animationDelay: `${100 + index * 100}ms` }}>
+                  {course.cover_image_url ? (
+                    <div className="relative h-48 overflow-hidden">
+                      <img
+                        src={course.cover_image_url}
+                        alt={course.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                      <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
+                        <GraduationCap className="h-3 w-3 mr-1" />
+                        {course.formatted_duration || course.duration_months + 'm'}
+                      </Badge>
+                    </div>
+                  ) : (
+                    <div className="relative h-48 bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center">
+                      <div className="text-center">
+                        <GraduationCap className="h-12 w-12 text-primary/60 mx-auto mb-2" />
+                        <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
+                          <GraduationCap className="h-3 w-3 mr-1" />
+                          {course.formatted_duration || course.duration_months + 'm'}
+                        </Badge>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge variant="secondary" className="text-xs">
+                        {course.commerce?.name || 'APAC'}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {course.age_range}
+                      </Badge>
+                    </div>
+                    <CardTitle className="text-xl font-bold group-hover:text-primary transition-colors line-clamp-2">
+                      {course.title}
+                    </CardTitle>
+                    <p className="text-muted-foreground text-sm line-clamp-2">
+                      {course.short_description || course.description}
+                    </p>
+                  </CardHeader>
+                  
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <Calendar className="h-4 w-4 mr-2 text-primary" />
+                      {course.start_date_format} - {course.end_date_format}
+                    </div>
+                    
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <MapPin className="h-4 w-4 mr-2 text-primary" />
+                      {course.location}
+                    </div>
+                    
+                    <div className="flex items-center justify-between pt-4">
+                      <div>
+                        <span className="text-xs text-muted-foreground">Desde</span>
+                        <p className="text-xl font-bold text-primary">
+                          {formatPrice(toNumber(course.monthly_fee_member))}
+                        </p>
+                      </div>
+                      
+                      <Button asChild className="bg-primary hover:bg-primary/90">
+                        <Link to={`/curso/${course.slug}`}>
+                          Ver Detalles
+                        </Link>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )) || []}
+            </div>
+          ) : (
+            <div className="text-center py-2">
+              <GraduationCap className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium mb-2">No hay cursos disponibles</h3>
+              <p className="text-muted-foreground">
+                Actualmente no hay cursos programados. Mantente atento para próximas convocatorias.
+              </p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Raffles Section */}
+      <section className="py-16 px-4 bg-muted/30">
         <div className="container mx-auto max-w-6xl">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-2xl md:text-3xl font-bold animate-fade-up">
