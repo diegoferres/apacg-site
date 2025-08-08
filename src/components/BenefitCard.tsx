@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
+import { formatPrice, formatDate } from '@/lib/utils';
 
 export interface Benefit {
   id: string;
@@ -47,20 +48,6 @@ const BenefitCard = ({ benefit, delay = 0 }: BenefitCardProps) => {
     return () => clearTimeout(timer);
   }, [delay]);
 
-  const formatDate = (dateString: string | null | undefined): string => {
-    if (!dateString || dateString === 'No definido' || dateString.trim() === '') {
-      return 'No definido';
-    }
-    try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) {
-        return 'No definido';
-      }
-      return date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    } catch {
-      return 'No definido';
-    }
-  };
 
   const handleImageError = () => {
     setImageError(true);
@@ -102,7 +89,7 @@ const BenefitCard = ({ benefit, delay = 0 }: BenefitCardProps) => {
         </div>
         <div className="flex items-center text-sm text-muted-foreground mb-3">
           <Calendar className="h-4 w-4 mr-2 flex-shrink-0" />
-          <span>Válido: {formatDate(benefit.start_date)} - {formatDate(benefit.end_date)}</span>
+          <span>Válido: {formatDate(benefit.start_date, { format: 'medium' })} - {formatDate(benefit.end_date, { format: 'medium' })}</span>
         </div>
         <p className="text-sm line-clamp-2 mt-2">{removeHTMLTags(benefit.description)}</p>
       </CardContent>

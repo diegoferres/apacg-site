@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useToast } from '@/hooks/use-toast';
-import { formatPrice } from '@/lib/utils';
+import { formatPrice, toNumber, formatDate } from '@/lib/utils';
 import { useStore } from '@/stores/store';
 import api from '@/services/api';
 
@@ -122,24 +122,6 @@ const RaffleDetail = () => {
     );
   }
 
-  const formatDate = (dateString: string | null | undefined) => {
-    if (!dateString || dateString === 'No definido' || dateString.trim() === '') {
-      return 'No definido';
-    }
-    try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) {
-        return 'No definido';
-      }
-      return date.toLocaleDateString('es-ES', {
-        day: '2-digit',
-        month: 'long',
-        year: 'numeric'
-      });
-    } catch {
-      return 'No definido';
-    }
-  };
 
   const updateQuantity = (change: number) => {
     const newQuantity = Math.max(0, quantity + change);
@@ -147,7 +129,7 @@ const RaffleDetail = () => {
   };
 
   const getTotalPrice = () => {
-    return raffle.price * quantity;
+    return toNumber(raffle.price) * quantity;
   };
 
   const handlePurchase = async () => {
@@ -173,7 +155,7 @@ const RaffleDetail = () => {
         id: 1,
         name: 'Número de Rifa',
         quantity: quantity,
-        price: raffle.price,
+        price: toNumber(raffle.price),
         total: getTotalPrice()
       }],
       totalAmount: getTotalPrice(),
@@ -217,7 +199,7 @@ const RaffleDetail = () => {
                 <div>
                   <Badge className="mb-3 bg-primary/10 text-primary hover:bg-primary/20">
                     <Calendar className="h-3 w-3 mr-1" />
-                    {formatDate(raffle.end_date)}
+                    {formatDate(raffle.end_date, { format: 'short' })}
                   </Badge>
                   <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground mb-2">
                     {raffle.title}
@@ -263,7 +245,7 @@ const RaffleDetail = () => {
                       <div className="flex-1">
                         <h4 className="font-semibold">Número de Rifa</h4>
                         <span className="text-xl md:text-2xl font-bold text-primary">
-                          {formatPrice(raffle.price)}
+                          {formatPrice(toNumber(raffle.price))}
                         </span>
                       </div>
                       

@@ -31,14 +31,51 @@ import Payment from "./pages/Payment";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentConfirmation from "./pages/PaymentConfirmation";
 import ProtectedRoute from "./components/ProtectedRoute";
+import StudentDataSplash from "./components/StudentDataSplash";
+import ProtectedWithStudentsRequired from "./components/ProtectedWithStudentsRequired";
+import DevTestPanel from "./components/DevTestPanel";
 import { useStore } from "./stores/store";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import api from "./services/api";
+// Import test utils for debugging
+import "./utils/testUtils";
 
 const queryClient = new QueryClient();
 
 const App = () => {
-  const { setIsLoading, setUser, setIsLoggedIn } = useStore();
+  const { setIsLoading, setUser, setIsLoggedIn, user, isLoggedIn } = useStore();
+  const [showStudentSplash, setShowStudentSplash] = useState(false);
+  
+  // Check if user needs to complete student data
+  useEffect(() => {
+    console.log('App.tsx - Checking student data:', { isLoggedIn, user: user?.name, member: !!user?.member, students: user?.member?.students });
+    if (isLoggedIn && user && user.member) {
+      const students = user.member.students || [];
+      const hasStudents = students.length > 0;
+      
+      // Check if students have complete CI data
+      const studentsWithCI = students.filter(student => student.ci && student.ci.trim() !== '');
+      const allStudentsHaveCI = students.length > 0 && studentsWithCI.length === students.length;
+      
+      console.log('App.tsx - Students analysis:', {
+        totalStudents: students.length,
+        studentsWithCI: studentsWithCI.length,
+        allStudentsHaveCI,
+        students: students.map(s => ({ name: s.full_name, ci: s.ci }))
+      });
+      
+      if (!hasStudents || !allStudentsHaveCI) {
+        console.log('App.tsx - Showing student splash - missing students or missing CI');
+        setShowStudentSplash(true);
+      } else {
+        console.log('App.tsx - Hiding student splash (all students have CI)');
+        setShowStudentSplash(false);
+      }
+    } else {
+      console.log('App.tsx - Hiding student splash (not logged in or no member)');
+      setShowStudentSplash(false); // Close splash if not logged in
+    }
+  }, [isLoggedIn, user]);
   
   useEffect(() => {
     const checkAuth = async () => {
@@ -64,11 +101,25 @@ const App = () => {
     checkAuth();
   }, [setIsLoading, setUser, setIsLoggedIn]);
 
+  const handleStudentDataComplete = () => {
+    setShowStudentSplash(false);
+  };
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        
+        {/* Student Data Splash Screen */}
+        <StudentDataSplash 
+          isOpen={showStudentSplash}
+          onDataComplete={handleStudentDataComplete}
+        />
+        
+        {/* Dev Test Panel */}
+        <DevTestPanel />
+        
         <BrowserRouter 
           future={{
             v7_startTransition: true,
@@ -78,44 +129,64 @@ const App = () => {
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/beneficios" element={
-              /*<ProtectedWithStudents>*/
+              <ProtectedWithStudentsRequired>
                 <Benefits />
-              /*</ProtectedWithStudents>*/
+              </ProtectedWithStudentsRequired>
             } />
             <Route path="/beneficio/:slug" element={
-              /*<ProtectedWithStudents>*/
+              <ProtectedWithStudentsRequired>
                 <BenefitDetail />
-              /*</ProtectedWithStudents>*/
+              </ProtectedWithStudentsRequired>
             } />
             <Route path="/comercios" element={
-              /*<ProtectedWithStudents>*/
+              <ProtectedWithStudentsRequired>
                 <Commerces />
-              /*</ProtectedWithStudents>*/
+              </ProtectedWithStudentsRequired>
             } />
             <Route path="/comercio/:slug" element={
-              /*<ProtectedWithStudents>*/
+              <ProtectedWithStudentsRequired>
                 <CommerceDetail />
-              /*</ProtectedWithStudents>*/
+              </ProtectedWithStudentsRequired>
             } />
             <Route path="/eventos" element={<Events />} />
             <Route path="/evento/:slug" element={<EventDetail />} />
-            <Route path="/rifas" element={<Raffles />} />
-            <Route path="/rifa/:slug" element={<RaffleDetail />} />
-            <Route path="/cursos" element={<Courses />} />
-            <Route path="/curso/:slug" element={<CourseDetail />} />
+            <Route path="/rifas" element={
+              <ProtectedWithStudentsRequired>
+                <Raffles />
+              </ProtectedWithStudentsRequired>
+            } />
+            <Route path="/rifa/:slug" element={
+              <ProtectedWithStudentsRequired>
+                <RaffleDetail />
+              </ProtectedWithStudentsRequired>
+            } />
+            <Route path="/cursos" element={
+              <ProtectedWithStudentsRequired>
+                <Courses />
+              </ProtectedWithStudentsRequired>
+            } />
+            <Route path="/curso/:slug" element={
+              <ProtectedWithStudentsRequired>
+                <CourseDetail />
+              </ProtectedWithStudentsRequired>
+            } />
             <Route path="/novedades" element={<News />} />
             <Route path="/novedad/:slug" element={<NewsDetail />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/perfil" element={
-              /*<ProtectedWithStudents>*/
-                <Profile />
-              /*</ProtectedWithStudents>*/
+              <ProtectedRoute>
+                <ProtectedWithStudentsRequired>
+                  <Profile />
+                </ProtectedWithStudentsRequired>
+              </ProtectedRoute>
             } />
             <Route path="/pago-membresia" element={
-              /*<ProtectedWithStudents>*/
-                <PaymentPage />
-              /*</ProtectedWithStudents>*/
+              <ProtectedRoute>
+                <ProtectedWithStudentsRequired>
+                  <PaymentPage />
+                </ProtectedWithStudentsRequired>
+              </ProtectedRoute>
             } />
             <Route path="/inscripcion-alumnos" element={<ChildrenEnrollment />} />
             <Route path="/checkout" element={<Checkout />} />

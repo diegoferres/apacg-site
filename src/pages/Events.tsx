@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import SearchBar from '@/components/SearchBar';
-import { formatPrice } from '@/lib/utils';
+import { formatPrice, formatDate } from '@/lib/utils';
 import { 
   Pagination, 
   PaginationContent, 
@@ -32,6 +32,7 @@ export interface Event {
   time: string;
   location: string;
   price_from: number;
+  is_informational: boolean;
   cover: {
     storage_path_full: string;
   };
@@ -108,25 +109,6 @@ const Events = () => {
     setSearchParams({ page: page.toString() });
   };
 
-  const formatDate = (dateString: string | null | undefined) => {
-    if (!dateString || dateString === 'No definido' || dateString.trim() === '') {
-      return 'No definido';
-    }
-    try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) {
-        return 'No definido';
-      }
-      return date.toLocaleDateString('es-ES', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric'
-      });
-    } catch {
-      return 'No definido';
-    }
-  };
-
 
 
   const handleBuyTickets = (event: Event) => {
@@ -182,7 +164,7 @@ const Events = () => {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                     <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
                       <Calendar className="h-3 w-3 mr-1" />
-                      {formatDate(event.date)}
+                      {formatDate(event.date, { format: 'short' })}
                     </Badge>
                   </div>
                 ) : (
@@ -191,7 +173,7 @@ const Events = () => {
                       <Ticket className="h-12 w-12 text-primary/60 mx-auto mb-2" />
                       <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
                         <Calendar className="h-3 w-3 mr-1" />
-                        {formatDate(event.date_format)}
+                        {formatDate(event.date, { format: 'short' })}
                       </Badge>
                     </div>
                   </div>

@@ -8,7 +8,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CourseEnrollmentModal from '@/components/CourseEnrollmentModal';
 import { Clock, Users, MapPin, Calendar, GraduationCap, ArrowLeft } from 'lucide-react';
-import { formatPrice, toNumber, renderSafeHtml } from '@/lib/utils';
+import { formatPrice, toNumber, renderSafeHtml, formatDate } from '@/lib/utils';
 import api from '@/services/api';
 
 const CourseDetail = () => {

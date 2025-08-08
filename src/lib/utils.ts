@@ -90,3 +90,66 @@ export function renderSafeHtml(htmlContent: string): { __html: string } {
 export function formatPrice(amount: number): string {
   return formatGuaraniPrice(amount, { symbol: '₲' })
 }
+
+/**
+ * Formatea una fecha de manera segura evitando problemas de timezone
+ * @param dateString - La fecha en formato ISO string o null/undefined
+ * @param options - Opciones de formateo
+ * @returns La fecha formateada en español o "No definido" si es inválida
+ */
+export function formatDate(
+  dateString: string | null | undefined,
+  options: {
+    format?: 'long' | 'short' | 'medium'
+    includeYear?: boolean
+    includeTime?: boolean
+  } = {}
+): string {
+  const { format = 'long', includeYear = true, includeTime = false } = options;
+
+  if (!dateString || dateString === 'No definido' || dateString.trim() === '') {
+    return 'No definido';
+  }
+
+  try {
+    // Check if it's a full datetime string (includes time)
+    const datetimeMatch = dateString.match(/(\d{4}-\d{2}-\d{2})(?:[T\s](\d{2}:\d{2}:\d{2}))?/);
+    if (!datetimeMatch) {
+      return 'No definido';
+    }
+
+    const [year, month, day] = datetimeMatch[1].split('-').map(Number);
+    let date = new Date(year, month - 1, day);
+
+    // If time is present and includeTime is true, parse the full datetime
+    if (includeTime && datetimeMatch[2]) {
+      const [hours, minutes, seconds] = datetimeMatch[2].split(':').map(Number);
+      date = new Date(year, month - 1, day, hours, minutes, seconds);
+    }
+    
+    if (isNaN(date.getTime())) {
+      return 'No definido';
+    }
+
+    // Formatear según las opciones
+    const formatOptions: Intl.DateTimeFormatOptions = {
+      day: '2-digit',
+      month: format === 'long' ? 'long' : format === 'short' ? 'short' : '2-digit',
+    };
+
+    if (includeYear) {
+      formatOptions.year = 'numeric';
+    }
+
+    if (includeTime) {
+      formatOptions.hour = '2-digit';
+      formatOptions.minute = '2-digit';
+      formatOptions.hour12 = false; // 24-hour format
+    }
+
+    return includeTime ? date.toLocaleString('es-ES', formatOptions) : date.toLocaleDateString('es-ES', formatOptions);
+  } catch (error) {
+    console.warn('Error formatting date:', error);
+    return 'No definido';
+  }
+}

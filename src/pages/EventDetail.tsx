@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useToast } from '@/hooks/use-toast';
-import { formatPrice } from '@/lib/utils';
+import { formatPrice, formatDate } from '@/lib/utils';
 import { useStore } from '@/stores/store';
 import api from '@/services/api';
 
@@ -29,6 +29,7 @@ interface Event {
   location: string;
   slug: string;
   price_from: number;
+  is_informational: boolean;
   ticket_types: TicketType[];
   cover: {
     storage_path_full: string;
@@ -132,25 +133,6 @@ const EventDetail = () => {
       </div>
     );
   }
-
-  const formatDate = (dateString: string | null | undefined) => {
-    if (!dateString || dateString === 'No definido' || dateString.trim() === '') {
-      return 'No definido';
-    }
-    try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) {
-        return 'No definido';
-      }
-      return date.toLocaleDateString('es-ES', {
-        day: '2-digit',
-        month: 'long',
-        year: 'numeric'
-      });
-    } catch {
-      return 'No definido';
-    }
-  };
 
   const updateTicketQuantity = (ticketId: number, change: number) => {
     const currentQuantity = selectedTickets[ticketId] || 0;
@@ -272,7 +254,7 @@ const EventDetail = () => {
               <div>
                 <Badge className="mb-4 bg-primary/10 text-primary hover:bg-primary/20">
                   <Calendar className="h-3 w-3 mr-1" />
-                  {formatDate(event.date_format)}
+                  {formatDate(event.date, { format: 'short' })}
                 </Badge>
                 <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
                   {event.title}
@@ -304,37 +286,39 @@ const EventDetail = () => {
                         </span>
                       </div>
                       
-                      <div className="flex items-center gap-3">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => updateTicketQuantity(ticketType.id, -1)}
-                          disabled={!selectedTickets[ticketType.id]}
-                          className="h-8 w-8"
-                        >
-                          <Minus className="h-4 w-4" />
-                        </Button>
-                        
-                        <span className="w-8 text-center font-semibold">
-                          {selectedTickets[ticketType.id] || 0}
-                        </span>
-                        
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => updateTicketQuantity(ticketType.id, 1)}
-                          disabled={(selectedTickets[ticketType.id] || 0) >= ticketType.stock}
-                          className="h-8 w-8"
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      {!event.is_informational && (
+                        <div className="flex items-center gap-3">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => updateTicketQuantity(ticketType.id, -1)}
+                            disabled={!selectedTickets[ticketType.id]}
+                            className="h-8 w-8"
+                          >
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                          
+                          <span className="w-8 text-center font-semibold">
+                            {selectedTickets[ticketType.id] || 0}
+                          </span>
+                          
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => updateTicketQuantity(ticketType.id, 1)}
+                            disabled={(selectedTickets[ticketType.id] || 0) >= ticketType.stock}
+                            className="h-8 w-8"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
                 
                 {/* Purchase Button */}
-                {getTotalTickets() > 0 && (
+                {getTotalTickets() > 0 && !event.is_informational && (
                   <div className="mt-6 p-4 bg-primary/5 border border-primary/20 rounded-lg">
                     <div className="flex justify-between items-center mb-4">
                       <span className="font-semibold">Total:</span>

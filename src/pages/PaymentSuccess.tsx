@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle, Download, Mail, Home, Loader2, CreditCard, Calendar, Hash, Receipt } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { formatPrice } from '@/lib/utils';
+import { formatPrice, formatDate } from '@/lib/utils';
 import { useStore } from '@/stores/store';
 import api from '@/services/api';
 
@@ -195,19 +195,6 @@ const PaymentSuccess = () => {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    try {
-      return new Date(dateString).toLocaleString('es-PY', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch {
-      return dateString;
-    }
-  };
 
   const getItemTypeName = (type: string) => {
     switch (type) {
@@ -301,7 +288,7 @@ const PaymentSuccess = () => {
                         <div>
                           <p className="font-medium">Fecha y Hora</p>
                           <p className="text-sm text-muted-foreground">
-                            {formatDate(paymentDetails.processed_at)}
+                            {formatDate(paymentDetails.processed_at, { includeTime: true })}
                           </p>
                         </div>
                       </div>

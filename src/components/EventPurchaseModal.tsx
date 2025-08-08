@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { formatPrice } from '@/lib/utils';
+import { formatPrice, formatDate } from '@/lib/utils';
 
 interface TicketType {
   id: number;
@@ -25,6 +25,7 @@ interface Event {
   location: string;
   image: string;
   priceFrom: number;
+  is_informational: boolean;
   ticketTypes: TicketType[];
 }
 
@@ -39,25 +40,6 @@ const EventPurchaseModal = ({ event, isOpen, onClose }: EventPurchaseModalProps)
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const formatDate = (dateString: string | null | undefined) => {
-    if (!dateString || dateString === 'No definido' || dateString.trim() === '') {
-      return 'No definido';
-    }
-    try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) {
-        return 'No definido';
-      }
-      return date.toLocaleDateString('es-ES', {
-        weekday: 'long',
-        day: '2-digit',
-        month: 'long',
-        year: 'numeric'
-      });
-    } catch {
-      return 'No definido';
-    }
-  };
 
 
 
@@ -128,7 +110,7 @@ const EventPurchaseModal = ({ event, isOpen, onClose }: EventPurchaseModalProps)
             <div className="space-y-3">
               <div className="flex items-center text-sm">
                 <Calendar className="h-4 w-4 mr-2 text-blue-600" />
-                <span className="font-medium">{formatDate(event.date)}</span>
+                <span className="font-medium">{event.date_format || formatDate(event.date, { format: 'short' })}</span>
               </div>
               
               <div className="flex items-center text-sm">
@@ -167,29 +149,31 @@ const EventPurchaseModal = ({ event, isOpen, onClose }: EventPurchaseModalProps)
                         </div>
                       </div>
                       
-                      <div className="flex items-center gap-3">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => updateTicketQuantity(ticketType.id, -1)}
-                          disabled={!selectedTickets[ticketType.id]}
-                        >
-                          <Minus className="h-4 w-4" />
-                        </Button>
-                        
-                        <span className="w-8 text-center font-medium">
-                          {selectedTickets[ticketType.id] || 0}
-                        </span>
-                        
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => updateTicketQuantity(ticketType.id, 1)}
-                          disabled={(selectedTickets[ticketType.id] || 0) >= ticketType.stock}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      {!event.is_informational && (
+                        <div className="flex items-center gap-3">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => updateTicketQuantity(ticketType.id, -1)}
+                            disabled={!selectedTickets[ticketType.id]}
+                          >
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                          
+                          <span className="w-8 text-center font-medium">
+                            {selectedTickets[ticketType.id] || 0}
+                          </span>
+                          
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => updateTicketQuantity(ticketType.id, 1)}
+                            disabled={(selectedTickets[ticketType.id] || 0) >= ticketType.stock}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
