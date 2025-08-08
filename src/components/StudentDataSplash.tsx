@@ -97,13 +97,39 @@ export const StudentDataSplash = ({ isOpen, onDataComplete }: StudentDataSplashP
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    toast({
-      title: "Sesión cerrada",
-      description: "Puedes continuar navegando como invitado",
-    });
-    onDataComplete(); // This will close the splash
+  const handleLogout = async () => {
+    try {
+      // Call backend logout endpoint (same as Profile.tsx)
+      await api.post('/logout');
+      
+      // Clear frontend state  
+      setUser(null);
+      logout(); // Also use store's logout method
+      localStorage.removeItem('user');
+      
+      // Close the splash first
+      onDataComplete();
+      
+      // Show success message
+      toast({
+        title: "Sesión cerrada",
+        description: "Ahora puedes continuar navegando como invitado",
+      });
+      
+    } catch (error) {
+      console.error('Error en el logout:', error);
+      
+      // Even if backend call fails, clear frontend state
+      setUser(null);
+      logout(); // Also use store's logout method  
+      localStorage.removeItem('user');
+      onDataComplete();
+      
+      toast({
+        title: "Sesión cerrada",
+        description: "Ahora puedes continuar navegando como invitado",
+      });
+    }
   };
 
   const allStudentsHaveCI = students.every(student => student.ci && student.ci.trim() !== '');
