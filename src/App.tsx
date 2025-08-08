@@ -33,12 +33,9 @@ import PaymentConfirmation from "./pages/PaymentConfirmation";
 import ProtectedRoute from "./components/ProtectedRoute";
 import StudentDataSplash from "./components/StudentDataSplash";
 import ProtectedWithStudentsRequired from "./components/ProtectedWithStudentsRequired";
-import DevTestPanel from "./components/DevTestPanel";
 import { useStore } from "./stores/store";
 import { useEffect, useState } from "react";
 import api from "./services/api";
-// Import test utils for debugging
-import "./utils/testUtils";
 
 const queryClient = new QueryClient();
 
@@ -116,9 +113,6 @@ const App = () => {
           isOpen={showStudentSplash}
           onDataComplete={handleStudentDataComplete}
         />
-        
-        {/* Dev Test Panel */}
-        <DevTestPanel />
         
         <BrowserRouter 
           future={{
