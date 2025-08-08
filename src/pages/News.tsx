@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
+import { formatDate } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -88,14 +89,6 @@ const News = () => {
     setSearchParams({ page: page.toString() });
   };
   
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('es-ES', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric'
-    });
-  };
   
   const stripHtml = (html: string) => {
     const doc = new DOMParser().parseFromString(html, 'text/html');
@@ -163,7 +156,7 @@ const News = () => {
                       <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                       <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
                         <Calendar className="h-3 w-3 mr-1" />
-                        {formatDate(item.date_format)}
+                        {item.date_format || formatDate(item.date, { format: 'short' })}
                       </Badge>
                     </div>
                   ) : (
@@ -172,7 +165,7 @@ const News = () => {
                         <FileText className="h-12 w-12 text-primary/60 mx-auto mb-2" />
                         <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
                           <Calendar className="h-3 w-3 mr-1" />
-                          {formatDate(item.date_format)}
+                          {item.date_format || formatDate(item.date, { format: 'short' })}
                         </Badge>
                       </div>
                     </div>

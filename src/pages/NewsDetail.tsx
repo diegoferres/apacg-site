@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { formatDate } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Navbar from '@/components/Navbar';
@@ -31,14 +32,6 @@ const NewsDetail = () => {
     loadNewsDetail();
   }, [slug]);
   
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('es-ES', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric'
-    });
-  };
   
   if (isLoading) {
     return (
@@ -115,7 +108,7 @@ const NewsDetail = () => {
             <div className="flex items-center gap-4 mb-4">
               <Badge className="bg-primary/10 text-primary hover:bg-primary/20">
                 <Calendar className="h-3 w-3 mr-1" />
-                {formatDate(newsItem.date_format)}
+                {formatDate(newsItem.date, { format: 'short' })}
               </Badge>
             </div>
             

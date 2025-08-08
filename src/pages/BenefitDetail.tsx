@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { formatPrice, formatDate } from '@/lib/utils';
 import { 
   Pagination, 
   PaginationContent, 
@@ -24,7 +25,6 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import BenefitCard, { Benefit } from '@/components/BenefitCard';
 import api from '@/services/api';
-import { format } from 'date-fns';
 import { useStore } from '@/stores/store';
 
 interface BenefitDetail {
@@ -116,20 +116,6 @@ const BenefitDetail = () => {
     }
   };
 
-  const formatDateSafe = (dateString: string | null | undefined): string => {
-    if (!dateString || dateString === 'No definido' || dateString.trim() === '') {
-      return 'No definido';
-    }
-    try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) {
-        return 'No definido';
-      }
-      return format(date, 'dd/MM/yyyy');
-    } catch {
-      return 'No definido';
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -181,7 +167,7 @@ const BenefitDetail = () => {
               <div>
                 <Badge className="mb-4 bg-primary/10 text-primary hover:bg-primary/20">
                   <Calendar className="h-3 w-3 mr-1" />
-                  {formatDateSafe(benefit.start_date)} - {formatDateSafe(benefit.end_date)}
+                  {formatDate(benefit.start_date, { format: 'medium' })} - {formatDate(benefit.end_date, { format: 'medium' })}
                 </Badge>
                 <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
                   {benefit.name}

@@ -18,7 +18,7 @@ import {
   PaginationPrevious 
 } from '@/components/ui/pagination';
 import { useToast } from '@/components/ui/use-toast';
-import { formatPrice } from '@/lib/utils';
+import { formatPrice, toNumber, formatDate } from '@/lib/utils';
 import api from '@/services/api';
 
 export interface Raffle {
@@ -104,24 +104,6 @@ const Raffles = () => {
     setSearchParams({ page: page.toString() });
   };
 
-  const formatDate = (dateString: string | null | undefined) => {
-    if (!dateString || dateString === 'No definido' || dateString.trim() === '') {
-      return 'No definido';
-    }
-    try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) {
-        return 'No definido';
-      }
-      return date.toLocaleDateString('es-ES', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric'
-      });
-    } catch {
-      return 'No definido';
-    }
-  };
 
 
 
@@ -166,7 +148,7 @@ const Raffles = () => {
                   <div className="flex justify-between items-start mb-2">
                     <Badge className="bg-primary/10 text-primary hover:bg-primary/20">
                       <Calendar className="h-3 w-3 mr-1" />
-                      {formatDate(raffle.end_date)}
+                      {formatDate(raffle.end_date, { format: 'short' })}
                     </Badge>
                   </div>
                   <CardTitle className="text-lg font-bold group-hover:text-primary transition-colors">
@@ -180,14 +162,14 @@ const Raffles = () => {
                 <CardContent className="space-y-3">
                   <div className="flex items-center text-sm text-muted-foreground">
                     <Clock className="h-4 w-4 mr-2 text-primary" />
-                    <span>Sortea el {formatDate(raffle.end_date)}</span>
+                    <span>Sortea el {formatDate(raffle.end_date, { format: 'short' })}</span>
                   </div>
                   
                   <div className="flex items-center justify-between pt-4">
                     <div>
                       <span className="text-xs text-muted-foreground">Precio</span>
                       <p className="text-xl font-bold text-primary">
-                        {formatPrice(raffle.price)}
+                        {formatPrice(toNumber(raffle.price))}
                       </p>
                     </div>
                     

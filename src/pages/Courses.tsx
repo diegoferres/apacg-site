@@ -15,7 +15,7 @@ import {
   PaginationPrevious 
 } from '@/components/ui/pagination';
 import { Clock, Users, MapPin, Calendar, GraduationCap } from 'lucide-react';
-import { formatPrice, toNumber } from '@/lib/utils';
+import { formatPrice, toNumber, formatDate } from '@/lib/utils';
 import api from '@/services/api';
 
 const Courses = () => {

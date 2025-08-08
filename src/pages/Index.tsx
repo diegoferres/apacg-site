@@ -11,7 +11,7 @@ import { Store, Tag, ArrowRight, Calendar, Clock, MapPin, Users, Ticket, FileTex
 import api from '@/services/api';
 import CommerceCard, { Commerce } from '@/components/CommerceCard';
 import { useStore } from '@/stores/store';
-import { formatPrice, toNumber } from '@/lib/utils';
+import { formatPrice, toNumber, formatDate } from '@/lib/utils';
 
 // Mock data para eventos destacados en el home
 const featuredEvents = [
@@ -83,6 +83,7 @@ export interface Events {
   time: string;
   location: string;
   price_from: number;
+  is_informational: boolean;
   cover: {
     storage_path_full: string;
   }
@@ -212,23 +213,6 @@ const Index = () => {
     return doc.body.textContent || "";
   };
 
-  const formatDate = (dateString: string | null | undefined) => {
-    if (!dateString || dateString === 'No definido' || dateString.trim() === '') {
-      return 'No definido';
-    }
-    try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) {
-        return 'No definido';
-      }
-      return date.toLocaleDateString('es-ES', {
-        day: '2-digit',
-        month: 'short'
-      });
-    } catch {
-      return 'No definido';
-    }
-  };
 
 
 
@@ -307,7 +291,7 @@ const Index = () => {
                       <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                       <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
                         <Calendar className="h-3 w-3 mr-1" />
-                        {formatDate(event.date_format)}
+                        {formatDate(event.date, { format: 'short' })}
                       </Badge>
                     </div>
                   ) : (
@@ -316,7 +300,7 @@ const Index = () => {
                         <Ticket className="h-12 w-12 text-primary/60 mx-auto mb-2" />
                         <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
                           <Calendar className="h-3 w-3 mr-1" />
-                          {formatDate(event.date_format)}
+                          {formatDate(event.date, { format: 'short' })}
                         </Badge>
                       </div>
                     </div>
@@ -496,7 +480,7 @@ const Index = () => {
                     <div className="flex justify-between items-start mb-2">
                       <Badge className="bg-primary/10 text-primary hover:bg-primary/20">
                         <Calendar className="h-3 w-3 mr-1" />
-                        {formatDate(raffle.end_date)}
+                        {formatDate(raffle.end_date, { format: 'short' })}
                       </Badge>
                     </div>
                     <CardTitle className="text-lg font-bold group-hover:text-primary transition-colors">
@@ -510,14 +494,14 @@ const Index = () => {
                   <CardContent className="space-y-3">
                     <div className="flex items-center text-sm text-muted-foreground">
                       <Clock className="h-4 w-4 mr-2 text-primary" />
-                      <span>Sortea el {formatDate(raffle.end_date)}</span>
+                      <span>Sortea el {formatDate(raffle.end_date, { format: 'short' })}</span>
                     </div>
                     
                     <div className="flex items-center justify-between pt-4">
                       <div>
                         <span className="text-xs text-muted-foreground">Precio</span>
                         <p className="text-xl font-bold text-primary">
-                          {formatPrice(raffle.price)}
+                          {formatPrice(toNumber(raffle.price))}
                         </p>
                       </div>
                       
@@ -597,7 +581,7 @@ const Index = () => {
                       <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                       <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
                         <Calendar className="h-3 w-3 mr-1" />
-                        {formatDate(newsItem.date_format)}
+                        {newsItem.date_format || formatDate(newsItem.date, { format: 'short' })}
                       </Badge>
                     </div>
                   ) : (
@@ -606,7 +590,7 @@ const Index = () => {
                         <FileText className="h-12 w-12 text-primary/60 mx-auto mb-2" />
                         <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
                           <Calendar className="h-3 w-3 mr-1" />
-                          {formatDate(newsItem.date)}
+                          {newsItem.date_format || formatDate(newsItem.date, { format: 'short' })}
                         </Badge>
                       </div>
                     </div>
