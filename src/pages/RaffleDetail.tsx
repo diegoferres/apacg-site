@@ -32,6 +32,7 @@ const RaffleDetail = () => {
   const { toast } = useToast();
   const [quantity, setQuantity] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const { user, isLoggedIn } = useStore();
   
   // Detectar y almacenar código de referido
@@ -132,6 +133,13 @@ const RaffleDetail = () => {
     return toNumber(raffle.price) * quantity;
   };
 
+  const truncateText = (text: string, maxLength: number = 300) => {
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
+  };
+
+  const shouldShowReadMore = raffle?.description && raffle.description.length > 300;
+
   const handlePurchase = async () => {
     if (quantity === 0) {
       toast({
@@ -226,8 +234,20 @@ const RaffleDetail = () => {
                 <CardContent>
                   <div 
                     className="text-muted-foreground leading-relaxed prose prose-sm max-w-none"
-                    dangerouslySetInnerHTML={{ __html: raffle.description }}
+                    dangerouslySetInnerHTML={{ 
+                      __html: isDescriptionExpanded ? raffle.description : truncateText(raffle.description)
+                    }}
                   />
+                  {shouldShowReadMore && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                      className="mt-3 text-primary hover:text-primary/80 p-0 h-auto font-medium"
+                    >
+                      {isDescriptionExpanded ? 'Ver menos' : 'Ver más'}
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             </div>
