@@ -239,11 +239,12 @@ const PaymentPage = () => {
   const handlePaymentSuccess = (data: any) => {
     console.log('Payment success:', data);
     
-    // Limpiar datos del localStorage
+    // Limpiar datos del localStorage (pero preservar checkout_form_data para guests)
     localStorage.removeItem('payment_data');
     localStorage.removeItem('checkout_data');
     localStorage.removeItem('current_payment');
     localStorage.removeItem('referral_code'); // Limpiar código de referido usado
+    // NO limpiar checkout_form_data para preservar datos del formulario para guests
     
     // Redirigir a página de éxito con datos
     navigate(`/pago-exitoso?title=${encodeURIComponent(paymentData?.eventTitle || 'Compra')}&order=${orderId}`);
@@ -256,10 +257,12 @@ const PaymentPage = () => {
 
   const handlePaymentCancel = () => {
     console.log('Payment cancelled by user');
+    // NO limpiar checkout_form_data para preservar datos del formulario
     navigate('/checkout');
   };
 
   const handleGoBack = () => {
+    // NO limpiar checkout_form_data para preservar datos del formulario
     navigate('/checkout');
   };
 
