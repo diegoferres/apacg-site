@@ -40,39 +40,87 @@ import api from "./services/api";
 const queryClient = new QueryClient();
 
 const App = () => {
-  const { setIsLoading, setUser, setIsLoggedIn, user, isLoggedIn } = useStore();
+  const { setIsLoading, setUser, setIsLoggedIn, user, isLoggedIn, isLoading } = useStore();
   const [showStudentSplash, setShowStudentSplash] = useState(false);
   
-  // Check if user needs to complete student data
+  // Check if user needs to complete student data or setup
   useEffect(() => {
-    console.log('App.tsx - Checking student data:', { isLoggedIn, user: user?.name, member: !!user?.member, students: user?.member?.students });
-    if (isLoggedIn && user && user.member) {
-      const students = user.member.students || [];
-      const hasStudents = students.length > 0;
-      
-      // Check if students have complete CI data
-      const studentsWithCI = students.filter(student => student.ci && student.ci.trim() !== '');
-      const allStudentsHaveCI = students.length > 0 && studentsWithCI.length === students.length;
-      
-      console.log('App.tsx - Students analysis:', {
-        totalStudents: students.length,
-        studentsWithCI: studentsWithCI.length,
-        allStudentsHaveCI,
-        students: students.map(s => ({ name: s.full_name, ci: s.ci }))
-      });
-      
-      if (!hasStudents || !allStudentsHaveCI) {
-        console.log('App.tsx - Showing student splash - missing students or missing CI');
-        setShowStudentSplash(true);
-      } else {
-        console.log('App.tsx - Hiding student splash (all students have CI)');
-        setShowStudentSplash(false);
-      }
-    } else {
-      console.log('App.tsx - Hiding student splash (not logged in or no member)');
-      setShowStudentSplash(false); // Close splash if not logged in
+    // Don't show splash while still loading user data
+    if (isLoading) {
+      console.log('App.tsx - Still loading user data, not showing splash');
+      setShowStudentSplash(false);
+      return;
     }
-  }, [isLoggedIn, user]);
+    
+    // Only evaluate when we have complete user data (not loading and user exists)
+    if (!isLoggedIn || !user) {
+      console.log('App.tsx - Not logged in or no user data, hiding splash');
+      setShowStudentSplash(false);
+      return;
+    }
+    
+    // Additional check: make sure we have complete user data including setup_completed field
+    // This ensures we don't show splash prematurely after login
+    if (user.setup_completed === undefined) {
+      console.log('App.tsx - User data incomplete (missing setup_completed), not showing splash yet');
+      setShowStudentSplash(false);
+      return;
+    }
+    
+    // If user doesn't have member data, don't show splash
+    if (!user.member) {
+      console.log('App.tsx - User has no member data, hiding splash');
+      setShowStudentSplash(false);
+      return;
+    }
+    
+    console.log('App.tsx - Checking student data and setup:', { 
+      isLoggedIn, 
+      user: user?.name, 
+      member: !!user?.member, 
+      students: user?.member?.students,
+      setupCompleted: user?.setup_completed,
+      isLoading 
+    });
+    
+    const students = user.member.students || [];
+    const hasStudents = students.length > 0;
+    
+    // Check if students have complete CI data
+    const studentsWithoutCI = students.filter(student => !student.ci || student.ci.trim() === '');
+    const allStudentsHaveCI = students.length > 0 && studentsWithoutCI.length === 0;
+    const setupCompleted = !!user.setup_completed; // Convert to boolean (handles 1, true, etc.)
+    
+    console.log('App.tsx - Analysis:', {
+      totalStudents: students.length,
+      studentsWithoutCI: studentsWithoutCI.length,
+      allStudentsHaveCI,
+      setupCompleted,
+      students: students.map(s => ({ name: s.full_name, ci: s.ci }))
+    });
+    
+    // Show splash ONLY if:
+    // 1. User has students without CI (at least 1 student missing CI)
+    // 2. OR all students have CI but setup is not completed (setup_completed = false)
+    const hasStudentsWithoutCI = studentsWithoutCI.length > 0;
+    const needsSetup = allStudentsHaveCI && !setupCompleted;
+    
+    const shouldShowSplash = hasStudentsWithoutCI || needsSetup;
+    
+    console.log('App.tsx - Decision:', {
+      hasStudentsWithoutCI,
+      needsSetup,
+      shouldShowSplash
+    });
+    
+    if (shouldShowSplash) {
+      console.log('App.tsx - Showing splash -', { hasStudentsWithoutCI, needsSetup });
+      setShowStudentSplash(true);
+    } else {
+      console.log('App.tsx - Hiding splash (everything complete)');
+      setShowStudentSplash(false);
+    }
+  }, [isLoggedIn, user, isLoading]);
   
   useEffect(() => {
     const checkAuth = async () => {
