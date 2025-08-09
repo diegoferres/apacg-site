@@ -9,7 +9,7 @@ import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, Tabl
 import { QrCode, LogOut, User, CreditCard, Gift, Edit, Mail, Phone, Calendar, CheckCircle, XCircle, Receipt, ExternalLink, Ticket, Users, Copy, MapPin, Store, Tag } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, formatDate } from "@/lib/utils";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useStore } from "@/stores/store";
@@ -487,11 +487,7 @@ const Profile = () => {
                             <h3 className="font-medium text-lg">{benefit.benefit?.title}</h3>
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                               <Calendar className="h-4 w-4" />
-                              <span>Reclamado el {new Date(benefit.verification_date).toLocaleDateString('es-PY', {
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric'
-                              })}</span>
+                              <span>Reclamado el {formatDate(benefit.verification_date, { format: 'long' })}</span>
                             </div>
                           </div>
                           <div className="space-y-2">

@@ -49,6 +49,12 @@ const PaymentSuccess = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
     
+    // Limpiar datos del formulario de checkout ya que el pago fue exitoso
+    // Solo limpiar después de que el usuario haya llegado a esta página
+    localStorage.removeItem('checkout_form_data');
+    localStorage.removeItem('payment_data');
+    localStorage.removeItem('checkout_data');
+    
     if (orderId && paymentId) {
       fetchPaymentDetails();
     } else {
@@ -311,7 +317,7 @@ const PaymentSuccess = () => {
                       ))}
                       <div className="border-t pt-2 flex justify-between items-center font-semibold">
                         <span>Total</span>
-                        <span>{formatPrice(paymentDetails.order.total_amount)} PYG</span>
+                        <span>{formatPrice(paymentDetails.order.total_amount)}</span>
                       </div>
                     </div>
                   </div>

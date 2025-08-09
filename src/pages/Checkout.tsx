@@ -59,8 +59,22 @@ const Checkout = () => {
   const [errors, setErrors] = useState<Partial<CheckoutData>>({});
   const [paymentError, setPaymentError] = useState<string | null>(null);
 
-  // Precargar datos del usuario autenticado
+  // Precargar datos del usuario autenticado o datos guardados del formulario
   useEffect(() => {
+    // Primero intentar cargar datos guardados del formulario (para guests)
+    const savedFormData = localStorage.getItem('checkout_form_data');
+    if (savedFormData && !user?.member) {
+      try {
+        const parsedFormData = JSON.parse(savedFormData);
+        setFormData(parsedFormData);
+        return; // Si se cargaron datos guardados, no sobrescribir
+      } catch (error) {
+        console.error('Error parsing saved form data:', error);
+        localStorage.removeItem('checkout_form_data');
+      }
+    }
+    
+    // Luego precargar datos del usuario autenticado
     if (user?.member) {
       setFormData({
         name: `${user.member.first_name || ''} ${user.member.last_name || ''}`.trim() || user.name || '',
@@ -122,10 +136,17 @@ const Checkout = () => {
   }, [searchParams]);
 
   const handleInputChange = (field: keyof CheckoutData) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
-      ...prev,
+    const newFormData = {
+      ...formData,
       [field]: e.target.value
-    }));
+    };
+    
+    setFormData(newFormData);
+    
+    // Guardar datos del formulario para guests (solo si no es usuario autenticado)
+    if (!user?.member) {
+      localStorage.setItem('checkout_form_data', JSON.stringify(newFormData));
+    }
     
     if (errors[field]) {
       setErrors(prev => ({
@@ -173,6 +194,11 @@ const Checkout = () => {
       // Guardar datos del pago
       localStorage.setItem('payment_data', JSON.stringify(paymentData));
       
+      // Guardar datos del formulario para preservar al volver (solo para guests)
+      if (!user?.member) {
+        localStorage.setItem('checkout_form_data', JSON.stringify(formData));
+      }
+      
       navigate('/pago');
     }
   };
@@ -186,6 +212,19 @@ const Checkout = () => {
       navigate(`/curso/${eventData.eventSlug}`);
     } else {
       navigate('/');
+    }
+  };
+
+  const handleClearForm = () => {
+    // Limpiar datos del formulario para guests
+    if (!user?.member) {
+      localStorage.removeItem('checkout_form_data');
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        cedula: ''
+      });
     }
   };
 
@@ -218,7 +257,19 @@ const Checkout = () => {
             <div className="lg:col-span-1">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-2xl">Datos de Compra</CardTitle>
+                  <CardTitle className="text-2xl flex items-center justify-between">
+                    <span>Datos de Compra</span>
+                    {!user?.member && (formData.name || formData.email || formData.phone || formData.cedula) && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={handleClearForm}
+                        className="text-xs"
+                      >
+                        Limpiar
+                      </Button>
+                    )}
+                  </CardTitle>
                   <p className="text-muted-foreground">
                     Complete sus datos para continuar con la compra
                   </p>
