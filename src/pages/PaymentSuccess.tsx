@@ -49,16 +49,13 @@ const PaymentSuccess = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
     
-    // Limpiar datos del formulario de checkout ya que el pago fue exitoso
-    // Solo limpiar después de que el usuario haya llegado a esta página
-    localStorage.removeItem('checkout_form_data');
-    localStorage.removeItem('payment_data');
-    localStorage.removeItem('checkout_data');
-    
     if (orderId && paymentId) {
       fetchPaymentDetails();
     } else {
-      // Si no hay IDs, mostrar página básica
+      // Si no hay IDs, mostrar página básica y limpiar datos
+      localStorage.removeItem('checkout_form_data');
+      localStorage.removeItem('payment_data');
+      localStorage.removeItem('checkout_data');
       setIsLoading(false);
     }
   }, [orderId, paymentId]);
@@ -128,6 +125,11 @@ const PaymentSuccess = () => {
       
       if (response.data.success) {
         setPaymentDetails(response.data.data);
+        
+        // Limpiar datos del localStorage solo DESPUÉS de obtener exitosamente los detalles
+        localStorage.removeItem('checkout_form_data');
+        localStorage.removeItem('payment_data');
+        localStorage.removeItem('checkout_data');
       } else {
         setError('No se pudieron cargar los detalles del pago');
       }
@@ -178,6 +180,11 @@ const PaymentSuccess = () => {
             const retryResponse = await api.get(retryUrl);
             if (retryResponse.data.success) {
               setPaymentDetails(retryResponse.data.data);
+              
+              // Limpiar datos del localStorage también en el retry exitoso
+              localStorage.removeItem('checkout_form_data');
+              localStorage.removeItem('payment_data');
+              localStorage.removeItem('checkout_data');
               return;
             }
           } catch (retryError) {
