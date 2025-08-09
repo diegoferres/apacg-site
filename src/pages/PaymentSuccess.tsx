@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle, Download, Mail, Home, Loader2, CreditCard, Calendar, Hash, Receipt } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { formatPrice, formatDate } from '@/lib/utils';
+import { formatPrice, formatDate, toNumber } from '@/lib/utils';
 import { useStore } from '@/stores/store';
 import api from '@/services/api';
 
@@ -291,7 +291,7 @@ const PaymentSuccess = () => {
                         <div>
                           <p className="font-medium">Monto Pagado</p>
                           <p className="text-sm text-muted-foreground">
-                            {formatPrice(paymentDetails.amount)}
+                            {formatPrice(toNumber(paymentDetails.amount))}
                           </p>
                         </div>
                       </div>
@@ -318,13 +318,13 @@ const PaymentSuccess = () => {
                             {getItemTypeName(item.orderable_type)} - Cantidad: {item.quantity}
                           </span>
                           <span className="font-medium">
-                            {formatPrice(item.total_price)}
+                            {formatPrice(toNumber(item.total_price))}
                           </span>
                         </div>
                       ))}
                       <div className="border-t pt-2 flex justify-between items-center font-semibold">
                         <span>Total</span>
-                        <span>{formatPrice(paymentDetails.order.total_amount)}</span>
+                        <span>{formatPrice(toNumber(paymentDetails.order.total_amount))}</span>
                       </div>
                     </div>
                   </div>
