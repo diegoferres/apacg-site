@@ -67,6 +67,26 @@ const App = () => {
       return;
     }
     
+    // Debug: Log full user structure to understand role data
+    console.log('App.tsx - Full user data for role check:', {
+      name: user.name,
+      role: user.role,
+      roles: user.roles,
+      member: !!user.member,
+      fullUser: user
+    });
+    
+    // If user is admin, don't show splash (admins bypass this validation)
+    // Check Laravel Permissions structure: user.roles array with role objects
+    const isAdmin = user.roles?.some((role: any) => role.name === 'admin' || role.name === 'Administrador');
+    console.log('App.tsx - Admin check:', { isAdmin, roles: user.roles });
+    
+    if (isAdmin) {
+      console.log('App.tsx - User is admin, hiding splash');
+      setShowStudentSplash(false);
+      return;
+    }
+    
     // If user doesn't have member data, don't show splash
     if (!user.member) {
       console.log('App.tsx - User has no member data, hiding splash');
@@ -77,6 +97,8 @@ const App = () => {
     console.log('App.tsx - Checking student data and setup:', { 
       isLoggedIn, 
       user: user?.name, 
+      role: user?.role,
+      roles: user?.roles,
       member: !!user?.member, 
       students: user?.member?.students,
       setupCompleted: user?.setup_completed,
@@ -125,8 +147,13 @@ const App = () => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        // Use the client user endpoint that loads member, students and setup_completed
         const response = await api.get('api/user');
-        if (response.data && response.data) {
+        if (response.data) {
+          console.log('App.tsx - User loaded:', response.data);
+          console.log('App.tsx - User roles:', response.data.roles);
+          console.log('App.tsx - User roles type:', typeof response.data.roles);
+          console.log('App.tsx - User roles length:', response.data.roles?.length);
           setUser(response.data);
           setIsLoggedIn(true);
         }
