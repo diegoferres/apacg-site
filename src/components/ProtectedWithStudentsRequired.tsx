@@ -21,7 +21,26 @@ const ProtectedWithStudentsRequired = ({ children }: Props) => {
 
   // If user is logged in, check if they have students
   if (isLoggedIn && user) {
-    // If user doesn't have member data, redirect to home
+    // Debug: Log full user structure to understand role data
+    console.log('ProtectedWithStudentsRequired - Full user data:', {
+      name: user.name,
+      role: user.role,
+      roles: user.roles,
+      member: !!user.member,
+      fullUser: user
+    });
+    
+    // FIRST: If user is admin, allow access (admins bypass all validations)
+    // Check Laravel Permissions structure: user.roles array with role objects
+    const isAdmin = user.roles?.some((role: any) => role.name === 'admin' || role.name === 'Administrador');
+    console.log('ProtectedWithStudentsRequired - Admin check:', { isAdmin, roles: user.roles });
+    
+    if (isAdmin) {
+      console.log('ProtectedWithStudentsRequired - User is admin, allowing access');
+      return <>{children}</>;
+    }
+    
+    // SECOND: If user doesn't have member data, redirect to home (only for non-admin users)
     if (!user.member) {
       console.log('ProtectedWithStudentsRequired - User has no member data, redirecting');
       return <Navigate to="/" replace />;
@@ -33,7 +52,7 @@ const ProtectedWithStudentsRequired = ({ children }: Props) => {
     const studentsWithCI = students.filter(student => student.ci && student.ci.trim() !== '');
     const allStudentsHaveCI = students.length > 0 && studentsWithCI.length === students.length;
     
-    console.log('ProtectedWithStudentsRequired - User:', user.name, 'Students analysis:', {
+    console.log('ProtectedWithStudentsRequired - User:', user.name, 'Role:', user.role, 'Students analysis:', {
       totalStudents: students.length,
       studentsWithCI: studentsWithCI.length,
       allStudentsHaveCI,
