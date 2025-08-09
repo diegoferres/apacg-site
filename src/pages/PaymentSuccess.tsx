@@ -359,24 +359,17 @@ const PaymentSuccess = () => {
                     </div>
                   </div>
                   
-                  <div className="flex items-start gap-3">
-                    <Download className="h-5 w-5 text-primary mt-0.5" />
-                    <div>
-                      <p className="font-medium">Comprobante disponible</p>
-                      <p className="text-sm text-muted-foreground">
-                        Puede descargar su comprobante desde su perfil en cualquier momento.
-                      </p>
-                    </div>
-                  </div>
                 </div>
               </div>
 
               <div className="space-y-3">
-                <Button asChild className="w-full" size="lg">
-                  <Link to="/perfil">
-                    Ver Mis Compras
-                  </Link>
-                </Button>
+                {isLoggedIn && (
+                  <Button asChild className="w-full" size="lg">
+                    <Link to="/perfil">
+                      Ver Mis Compras
+                    </Link>
+                  </Button>
+                )}
                 
                 <Button variant="outline" asChild className="w-full">
                   <Link to="/">
