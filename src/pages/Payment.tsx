@@ -53,6 +53,14 @@ const PaymentPage = () => {
 
   useEffect(() => {
     loadPaymentData();
+    
+    // Cleanup function para limpiar el script de Bancard cuando el componente se desmonte
+    return () => {
+      const existingScript = document.getElementById('bancard-script');
+      if (existingScript) {
+        existingScript.remove();
+      }
+    };
   }, [searchParams]);
 
   const loadPaymentData = () => {
@@ -178,17 +186,21 @@ const PaymentPage = () => {
   };
 
   const loadBancardScript = (checkoutData: BancardData) => {
-    // Verificar si el script ya está cargado
-    if (document.getElementById('bancard-script')) {
-      initializeBancardCheckout(checkoutData);
-      return;
+    // Limpiar cualquier instancia previa de Bancard
+    const existingScript = document.getElementById('bancard-script');
+    if (existingScript) {
+      existingScript.remove();
     }
 
+    // Crear y cargar el script de Bancard
     const script = document.createElement('script');
     script.id = 'bancard-script';
     script.src = checkoutData.script_url;
     script.onload = () => {
-      initializeBancardCheckout(checkoutData);
+      // Dar tiempo para que el DOM se actualice antes de inicializar
+      setTimeout(() => {
+        initializeBancardCheckout(checkoutData);
+      }, 100);
     };
     script.onerror = () => {
       setError('Error al cargar el procesador de pagos. Verifique su conexión.');
@@ -199,13 +211,18 @@ const PaymentPage = () => {
 
   const initializeBancardCheckout = (checkoutData: BancardData) => {
     try {
+      // Verificar que el contenedor existe
+      const container = document.getElementById('bancard-checkout-container');
+      if (!container) {
+        console.error('Bancard container not found in DOM');
+        setError('Error: Contenedor de pago no encontrado. Intente recargar la página.');
+        return;
+      }
+
       // @ts-ignore - Bancard script global
       if (window.Bancard && window.Bancard.Checkout) {
-        // Limpiar contenedor
-        const container = document.getElementById('bancard-checkout-container');
-        if (container) {
-          container.innerHTML = '';
-        }
+        // Limpiar contenedor antes de inicializar
+        container.innerHTML = '';
 
         // Configurar estilos del formulario
         const styles = {
@@ -228,6 +245,7 @@ const PaymentPage = () => {
         // Bancard se encarga de la redirección automática al completar/fallar
         console.log('Bancard checkout form initialized successfully');
       } else {
+        console.error('Bancard object not available:', window.Bancard);
         setError('El procesador de pagos no está disponible. Inténtelo nuevamente.');
       }
     } catch (error) {
@@ -403,7 +421,8 @@ const PaymentPage = () => {
                       {/* Container para el formulario de Bancard */}
                       <div 
                         id="bancard-checkout-container"
-                        className="w-full min-h-[500px] p-4 border rounded-lg bg-white"
+                        className="w-full min-h-[600px] border rounded-lg bg-white"
+                        style={{ padding: '0' }}
                       >
                         {/* El formulario de Bancard se insertará aquí */}
                       </div>
