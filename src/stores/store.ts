@@ -6,6 +6,7 @@ interface User {
   name: string;
   email: string;
   avatar?: string;
+  setup_completed?: boolean;
   member?: {
     id: number;
     status: string;
