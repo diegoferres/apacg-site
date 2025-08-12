@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useStore } from '@/stores/store';
 import { Button } from '@/components/ui/button';
+import api from '@/services/api';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -12,7 +14,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
-import { formatPrice, formatDate } from '@/lib/utils';
+import { formatPrice, formatDate, toNumber } from '@/lib/utils';
 import { Clock, Users, Calendar, MapPin } from 'lucide-react';
 
 interface Course {
@@ -54,54 +56,74 @@ interface CourseEnrollmentModalProps {
 
 const CourseEnrollmentModal = ({ isOpen, onClose, course, group }: CourseEnrollmentModalProps) => {
   const navigate = useNavigate();
+  const user = useStore((state) => state.user);
   const [studentName, setStudentName] = useState('');
   const [studentId, setStudentId] = useState('');
   const [isMember, setIsMember] = useState(false);
-
-  // Helper function to safely convert to number
-  const toNumber = (value: any): number => {
-    if (value === null || value === undefined || value === '') return 0;
-    
-    // If it's already a number, return it
-    if (typeof value === 'number') return value;
-    
-    // If it's a string, try to parse it
-    if (typeof value === 'string') {
-      // Remove any non-numeric characters except decimal point
-      const cleanValue = value.replace(/[^\d.-]/g, '');
-      const num = parseFloat(cleanValue);
-      return isNaN(num) ? 0 : num;
+  const [membershipStatus, setMembershipStatus] = useState<any>(null);
+  const [checkingMembership, setCheckingMembership] = useState(false);
+  
+  // Verificar estado de membresía al abrir el modal
+  useEffect(() => {
+    if (isOpen && user) {
+      checkMembershipStatus();
+    }
+  }, [isOpen, user]);
+  
+  const checkMembershipStatus = async () => {
+    if (!user?.member) {
+      setIsMember(false);
+      return;
     }
     
-    // For other types, try Number conversion
-    const num = Number(value);
-    return isNaN(num) ? 0 : num;
+    setCheckingMembership(true);
+    try {
+      const response = await api.get('/api/client/members/check-membership-status');
+      setMembershipStatus(response.data);
+      setIsMember(response.data.is_active_member);
+    } catch (error) {
+      console.error('Error checking membership status:', error);
+      setIsMember(false);
+    } finally {
+      setCheckingMembership(false);
+    }
   };
+
+  // Using toNumber from utils instead of duplicating the function
 
   // Calcular precios según si es grupo específico o curso general
   const getEnrollmentFee = (): number => {
+    let enrollmentFee = 0;
+    
+    // Prioridad: Si el grupo tiene matrícula definida, usar esa
     if (group) {
-      // Si el grupo tiene su propio precio, usarlo; si no, usar el del curso
       const groupFee = isMember ? group.enrollment_fee_member : group.enrollment_fee_non_member;
-      if (groupFee !== null && groupFee !== undefined) {
-        return toNumber(groupFee);
+      if (groupFee !== null && groupFee !== undefined && toNumber(groupFee) > 0) {
+        enrollmentFee = toNumber(groupFee);
       }
     }
-    // Usar siempre el precio del curso como fallback
-    return isMember 
-      ? toNumber(course.enrollment_fee_member) 
-      : toNumber(course.enrollment_fee_non_member);
+    
+    // Si no hay matrícula del grupo, verificar si el curso la requiere y tiene matrícula
+    if (enrollmentFee === 0 && course.requires_enrollment_fee) {
+      enrollmentFee = isMember 
+        ? toNumber(course.enrollment_fee_member) 
+        : toNumber(course.enrollment_fee_non_member);
+    }
+    
+    return enrollmentFee;
   };
 
   const getMonthlyFee = (): number => {
+    // Prioridad: Si el grupo tiene mensualidad definida, usar esa; sino usar la del curso
     if (group) {
-      // Si el grupo tiene su propio precio, usarlo; si no, usar el del curso
       const groupFee = isMember ? group.monthly_fee_member : group.monthly_fee_non_member;
-      if (groupFee !== null && groupFee !== undefined) {
+      // Si el grupo tiene mensualidad definida (no null, no undefined y no 0), usar esa
+      if (groupFee !== null && groupFee !== undefined && toNumber(groupFee) > 0) {
         return toNumber(groupFee);
       }
     }
-    // Usar siempre el precio del curso como fallback
+    
+    // Fallback: usar la mensualidad del curso
     return isMember 
       ? toNumber(course.monthly_fee_member) 
       : toNumber(course.monthly_fee_non_member);
@@ -109,7 +131,7 @@ const CourseEnrollmentModal = ({ isOpen, onClose, course, group }: CourseEnrollm
 
   const enrollmentFee = getEnrollmentFee();
   const monthlyPrice = getMonthlyFee();
-  const totalCost = (course.requires_enrollment_fee ? enrollmentFee : 0) + monthlyPrice;
+  const totalCost = enrollmentFee + monthlyPrice;
 
   // Debug logging (temporal)
   console.log('Course price debugging:', {
@@ -121,6 +143,8 @@ const CourseEnrollmentModal = ({ isOpen, onClose, course, group }: CourseEnrollm
       requires_enrollment_fee: course.requires_enrollment_fee
     },
     group: group ? {
+      id: group.id,
+      name: group.name,
       enrollment_fee_member: group.enrollment_fee_member,
       enrollment_fee_non_member: group.enrollment_fee_non_member,
       monthly_fee_member: group.monthly_fee_member,
@@ -130,7 +154,8 @@ const CourseEnrollmentModal = ({ isOpen, onClose, course, group }: CourseEnrollm
       enrollmentFee,
       monthlyPrice,
       totalCost,
-      isMember
+      isMember,
+      shouldShowEnrollment: course.requires_enrollment_fee && enrollmentFee > 0
     }
   });
 
@@ -149,13 +174,27 @@ const CourseEnrollmentModal = ({ isOpen, onClose, course, group }: CourseEnrollm
       eventSlug: course.slug || `curso-${course.id}`,
       eventTitle: course.title,
       courseGroupId: group?.id || null,
+      courseGroupData: group ? {
+        id: group.id,
+        name: group.name,
+        schedule: group.schedule,
+        location: group.location
+      } : null,
       studentData: {
         name: studentName,
         cedula: studentId,
         is_member: isMember
       },
       totalAmount: totalCost,
-      totalTickets: 1
+      totalTickets: 1,
+      enrollmentFee: enrollmentFee,
+      monthlyFee: monthlyPrice,
+      courseData: {
+        title: course.title,
+        location: course.location,
+        commerce: course.commerce?.name || 'APAC',
+        requires_enrollment_fee: course.requires_enrollment_fee
+      }
     };
     
     // Guardar datos en localStorage para el checkout
@@ -240,28 +279,42 @@ const CourseEnrollmentModal = ({ isOpen, onClose, course, group }: CourseEnrollm
 
           <div className="space-y-2">
             <Label>Tipo de Inscripción</Label>
-            <div className="flex gap-6">
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="memberType"
-                  checked={isMember}
-                  onChange={() => setIsMember(true)}
-                  className="text-primary"
-                />
-                <span className="text-sm font-medium">Socio</span>
-              </label>
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="memberType"
-                  checked={!isMember}
-                  onChange={() => setIsMember(false)}
-                  className="text-primary"
-                />
-                <span className="text-sm font-medium">No Socio</span>
-              </label>
-            </div>
+            {checkingMembership ? (
+              <div className="p-3 rounded-md text-sm bg-gray-50 border border-gray-200">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                  <span>Verificando estado de membresía...</span>
+                </div>
+              </div>
+            ) : (
+              <div className={`p-3 rounded-md text-sm ${isMember ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-orange-50 border border-orange-200 text-orange-800'}`}>
+                <div className="flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full ${isMember ? 'bg-green-500' : 'bg-orange-500'}`}></div>
+                  <span className="font-medium">
+                    {isMember ? 'Socio Activo' : 'No Socio'}
+                  </span>
+                </div>
+                <p className="text-xs mt-1 opacity-80">
+                  {isMember 
+                    ? 'Se aplicarán las tarifas preferenciales para socios' 
+                    : user?.member 
+                      ? (
+                        <>
+                          Se aplicarán tarifas regulares.{' '}
+                          <button 
+                            onClick={() => navigate('/perfil')} 
+                            className="underline hover:opacity-80 text-inherit"
+                            type="button"
+                          >
+                            Ver estado de membresía
+                          </button>
+                        </>
+                      )
+                      : 'Se aplicarán las tarifas regulares'
+                  }
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Cost Summary */}
@@ -269,9 +322,9 @@ const CourseEnrollmentModal = ({ isOpen, onClose, course, group }: CourseEnrollm
             <CardContent className="pt-4">
               <div className="space-y-2">
                 <h4 className="font-medium">Resumen de Costos</h4>
-                {course.requires_enrollment_fee && enrollmentFee > 0 && (
+                {enrollmentFee > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span>Matrícula:</span>
+                    <span>Matrícula {isMember ? '(Socio)' : '(No Socio)'}:</span>
                     <span>{formatPrice(enrollmentFee)}</span>
                   </div>
                 )}
