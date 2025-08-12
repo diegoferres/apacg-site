@@ -32,6 +32,20 @@ interface StudentData {
   is_member: boolean;
 }
 
+interface CourseGroupData {
+  id: number;
+  name: string;
+  schedule: string;
+  location?: string;
+}
+
+interface CourseData {
+  title: string;
+  location?: string;
+  commerce: string;
+  requires_enrollment_fee: boolean;
+}
+
 interface CheckoutEventData {
   type: 'event' | 'raffle' | 'course';
   eventId?: number;
@@ -39,16 +53,21 @@ interface CheckoutEventData {
   eventTitle?: string;
   tickets?: TicketDetail[];
   courseGroupId?: number | null;
+  courseGroupData?: CourseGroupData | null;
   studentData?: StudentData;
   totalAmount: number;
   totalTickets: number;
   referralCode?: string;
+  enrollmentFee?: number;
+  monthlyFee?: number;
+  courseData?: CourseData;
 }
 
 const Checkout = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const user = useStore((state) => state.user);
+  const isUserLoading = useStore((state) => state.isLoading);
   const [eventData, setEventData] = useState<CheckoutEventData | null>(null);
   const [formData, setFormData] = useState<CheckoutData>({
     name: '',
@@ -61,9 +80,14 @@ const Checkout = () => {
 
   // Precargar datos del usuario autenticado o datos guardados del formulario
   useEffect(() => {
-    // Primero intentar cargar datos guardados del formulario (para guests)
+    // No intentar cargar datos si aún está cargando el usuario
+    if (isUserLoading) {
+      return;
+    }
+    
+    // Primero intentar cargar datos guardados del formulario (solo para guests sin autenticar)
     const savedFormData = localStorage.getItem('checkout_form_data');
-    if (savedFormData && !user?.member) {
+    if (savedFormData && !user) {
       try {
         const parsedFormData = JSON.parse(savedFormData);
         setFormData(parsedFormData);
@@ -74,16 +98,27 @@ const Checkout = () => {
       }
     }
     
-    // Luego precargar datos del usuario autenticado
-    if (user?.member) {
-      setFormData({
-        name: `${user.member.first_name || ''} ${user.member.last_name || ''}`.trim() || user.name || '',
-        email: user.email || '',
-        phone: user.member.phone || '',
-        cedula: '12345678' // Valor temporal por ahora
-      });
+    // Luego precargar datos del usuario autenticado (miembro o admin)
+    if (user) {
+      if (user.member) {
+        // Usuario con datos de miembro
+        setFormData({
+          name: `${user.member.first_name || ''} ${user.member.last_name || ''}`.trim() || user.name || '',
+          email: user.email || '',
+          phone: user.member.phone || '',
+          cedula: '12345678' // Valor temporal por ahora
+        });
+      } else {
+        // Usuario sin datos de miembro (ej: admin)
+        setFormData({
+          name: user.name || '',
+          email: user.email || '',
+          phone: '',
+          cedula: '12345678' // Valor temporal por ahora
+        });
+      }
     }
-  }, [user]);
+  }, [user, isUserLoading]);
 
   useEffect(() => {
     // Verificar si hay error de pago en los parámetros de URL
@@ -144,7 +179,7 @@ const Checkout = () => {
     setFormData(newFormData);
     
     // Guardar datos del formulario para guests (solo si no es usuario autenticado)
-    if (!user?.member) {
+    if (!user) {
       localStorage.setItem('checkout_form_data', JSON.stringify(newFormData));
     }
     
@@ -195,7 +230,7 @@ const Checkout = () => {
       localStorage.setItem('payment_data', JSON.stringify(paymentData));
       
       // Guardar datos del formulario para preservar al volver (solo para guests)
-      if (!user?.member) {
+      if (!user) {
         localStorage.setItem('checkout_form_data', JSON.stringify(formData));
       }
       
@@ -217,7 +252,7 @@ const Checkout = () => {
 
   const handleClearForm = () => {
     // Limpiar datos del formulario para guests
-    if (!user?.member) {
+    if (!user) {
       localStorage.removeItem('checkout_form_data');
       setFormData({
         name: '',
@@ -259,7 +294,7 @@ const Checkout = () => {
                 <CardHeader>
                   <CardTitle className="text-2xl flex items-center justify-between">
                     <span>Datos de Compra</span>
-                    {!user?.member && (formData.name || formData.email || formData.phone || formData.cedula) && (
+                    {!user && (formData.name || formData.email || formData.phone || formData.cedula) && (
                       <Button 
                         variant="ghost" 
                         size="sm" 
@@ -380,11 +415,24 @@ const Checkout = () => {
                       {eventData.type === 'raffle' && 'Números de Rifa'}
                       {eventData.type === 'course' && 'Inscripción al Curso'}
                     </p>
-                    {eventData.type === 'course' && eventData.studentData && (
-                      <div className="mt-2 text-sm">
-                        <p><strong>Estudiante:</strong> {eventData.studentData.name}</p>
-                        <p><strong>Cédula:</strong> {eventData.studentData.cedula}</p>
-                        <p><strong>Tipo:</strong> {eventData.studentData.is_member ? 'Socio' : 'No Socio'}</p>
+                    {eventData.type === 'course' && (
+                      <div className="mt-2 text-sm space-y-2">
+                        {eventData.courseGroupData && (
+                          <div className="bg-muted/30 p-2 rounded-md">
+                            <p><strong>Grupo:</strong> {eventData.courseGroupData.name}</p>
+                            <p><strong>Horario:</strong> {eventData.courseGroupData.schedule}</p>
+                            {eventData.courseGroupData.location && (
+                              <p><strong>Ubicación:</strong> {eventData.courseGroupData.location}</p>
+                            )}
+                          </div>
+                        )}
+                        {eventData.studentData && (
+                          <div>
+                            <p><strong>Estudiante:</strong> {eventData.studentData.name}</p>
+                            <p><strong>Cédula:</strong> {eventData.studentData.cedula}</p>
+                            <p><strong>Tipo:</strong> {eventData.studentData.is_member ? 'Socio' : 'No Socio'}</p>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -392,17 +440,35 @@ const Checkout = () => {
                   {eventData.type === 'course' ? (
                     <div className="space-y-3">
                       <h4 className="font-medium">Detalle de inscripción:</h4>
+                      {eventData.enrollmentFee && eventData.enrollmentFee > 0 && (
+                        <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">Matrícula</p>
+                            <p className="text-xs text-muted-foreground">
+                              {eventData.studentData?.is_member ? 'Tarifa de socio' : 'Tarifa regular'}
+                            </p>
+                          </div>
+                          <span className="font-semibold">
+                            {formatPrice(eventData.enrollmentFee)}
+                          </span>
+                        </div>
+                      )}
                       <div className="flex justify-between items-center py-2 border-b border-gray-100">
                         <div className="flex-1">
-                          <p className="font-medium text-sm">Inscripción al curso</p>
+                          <p className="font-medium text-sm">Primera mensualidad</p>
                           <p className="text-xs text-muted-foreground">
                             {eventData.studentData?.is_member ? 'Tarifa de socio' : 'Tarifa regular'}
                           </p>
                         </div>
                         <span className="font-semibold">
-                          {formatPrice(eventData.totalAmount)}
+                          {formatPrice(eventData.monthlyFee || 0)}
                         </span>
                       </div>
+                      {eventData.enrollmentFee && eventData.enrollmentFee > 0 && (
+                        <div className="text-xs text-muted-foreground italic">
+                          * La matrícula se paga una sola vez al momento de la inscripción
+                        </div>
+                      )}
                     </div>
                   ) : eventData.tickets && eventData.tickets.length > 0 && (
                     <div className="space-y-3">

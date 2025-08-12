@@ -93,7 +93,7 @@ export function formatPrice(amount: number): string {
 
 /**
  * Formatea una fecha de manera segura evitando problemas de timezone
- * @param dateString - La fecha en formato ISO string o null/undefined
+ * @param dateString - La fecha en formato ISO string, d-m-Y H:i:s, o null/undefined
  * @param options - Opciones de formateo
  * @returns La fecha formateada en español o "No definido" si es inválida
  */
@@ -112,19 +112,39 @@ export function formatDate(
   }
 
   try {
-    // Check if it's a full datetime string (includes time)
-    const datetimeMatch = dateString.match(/(\d{4}-\d{2}-\d{2})(?:[T\s](\d{2}:\d{2}:\d{2}))?/);
-    if (!datetimeMatch) {
-      return 'No definido';
-    }
-
-    const [year, month, day] = datetimeMatch[1].split('-').map(Number);
-    let date = new Date(year, month - 1, day);
-
-    // If time is present and includeTime is true, parse the full datetime
-    if (includeTime && datetimeMatch[2]) {
-      const [hours, minutes, seconds] = datetimeMatch[2].split(':').map(Number);
-      date = new Date(year, month - 1, day, hours, minutes, seconds);
+    let date: Date;
+    
+    // Intentar diferentes formatos de fecha
+    // Formato 1: "19-06-2025 20:36:52" (d-m-Y H:i:s)
+    const dmyMatch = dateString.match(/(\d{2})-(\d{2})-(\d{4})(?:\s+(\d{2}):(\d{2}):(\d{2}))?/);
+    if (dmyMatch) {
+      const [_, day, month, year, hours = '0', minutes = '0', seconds = '0'] = dmyMatch;
+      date = new Date(
+        parseInt(year),
+        parseInt(month) - 1,
+        parseInt(day),
+        parseInt(hours),
+        parseInt(minutes),
+        parseInt(seconds)
+      );
+    } 
+    // Formato 2: "2025-06-19 20:36:52" o "2025-06-19T20:36:52" (Y-m-d H:i:s o ISO)
+    else {
+      const ymdMatch = dateString.match(/(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}):(\d{2}):(\d{2}))?/);
+      if (ymdMatch) {
+        const [_, year, month, day, hours = '0', minutes = '0', seconds = '0'] = ymdMatch;
+        date = new Date(
+          parseInt(year),
+          parseInt(month) - 1,
+          parseInt(day),
+          parseInt(hours),
+          parseInt(minutes),
+          parseInt(seconds)
+        );
+      } else {
+        // Intentar parsear como fecha ISO estándar
+        date = new Date(dateString);
+      }
     }
     
     if (isNaN(date.getTime())) {

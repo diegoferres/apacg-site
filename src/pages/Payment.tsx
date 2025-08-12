@@ -24,16 +24,42 @@ interface CustomerData {
   cedula: string;
 }
 
+interface StudentData {
+  name: string;
+  cedula: string;
+  is_member: boolean;
+}
+
+interface CourseGroupData {
+  id: number;
+  name: string;
+  schedule: string;
+  location?: string;
+}
+
+interface CourseData {
+  title: string;
+  location?: string;
+  commerce: string;
+  requires_enrollment_fee: boolean;
+}
+
 interface PaymentData {
-  type: 'event' | 'raffle';
+  type: 'event' | 'raffle' | 'course';
   eventId?: number;
   eventSlug?: string;
   eventTitle?: string;
   tickets?: TicketDetail[];
+  courseGroupId?: number | null;
+  courseGroupData?: CourseGroupData | null;
+  studentData?: StudentData;
   totalAmount: number;
   totalTickets: number;
   customerData: CustomerData;
   referralCode?: string;
+  enrollmentFee?: number;
+  monthlyFee?: number;
+  courseData?: CourseData;
 }
 
 interface BancardData {
@@ -71,8 +97,15 @@ const PaymentPage = () => {
         const parsedData = JSON.parse(savedData);
         setPaymentData(parsedData);
         setIsLoading(false);
-        // Crear automáticamente la orden de pago
-        createPaymentOrder(parsedData);
+        
+        // Si ya tiene checkout_data (como en membresía), usar directamente
+        if (parsedData.checkout_data) {
+          setBancardData(parsedData.checkout_data);
+          loadBancardScript(parsedData.checkout_data);
+        } else {
+          // Crear automáticamente la orden de pago para otros tipos
+          createPaymentOrder(parsedData);
+        }
       } catch (error) {
         console.error('Error parsing payment data:', error);
         setError('Error al cargar los datos de pago');
@@ -144,6 +177,10 @@ const PaymentPage = () => {
           id: ticket.id,
           quantity: ticket.quantity
         }));
+      } else if (data.type === 'course') {
+        // Para cursos, enviar datos del estudiante y grupo
+        requestData.student_data = data.studentData;
+        requestData.course_group_id = data.courseGroupId;
       } else {
         // Para rifas, usar quantity simple
         requestData.quantity = data.totalTickets;
@@ -280,8 +317,15 @@ const PaymentPage = () => {
   };
 
   const handleGoBack = () => {
-    // NO limpiar checkout_form_data para preservar datos del formulario
-    navigate('/checkout');
+    // Determinar a dónde volver según el tipo de pago
+    if (paymentData?.type === 'membership') {
+      // Para pagos de membresía, volver al perfil
+      navigate('/perfil');
+    } else {
+      // Para otros tipos (eventos, rifas, cursos), volver al checkout
+      // NO limpiar checkout_form_data para preservar datos del formulario
+      navigate('/checkout');
+    }
   };
 
   const handleRetry = () => {
@@ -330,17 +374,18 @@ const PaymentPage = () => {
         <div className="container mx-auto px-4 md:px-6 max-w-4xl">
           <Button variant="ghost" onClick={handleGoBack} className="mb-6">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Volver a Datos
+            {paymentData?.type === 'membership' ? 'Volver al Perfil' : 'Volver a Datos'}
           </Button>
 
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Resumen de compra */}
-            <div className="lg:col-span-1">
+            <div className="lg:col-span-1 lg:order-2 order-1">
               <Card className="sticky top-8">
                 <CardHeader>
                   <CardTitle className="text-lg">Resumen de Compra</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {/* Datos del comprador */}
                   <div className="space-y-3">
                     <div className="text-sm">
                       <span className="font-medium">Comprador:</span>
@@ -351,29 +396,134 @@ const PaymentPage = () => {
                     </div>
                   </div>
                   
-                  <div className="pt-3 border-t">
-                    <h3 className="font-semibold text-sm mb-2">{paymentData.eventTitle}</h3>
-                    <p className="text-xs text-muted-foreground mb-3">
-                      {paymentData.type === 'event' ? 'Entrada de Evento' : 'Números de Rifa'}
+                  {/* Información del item */}
+                  <div className="border-b pb-4">
+                    <h3 className="font-semibold text-lg mb-2">
+                      {paymentData.type === 'membership' ? 'Pago de Membresía' : paymentData.eventTitle}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      {paymentData.type === 'event' && 'Entrada de Evento'}
+                      {paymentData.type === 'raffle' && 'Números de Rifa'}
+                      {paymentData.type === 'course' && 'Inscripción al Curso'}
+                      {paymentData.type === 'membership' && 'Anualidades de Estudiantes'}
                     </p>
-                    
-                    {paymentData.tickets && paymentData.tickets.length > 0 && (
-                      <div className="space-y-2">
-                        <h4 className="font-medium text-sm">Detalle:</h4>
-                        {paymentData.tickets.map((ticket, index) => (
-                          <div key={index} className="flex justify-between items-center text-sm">
-                            <span>{ticket.quantity}x {ticket.name}</span>
-                            <span>{formatPrice(ticket.total)}</span>
+                    {paymentData.type === 'course' && (
+                      <div className="mt-2 text-sm space-y-2">
+                        {paymentData.courseGroupData && (
+                          <div className="bg-muted/30 p-2 rounded-md">
+                            <p><strong>Grupo:</strong> {paymentData.courseGroupData.name}</p>
+                            <p><strong>Horario:</strong> {paymentData.courseGroupData.schedule}</p>
+                            {paymentData.courseGroupData.location && (
+                              <p><strong>Ubicación:</strong> {paymentData.courseGroupData.location}</p>
+                            )}
                           </div>
-                        ))}
+                        )}
+                        {paymentData.studentData && (
+                          <div>
+                            <p><strong>Estudiante:</strong> {paymentData.studentData.name}</p>
+                            <p><strong>Cédula:</strong> {paymentData.studentData.cedula}</p>
+                            <p><strong>Tipo:</strong> {paymentData.studentData.is_member ? 'Socio' : 'No Socio'}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {paymentData.type === 'membership' && paymentData.unpaidStudents && (
+                      <div className="mt-2 text-sm space-y-2">
+                        <p><strong>Estudiantes a pagar ({paymentData.studentCount}):</strong></p>
+                        <div className="bg-muted/30 p-2 rounded-md space-y-1">
+                          {paymentData.unpaidStudents.map((student, index) => (
+                            <div key={index} className="flex items-center gap-2">
+                              <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
+                              <span>{student.student_name}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
+
+                  {/* Detalle de la compra */}
+                  {paymentData.type === 'membership' ? (
+                    <div className="space-y-3">
+                      <h4 className="font-medium">Detalle de pago:</h4>
+                      {paymentData.unpaidStudents?.map((student, index) => (
+                        <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100">
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">{student.student_name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Anualidad {paymentData.membershipStatus?.current_year || new Date().getFullYear()}
+                            </p>
+                          </div>
+                          <span className="font-semibold">
+                            {formatPrice(paymentData.totalAmount / paymentData.studentCount)}
+                          </span>
+                        </div>
+                      ))}
+                      <div className="text-xs text-muted-foreground italic">
+                        * Pago de anualidad por estudiante para el año {paymentData.membershipStatus?.current_year || new Date().getFullYear()}
+                      </div>
+                    </div>
+                  ) : paymentData.type === 'course' ? (
+                    <div className="space-y-3">
+                      <h4 className="font-medium">Detalle de inscripción:</h4>
+                      {paymentData.enrollmentFee && paymentData.enrollmentFee > 0 && (
+                        <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">Matrícula</p>
+                            <p className="text-xs text-muted-foreground">
+                              {paymentData.studentData?.is_member ? 'Tarifa de socio' : 'Tarifa regular'}
+                            </p>
+                          </div>
+                          <span className="font-semibold">
+                            {formatPrice(paymentData.enrollmentFee)}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <div className="flex-1">
+                          <p className="font-medium text-sm">Primera mensualidad</p>
+                          <p className="text-xs text-muted-foreground">
+                            {paymentData.studentData?.is_member ? 'Tarifa de socio' : 'Tarifa regular'}
+                          </p>
+                        </div>
+                        <span className="font-semibold">
+                          {formatPrice(paymentData.monthlyFee || 0)}
+                        </span>
+                      </div>
+                      {paymentData.enrollmentFee && paymentData.enrollmentFee > 0 && (
+                        <div className="text-xs text-muted-foreground italic">
+                          * La matrícula se paga una sola vez al momento de la inscripción
+                        </div>
+                      )}
+                    </div>
+                  ) : paymentData.tickets && paymentData.tickets.length > 0 && (
+                    <div className="space-y-3">
+                      <h4 className="font-medium">Detalle de entradas:</h4>
+                      {paymentData.tickets.map((ticket, index) => (
+                        <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100">
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">{ticket.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {ticket.quantity} × {formatPrice(ticket.price)}
+                            </p>
+                          </div>
+                          <span className="font-semibold">
+                            {formatPrice(ticket.total)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   
-                  <div className="pt-3 border-t">
+                  <div className="pt-4 border-t">
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm">Total de entradas:</span>
-                      <span className="text-sm font-medium">{paymentData.totalTickets}</span>
+                      <span className="text-sm">
+                        {paymentData.type === 'membership' ? 'Total de estudiantes:' : 
+                         paymentData.type === 'course' ? 'Total de inscripciones:' : 'Total de entradas:'}
+                      </span>
+                      <span className="text-sm font-medium">
+                        {paymentData.type === 'membership' ? paymentData.studentCount : paymentData.totalTickets}
+                      </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="font-semibold">Total:</span>
@@ -387,7 +537,7 @@ const PaymentPage = () => {
             </div>
 
             {/* Procesador de pago */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2 lg:order-1 order-2">
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
@@ -432,7 +582,7 @@ const PaymentPage = () => {
                           ¿Problemas con el pago?
                         </p>
                         <Button variant="outline" onClick={handleGoBack}>
-                          Volver a Datos
+                          {paymentData?.type === 'membership' ? 'Volver al Perfil' : 'Volver a Datos'}
                         </Button>
                       </div>
                     </div>
@@ -447,7 +597,7 @@ const PaymentPage = () => {
                           Reintentar
                         </Button>
                         <Button variant="outline" onClick={handleGoBack}>
-                          Volver a Datos
+                          {paymentData?.type === 'membership' ? 'Volver al Perfil' : 'Volver a Datos'}
                         </Button>
                       </div>
                     </div>

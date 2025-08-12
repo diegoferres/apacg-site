@@ -300,13 +300,13 @@ const CourseDetail = () => {
                             <div className="flex justify-between">
                               <span className="text-sm">Socios:</span>
                               <span className="text-sm font-medium">
-                                {formatPrice(toNumber(group.monthly_fee_member) || toNumber(course.monthly_fee_member))}/mes
+                                {formatPrice(toNumber(group.monthly_fee_member) !== 0 ? toNumber(group.monthly_fee_member) : toNumber(course.monthly_fee_member))}/mes
                               </span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-sm">No socios:</span>
                               <span className="text-sm font-medium">
-                                {formatPrice(toNumber(group.monthly_fee_non_member) || toNumber(course.monthly_fee_non_member))}/mes
+                                {formatPrice(toNumber(group.monthly_fee_non_member) !== 0 ? toNumber(group.monthly_fee_non_member) : toNumber(course.monthly_fee_non_member))}/mes
                               </span>
                             </div>
                             <p className="text-xs text-muted-foreground">
