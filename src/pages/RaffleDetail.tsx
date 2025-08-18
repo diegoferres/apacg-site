@@ -227,6 +227,25 @@ const RaffleDetail = () => {
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Raffle Description */}
             <div className="lg:col-span-2 space-y-6">
+              {/* Raffle Image */}
+              {raffle.cover ? (
+                <div className="relative aspect-video overflow-hidden rounded-lg">
+                  <img
+                    src={raffle.cover?.storage_path_full}
+                    alt={raffle.title}
+                    className="w-full h-full object-cover object-center"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                </div>
+              ) : (
+                <div className="relative aspect-video bg-gradient-to-br from-primary/10 to-primary/20 rounded-lg flex items-center justify-center">
+                  <div className="text-center">
+                    <Ticket className="h-16 w-16 text-primary/60 mx-auto mb-4" />
+                    <p className="text-primary/80 font-medium">Rifa Especial</p>
+                  </div>
+                </div>
+              )}
+              
               <Card>
                 <CardHeader>
                   <CardTitle className="text-xl md:text-2xl">Acerca de la Rifa</CardTitle>

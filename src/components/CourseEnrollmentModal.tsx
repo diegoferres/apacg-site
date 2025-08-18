@@ -6,6 +6,13 @@ import api from '@/services/api';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -47,6 +54,14 @@ interface Group {
   location?: string;
 }
 
+interface Student {
+  id: number;
+  first_name: string;
+  last_name: string;
+  full_name: string;
+  ci: string;
+}
+
 interface CourseEnrollmentModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -62,11 +77,23 @@ const CourseEnrollmentModal = ({ isOpen, onClose, course, group }: CourseEnrollm
   const [isMember, setIsMember] = useState(false);
   const [membershipStatus, setMembershipStatus] = useState<any>(null);
   const [checkingMembership, setCheckingMembership] = useState(false);
+  const [associatedStudents, setAssociatedStudents] = useState<Student[]>([]);
+  const [selectedStudentId, setSelectedStudentId] = useState<string>('');
+  const [loadingStudents, setLoadingStudents] = useState(false);
+  const [isOtherStudent, setIsOtherStudent] = useState(false);
   
-  // Verificar estado de membresía al abrir el modal
+  // Verificar estado de membresía y cargar estudiantes al abrir el modal
   useEffect(() => {
     if (isOpen && user) {
       checkMembershipStatus();
+      fetchAssociatedStudents();
+    }
+    // Reset state when modal closes
+    if (!isOpen) {
+      setSelectedStudentId('');
+      setIsOtherStudent(false);
+      setStudentName('');
+      setStudentId('');
     }
   }, [isOpen, user]);
   
@@ -86,6 +113,55 @@ const CourseEnrollmentModal = ({ isOpen, onClose, course, group }: CourseEnrollm
       setIsMember(false);
     } finally {
       setCheckingMembership(false);
+    }
+  };
+
+  const fetchAssociatedStudents = async () => {
+    if (!user?.member?.id) {
+      return;
+    }
+    
+    setLoadingStudents(true);
+    try {
+      const response = await api.get('/api/client/students');
+      if (response.data && response.data.data) {
+        const students = response.data.data.map((student: any) => ({
+          id: student.id,
+          first_name: student.first_name,
+          last_name: student.last_name,
+          full_name: student.full_name || `${student.first_name} ${student.last_name}`,
+          ci: student.ci
+        }));
+        setAssociatedStudents(students);
+        
+        // If there's only one student, auto-select it
+        if (students.length === 1) {
+          setSelectedStudentId(students[0].id.toString());
+          setStudentName(students[0].full_name);
+          setStudentId(students[0].ci);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching associated students:', error);
+    } finally {
+      setLoadingStudents(false);
+    }
+  };
+
+  const handleStudentSelection = (value: string) => {
+    setSelectedStudentId(value);
+    
+    if (value === 'other') {
+      setIsOtherStudent(true);
+      setStudentName('');
+      setStudentId('');
+    } else {
+      setIsOtherStudent(false);
+      const student = associatedStudents.find(s => s.id.toString() === value);
+      if (student) {
+        setStudentName(student.full_name);
+        setStudentId(student.ci);
+      }
     }
   };
 
@@ -162,8 +238,13 @@ const CourseEnrollmentModal = ({ isOpen, onClose, course, group }: CourseEnrollm
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate that we have student data
+    if (associatedStudents.length > 0 && !selectedStudentId) {
+      return; // No student selected from dropdown
+    }
+    
     if (!studentName.trim() || !studentId.trim()) {
-      return;
+      return; // Missing student name or ID
     }
 
     // Navigate to checkout with enrollment data
@@ -249,33 +330,100 @@ const CourseEnrollmentModal = ({ isOpen, onClose, course, group }: CourseEnrollm
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="studentName">Nombre del Alumno</Label>
-              <Input
-                id="studentName"
-                type="text"
-                value={studentName}
-                onChange={(e) => setStudentName(e.target.value)}
-                placeholder="Nombre completo"
-                required
-                className="text-sm"
-              />
+          {/* Student Selection or Input */}
+          {loadingStudents ? (
+            <div className="p-4 text-center">
+              <div className="inline-flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                <span className="text-sm">Cargando estudiantes...</span>
+              </div>
             </div>
+          ) : associatedStudents.length > 0 ? (
+            // If user has associated students, show dropdown
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="studentSelect">Seleccionar Estudiante</Label>
+                <Select value={selectedStudentId} onValueChange={handleStudentSelection}>
+                  <SelectTrigger id="studentSelect">
+                    <SelectValue placeholder="Selecciona un estudiante para inscribir" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {associatedStudents.map((student) => (
+                      <SelectItem key={student.id} value={student.id.toString()}>
+                        {student.full_name} - CI: {student.ci}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="other">
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4" />
+                        <span>Inscribir a otro estudiante</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Show input fields if "Other student" is selected */}
+              {isOtherStudent && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg">
+                  <div className="space-y-2">
+                    <Label htmlFor="studentName">Nombre del Alumno</Label>
+                    <Input
+                      id="studentName"
+                      type="text"
+                      value={studentName}
+                      onChange={(e) => setStudentName(e.target.value)}
+                      placeholder="Nombre completo"
+                      required
+                      className="text-sm"
+                    />
+                  </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="studentId">Cédula</Label>
-              <Input
-                id="studentId"
-                type="text"
-                value={studentId}
-                onChange={(e) => setStudentId(e.target.value)}
-                placeholder="Número de cédula"
-                required
-                className="text-sm"
-              />
+                  <div className="space-y-2">
+                    <Label htmlFor="studentId">Cédula</Label>
+                    <Input
+                      id="studentId"
+                      type="text"
+                      value={studentId}
+                      onChange={(e) => setStudentId(e.target.value)}
+                      placeholder="Número de cédula"
+                      required
+                      className="text-sm"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
+          ) : (
+            // If no associated students (guest or user without students), show input fields
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="studentName">Nombre del Alumno</Label>
+                <Input
+                  id="studentName"
+                  type="text"
+                  value={studentName}
+                  onChange={(e) => setStudentName(e.target.value)}
+                  placeholder="Nombre completo"
+                  required
+                  className="text-sm"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="studentId">Cédula</Label>
+                <Input
+                  id="studentId"
+                  type="text"
+                  value={studentId}
+                  onChange={(e) => setStudentId(e.target.value)}
+                  placeholder="Número de cédula"
+                  required
+                  className="text-sm"
+                />
+              </div>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label>Tipo de Inscripción</Label>
@@ -346,7 +494,12 @@ const CourseEnrollmentModal = ({ isOpen, onClose, course, group }: CourseEnrollm
             </Button>
             <Button 
               type="submit" 
-              disabled={!studentName.trim() || !studentId.trim()}
+              disabled={
+                loadingStudents || 
+                (associatedStudents.length > 0 && !selectedStudentId) ||
+                !studentName.trim() || 
+                !studentId.trim()
+              }
               className="w-full sm:w-auto bg-primary hover:bg-primary/90"
             >
               Continuar al Checkout

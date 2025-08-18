@@ -42,6 +42,19 @@ const queryClient = new QueryClient();
 const App = () => {
   const { setIsLoading, setUser, setIsLoggedIn, user, isLoggedIn, isLoading } = useStore();
   const [showStudentSplash, setShowStudentSplash] = useState(false);
+  const [membershipStatus, setMembershipStatus] = useState(null);
+  
+  // Function to fetch membership status
+  const fetchMembershipStatus = async () => {
+    try {
+      const statusResponse = await api.get('api/client/members/check-membership-status');
+      setMembershipStatus(statusResponse.data);
+      return statusResponse.data;
+    } catch (error) {
+      console.error('Error fetching membership status:', error);
+      return null;
+    }
+  };
   
   // Check if user needs to complete student data or setup
   useEffect(() => {
@@ -121,28 +134,45 @@ const App = () => {
       students: students.map(s => ({ name: s.full_name, ci: s.ci }))
     });
     
-    // Show splash ONLY if:
-    // 1. User has students without CI (at least 1 student missing CI)
-    // 2. OR all students have CI but setup is not completed (setup_completed = false)
-    const hasStudentsWithoutCI = studentsWithoutCI.length > 0;
-    const needsSetup = allStudentsHaveCI && !setupCompleted;
+    // Check membership status asynchronously
+    const checkAndShowSplash = async () => {
+      let currentMembershipStatus = membershipStatus;
+      
+      // If we don't have membership status yet, fetch it
+      if (!currentMembershipStatus && hasStudents) {
+        currentMembershipStatus = await fetchMembershipStatus();
+      }
+      
+      // Show splash ONLY if:
+      // 1. User has students without CI (at least 1 student missing CI)
+      // 2. OR all students have CI but membership is inactive (!is_active_member)
+      // 3. OR all students have CI, membership is active, but setup is not completed
+      const hasStudentsWithoutCI = studentsWithoutCI.length > 0;
+      const needsMembershipPayment = allStudentsHaveCI && hasStudents && currentMembershipStatus && !currentMembershipStatus.is_active_member;
+      const needsSetup = allStudentsHaveCI && (!currentMembershipStatus || currentMembershipStatus.is_active_member) && !setupCompleted;
+      
+      const shouldShowSplash = hasStudentsWithoutCI || needsMembershipPayment || needsSetup;
+      
+      console.log('App.tsx - Decision:', {
+        hasStudentsWithoutCI,
+        needsMembershipPayment,
+        needsSetup,
+        shouldShowSplash,
+        membershipActive: currentMembershipStatus?.is_active_member,
+        membershipReason: currentMembershipStatus?.reason
+      });
+      
+      if (shouldShowSplash) {
+        console.log('App.tsx - Showing splash -', { hasStudentsWithoutCI, needsMembershipPayment, needsSetup });
+        setShowStudentSplash(true);
+      } else {
+        console.log('App.tsx - Hiding splash (everything complete)');
+        setShowStudentSplash(false);
+      }
+    };
     
-    const shouldShowSplash = hasStudentsWithoutCI || needsSetup;
-    
-    console.log('App.tsx - Decision:', {
-      hasStudentsWithoutCI,
-      needsSetup,
-      shouldShowSplash
-    });
-    
-    if (shouldShowSplash) {
-      console.log('App.tsx - Showing splash -', { hasStudentsWithoutCI, needsSetup });
-      setShowStudentSplash(true);
-    } else {
-      console.log('App.tsx - Hiding splash (everything complete)');
-      setShowStudentSplash(false);
-    }
-  }, [isLoggedIn, user, isLoading]);
+    checkAndShowSplash();
+  }, [isLoggedIn, user, isLoading, membershipStatus]);
   
   useEffect(() => {
     const checkAuth = async () => {
@@ -175,6 +205,8 @@ const App = () => {
 
   const handleStudentDataComplete = () => {
     setShowStudentSplash(false);
+    // Reset membership status to trigger a refresh on next evaluation
+    setMembershipStatus(null);
   };
 
   return (
@@ -183,18 +215,19 @@ const App = () => {
         <Toaster />
         <Sonner />
         
-        {/* Student Data Splash Screen */}
-        <StudentDataSplash 
-          isOpen={showStudentSplash}
-          onDataComplete={handleStudentDataComplete}
-        />
-        
         <BrowserRouter 
           future={{
             v7_startTransition: true,
             v7_relativeSplatPath: true
           }}
         >
+          {/* Student Data Splash Screen */}
+          <StudentDataSplash 
+            isOpen={showStudentSplash}
+            onDataComplete={handleStudentDataComplete}
+            membershipStatus={membershipStatus}
+            onRefreshMembershipStatus={fetchMembershipStatus}
+          />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/beneficios" element={

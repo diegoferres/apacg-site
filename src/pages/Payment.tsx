@@ -45,7 +45,7 @@ interface CourseData {
 }
 
 interface PaymentData {
-  type: 'event' | 'raffle' | 'course';
+  type: 'event' | 'raffle' | 'course' | 'course_monthly_payment';
   eventId?: number;
   eventSlug?: string;
   eventTitle?: string;
@@ -60,6 +60,14 @@ interface PaymentData {
   enrollmentFee?: number;
   monthlyFee?: number;
   courseData?: CourseData;
+  // Campos específicos para mensualidades
+  enrollment_id?: number;
+  studentName?: string;
+  courseName?: string;
+  groupName?: string;
+  lateFee?: number;
+  hasLateFee?: boolean;
+  orderNumber?: string;
 }
 
 interface BancardData {
@@ -95,6 +103,8 @@ const PaymentPage = () => {
     if (savedData) {
       try {
         const parsedData = JSON.parse(savedData);
+        
+        
         setPaymentData(parsedData);
         setIsLoading(false);
         
@@ -399,12 +409,15 @@ const PaymentPage = () => {
                   {/* Información del item */}
                   <div className="border-b pb-4">
                     <h3 className="font-semibold text-lg mb-2">
-                      {paymentData.type === 'membership' ? 'Pago de Membresía' : paymentData.eventTitle}
+                      {paymentData.type === 'membership' ? 'Pago de Membresía' : 
+                       paymentData.type === 'course_monthly_payment' ? 'Pago de Mensualidad' :
+                       paymentData.eventTitle}
                     </h3>
                     <p className="text-sm text-muted-foreground">
                       {paymentData.type === 'event' && 'Entrada de Evento'}
                       {paymentData.type === 'raffle' && 'Números de Rifa'}
                       {paymentData.type === 'course' && 'Inscripción al Curso'}
+                      {paymentData.type === 'course_monthly_payment' && paymentData.courseName}
                       {paymentData.type === 'membership' && 'Anualidades de Estudiantes'}
                     </p>
                     {paymentData.type === 'course' && (
@@ -425,6 +438,16 @@ const PaymentPage = () => {
                             <p><strong>Tipo:</strong> {paymentData.studentData.is_member ? 'Socio' : 'No Socio'}</p>
                           </div>
                         )}
+                      </div>
+                    )}
+                    {paymentData.type === 'course_monthly_payment' && (
+                      <div className="mt-2 text-sm space-y-2">
+                        <div className="bg-muted/30 p-2 rounded-md">
+                          <p><strong>Estudiante:</strong> {paymentData.studentName}</p>
+                          {paymentData.groupName && (
+                            <p><strong>Grupo:</strong> {paymentData.groupName}</p>
+                          )}
+                        </div>
                       </div>
                     )}
                     {paymentData.type === 'membership' && paymentData.unpaidStudents && (
@@ -462,6 +485,34 @@ const PaymentPage = () => {
                       <div className="text-xs text-muted-foreground italic">
                         * Pago de anualidad por estudiante para el año {paymentData.membershipStatus?.current_year || new Date().getFullYear()}
                       </div>
+                    </div>
+                  ) : paymentData.type === 'course_monthly_payment' ? (
+                    <div className="space-y-3">
+                      <h4 className="font-medium">Detalle de mensualidad:</h4>
+                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <div className="flex-1">
+                          <p className="font-medium text-sm">Mensualidad del curso</p>
+                          <p className="text-xs text-muted-foreground">
+                            {paymentData.courseName}
+                          </p>
+                        </div>
+                        <span className="font-semibold">
+                          {formatPrice(paymentData.monthlyFee || 0)}
+                        </span>
+                      </div>
+                      {paymentData.hasLateFee && paymentData.lateFee && paymentData.lateFee > 0 && (
+                        <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                          <div className="flex-1">
+                            <p className="font-medium text-sm text-red-600">Multa por atraso</p>
+                            <p className="text-xs text-muted-foreground">
+                              Recargo por pago tardío
+                            </p>
+                          </div>
+                          <span className="font-semibold text-red-600">
+                            {formatPrice(paymentData.lateFee)}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   ) : paymentData.type === 'course' ? (
                     <div className="space-y-3">
@@ -516,15 +567,18 @@ const PaymentPage = () => {
                   )}
                   
                   <div className="pt-4 border-t">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm">
-                        {paymentData.type === 'membership' ? 'Total de estudiantes:' : 
-                         paymentData.type === 'course' ? 'Total de inscripciones:' : 'Total de entradas:'}
-                      </span>
-                      <span className="text-sm font-medium">
-                        {paymentData.type === 'membership' ? paymentData.studentCount : paymentData.totalTickets}
-                      </span>
-                    </div>
+                    {(paymentData.type === 'membership' || paymentData.type === 'course' || paymentData.type === 'event' || paymentData.type === 'raffle') && (
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm">
+                          {paymentData.type === 'membership' ? 'Total de estudiantes:' : 
+                           paymentData.type === 'course' ? 'Total de inscripciones:' : 
+                           'Total de entradas:'}
+                        </span>
+                        <span className="text-sm font-medium">
+                          {paymentData.type === 'membership' ? paymentData.studentCount : paymentData.totalTickets}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex justify-between items-center">
                       <span className="font-semibold">Total:</span>
                       <span className="text-xl font-bold text-primary">

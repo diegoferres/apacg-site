@@ -209,7 +209,10 @@ const PaymentSuccess = () => {
   };
 
 
-  const getItemTypeName = (type: string) => {
+  const getDetailedItemDescription = (item: any) => {
+    const type = item.orderable_type;
+    const details = item.details || item.item_details || {};
+    
     switch (type) {
       case 'App\\Models\\Event':
         return 'Evento';
@@ -217,9 +220,77 @@ const PaymentSuccess = () => {
         return 'Entrada';
       case 'App\\Models\\Raffle':
         return 'Rifa';
+      case 'App\\Models\\Course':
+      case 'App\\Models\\CourseGroup':
+        // Construir descripción detallada para cursos
+        let description = 'Inscripción a curso';
+        
+        // Agregar nombre del curso si está disponible
+        if (details.course_title) {
+          description = `Inscripción a ${details.course_title}`;
+        }
+        
+        // Agregar grupo si está disponible
+        if (details.course_group_name) {
+          description += ` - ${details.course_group_name}`;
+        } else if (details.group_name) {
+          description += ` - ${details.group_name}`;
+        }
+        
+        // Agregar estudiante si está disponible
+        if (details.student_data?.name || details.student_name) {
+          const studentName = details.student_data?.name || details.student_name;
+          description += ` (Estudiante: ${studentName})`;
+        }
+        
+        return description;
       default:
         return 'Item';
     }
+  };
+
+  const getItemBreakdown = (item: any) => {
+    const details = item.details || item.item_details || {};
+    
+    if ((item.orderable_type === 'App\\Models\\Course' || item.orderable_type === 'App\\Models\\CourseGroup') && 
+        (details.payment_breakdown || details.enrollment_fee || details.monthly_fee)) {
+      const items = [];
+      
+      // Si hay payment_breakdown, usarlo
+      if (details.payment_breakdown) {
+        const breakdown = details.payment_breakdown;
+        if (breakdown.enrollment_fee && breakdown.enrollment_fee > 0) {
+          items.push({
+            name: 'Matrícula',
+            amount: breakdown.enrollment_fee
+          });
+        }
+        if (breakdown.monthly_fee && breakdown.monthly_fee > 0) {
+          items.push({
+            name: 'Mensualidad',
+            amount: breakdown.monthly_fee
+          });
+        }
+      } else {
+        // Si no hay payment_breakdown, usar los campos directos
+        if (details.enrollment_fee && toNumber(details.enrollment_fee) > 0) {
+          items.push({
+            name: 'Matrícula',
+            amount: toNumber(details.enrollment_fee)
+          });
+        }
+        if (details.monthly_fee && toNumber(details.monthly_fee) > 0) {
+          items.push({
+            name: 'Mensualidad',
+            amount: toNumber(details.monthly_fee)
+          });
+        }
+      }
+      
+      return items.length > 0 ? items : null;
+    }
+    
+    return null;
   };
 
   if (isLoading) {
@@ -311,17 +382,41 @@ const PaymentSuccess = () => {
                   {/* Resumen de compra */}
                   <div className="border-t pt-4">
                     <h4 className="font-medium mb-3 text-left">Resumen de Compra</h4>
-                    <div className="space-y-2">
-                      {paymentDetails.order.items.map((item, index) => (
-                        <div key={index} className="flex justify-between items-center text-sm">
-                          <span className="text-left">
-                            {getItemTypeName(item.orderable_type)} - Cantidad: {item.quantity}
-                          </span>
-                          <span className="font-medium">
-                            {formatPrice(toNumber(item.total_price))}
-                          </span>
-                        </div>
-                      ))}
+                    <div className="space-y-3">
+                      {paymentDetails.order.items.map((item, index) => {
+                        const breakdown = getItemBreakdown(item);
+                        return (
+                          <div key={index} className="space-y-2">
+                            <div className="flex justify-between items-start text-sm">
+                              <div className="text-left flex-1">
+                                <div className="font-medium">
+                                  {getDetailedItemDescription(item)}
+                                </div>
+                                {item.quantity > 1 && (
+                                  <div className="text-muted-foreground">
+                                    Cantidad: {item.quantity}
+                                  </div>
+                                )}
+                              </div>
+                              <span className="font-medium ml-4">
+                                {formatPrice(toNumber(item.total_price))}
+                              </span>
+                            </div>
+                            
+                            {/* Mostrar desglose para cursos */}
+                            {breakdown && breakdown.length > 0 && (
+                              <div className="ml-4 space-y-1 text-xs text-muted-foreground border-l-2 border-muted pl-3">
+                                {breakdown.map((breakdownItem, breakdownIndex) => (
+                                  <div key={breakdownIndex} className="flex justify-between">
+                                    <span>• {breakdownItem.name}:</span>
+                                    <span>{formatPrice(breakdownItem.amount)}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                       <div className="border-t pt-2 flex justify-between items-center font-semibold">
                         <span>Total</span>
                         <span>{formatPrice(toNumber(paymentDetails.order.total_amount))}</span>

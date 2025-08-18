@@ -128,7 +128,7 @@ const NewsDetail = () => {
                 <img
                   src={newsItem.cover.storage_path_full}
                   alt={newsItem.title}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover object-center"
                 />
               </div>
             </div>

@@ -231,16 +231,16 @@ const EventDetail = () => {
             {/* Event Image */}
             <div className="space-y-4">
               {event.cover ? (
-                <div className="relative overflow-hidden rounded-lg">
+                <div className="relative aspect-video overflow-hidden rounded-lg">
                   <img
                     src={event.cover?.storage_path_full}
                     alt={event.title}
-                    className="w-full h-96 object-cover"
+                    className="w-full h-full object-cover object-center"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                 </div>
               ) : (
-                <div className="relative h-96 bg-gradient-to-br from-primary/10 to-primary/20 rounded-lg flex items-center justify-center">
+                <div className="relative aspect-video bg-gradient-to-br from-primary/10 to-primary/20 rounded-lg flex items-center justify-center">
                   <div className="text-center">
                     <Ticket className="h-16 w-16 text-primary/60 mx-auto mb-4" />
                     <p className="text-primary/80 font-medium">Evento Especial</p>

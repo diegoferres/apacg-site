@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import SearchBar from '@/components/SearchBar';
+import IndependentSearchBar from '@/components/IndependentSearchBar';
 import { formatPrice, formatDate } from '@/lib/utils';
 import { 
   Pagination, 
@@ -42,7 +42,6 @@ export interface Event {
 
 const Events = () => {
   const [events, setEvents] = useState<Event[]>([]);
-  const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -50,35 +49,39 @@ const Events = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
-  const itemsPerPage = 6;
+
+
+  const fetchEvents = async (search: string = '', page: number = 1) => {
+    setIsLoading(true);
+    try {
+      const params: any = { page };
+      if (search.trim()) {
+        params.search = search.trim();
+      }
+
+      const response = await api.get('api/client/events', { params });
+      
+      setEvents(response.data.data.data);
+      setTotalPages(response.data.data.last_page || 1);
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar los eventos. Intente nuevamente más tarde.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     const page = searchParams.get('page') ? parseInt(searchParams.get('page') || '1') : 1;
+    const search = searchParams.get('search') || '';
+    
     setCurrentPage(page);
     
-    // En el futuro, aquí se haría la llamada al API
-    const fetchEvents = async () => {
-      setIsLoading(true);
-      try {
-        const response = await api.get('api/client/events', {
-          params: { page }
-        });
-        const eventsData = response.data.data.data;
-        setEvents(eventsData);
-        setFilteredEvents(eventsData);
-        setTotalPages(Math.ceil(response.data.data.last_page || 1));
-      } catch (error) {
-        console.error('Error fetching events:', error);
-        toast({
-          title: "Error",
-          description: "No se pudieron cargar los eventos. Intente nuevamente más tarde.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchEvents();
+    fetchEvents(search, page);
   }, [searchParams, toast]);
 
   // Helper function to strip HTML tags for short descriptions
@@ -87,26 +90,12 @@ const Events = () => {
     return doc.body.textContent || "";
   };
 
-  const handleSearch = (term: string, categories: string[]) => {
-    let results = [...(events || [])];
-    
-    if (term) {
-      const searchTerm = term.toLowerCase();
-      results = results.filter(event => 
-        event.title.toLowerCase().includes(searchTerm) ||
-        event.description.toLowerCase().includes(searchTerm) ||
-        event.location.toLowerCase().includes(searchTerm)
-      );
-    }
-    
-    setFilteredEvents(results);
-    setTotalPages(Math.ceil(results.length / itemsPerPage));
-    setCurrentPage(1); // Reset to first page when searching
-    setSearchParams({ page: '1' });
-  };
+  // Search functionality is now handled by IndependentSearchBar
 
   const handlePageChange = (page: number) => {
-    setSearchParams({ page: page.toString() });
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('page', page.toString());
+    setSearchParams(newParams);
   };
 
 
@@ -137,7 +126,11 @@ const Events = () => {
             Descubre y participa en los eventos especiales organizados por A.P.A.C. GOETHE.
           </p>
           
-          <SearchBar onSearch={handleSearch} categories={[]} />
+          <IndependentSearchBar 
+            placeholder="Buscar eventos..."
+            showCategoryFilter={false}
+            module="events"
+          />
         </div>
       </section>
 
@@ -149,17 +142,17 @@ const Events = () => {
                 <div key={index} className="h-96 bg-muted/30 animate-pulse rounded-lg"></div>
               ))}
             </div>
-          ) : filteredEvents?.length > 0 ? (
+          ) : events?.length > 0 ? (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredEvents?.map((event) => (
+              {events?.map((event) => (
               <Link key={event.id} to={`/evento/${event.slug}`} className="block">
                 <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 group cursor-pointer">
                 {event.cover ? (
-                  <div className="relative h-48 overflow-hidden">
+                  <div className="relative aspect-[16/9] overflow-hidden">
                     <img
                       src={event.cover?.storage_path_full}
                       alt={event.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                     <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
@@ -168,7 +161,7 @@ const Events = () => {
                     </Badge>
                   </div>
                 ) : (
-                  <div className="relative h-48 bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center">
+                  <div className="relative aspect-[16/9] bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center">
                     <div className="text-center">
                       <Ticket className="h-12 w-12 text-primary/60 mx-auto mb-2" />
                       <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
@@ -222,7 +215,10 @@ const Events = () => {
           ) : (
             <div className="text-center py-12">
               <p className="text-muted-foreground">
-                No se encontraron eventos con los criterios seleccionados.
+                {searchParams.get('search') ? 
+                  `No se encontraron eventos que contengan "${searchParams.get('search')}".` :
+                  'No se encontraron eventos disponibles.'
+                }
               </p>
             </div>
           )}
