@@ -16,7 +16,7 @@ import Footer from "@/components/Footer";
 import { useStore } from "@/stores/store";
 import { FaUserAlt } from 'react-icons/fa';
 import api from "@/services/api";
-import { ChildrenManager } from "@/components/ChildrenManager";
+import { ChildrenManager, calculatePaymentStats } from "@/components/ChildrenManager";
 
 const Profile = () => {
   const [activeTab, setActiveTab] = useState("membership");
@@ -44,6 +44,7 @@ const Profile = () => {
   const [phone, setPhone] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [studentsWithEnrollments, setStudentsWithEnrollments] = useState([]);
 
   const isPending = user?.member?.status === "En Mora";
 
@@ -55,26 +56,86 @@ const Profile = () => {
     }
   }, [isLoggedIn, navigate]);
 
-  // Handle payment success parameter
+  // Handle payment success/error parameters
   useEffect(() => {
     const paymentSuccess = searchParams.get('payment_success');
+    const paymentError = searchParams.get('payment_error');
+    const paymentId = searchParams.get('payment_id');
+    const errorMessage = searchParams.get('message');
+    
     if (paymentSuccess === 'membership') {
-      // Show success toast and clean URL
+      // Show success toast with improved message
       toast({
-        title: "¡Pago Exitoso!",
-        description: "Las anualidades han sido pagadas correctamente. Su membresía está ahora activa.",
+        title: "✅ ¡Pago Exitoso!",
+        description: "Las anualidades han sido pagadas correctamente. Su membresía está ahora activa. Los cambios se reflejarán en breve.",
         variant: "default",
+        duration: 5000,
+      });
+      
+      // Clean URL parameters to avoid showing the message on refresh
+      setSearchParams({});
+      
+      // Set active tab to membership to show the updated status
+      setActiveTab("membership");
+      
+      // Refresh membership status after a short delay
+      setTimeout(async () => {
+        try {
+          // Fetch updated membership status
+          const statusResponse = await api.get('api/client/members/check-membership-status');
+          setMembershipStatus(statusResponse.data);
+          
+          // Fetch updated payments
+          if (user?.id) {
+            const paymentsResponse = await api.get(`api/client/memberships/${user.id}`);
+            setPayments(paymentsResponse.data.data.data || []);
+          }
+        } catch (error) {
+          console.error('Error refreshing membership data:', error);
+        }
+      }, 1500);
+    } else if (paymentError === 'membership') {
+      // Get additional Bancard parameters if available
+      const responseCode = searchParams.get('response_code');
+      const response = searchParams.get('response');
+      
+      // Build the error message
+      let finalErrorMessage = errorMessage ? decodeURIComponent(errorMessage) : "No se pudo procesar el pago de las anualidades.";
+      
+      // Add response code info if available (helps identify specific Bancard errors)
+      if (responseCode && responseCode !== '00') {
+        // Common Bancard error codes
+        const errorCodes: { [key: string]: string } = {
+          '51': 'Fondos insuficientes',
+          '54': 'Tarjeta vencida',
+          '61': 'Límite de monto excedido',
+          '65': 'Límite de transacciones excedido',
+          '91': 'Procesador no disponible',
+          '96': 'Error del sistema'
+        };
+        
+        if (errorCodes[responseCode]) {
+          finalErrorMessage = `${finalErrorMessage} (${errorCodes[responseCode]})`;
+        } else if (responseCode) {
+          finalErrorMessage = `${finalErrorMessage} (Código: ${responseCode})`;
+        }
+      }
+      
+      // Show error toast for failed membership payment
+      toast({
+        title: "❌ Error en el Pago",
+        description: `${finalErrorMessage} Por favor, intente nuevamente.`,
+        variant: "destructive",
+        duration: 8000,
       });
       
       // Clean URL parameters
       setSearchParams({});
       
-      // Refresh membership status
-      setTimeout(() => {
-        window.location.reload();
-      }, 2000);
+      // Set active tab to membership
+      setActiveTab("membership");
     }
-  }, [searchParams, setSearchParams]);
+  }, [searchParams, setSearchParams, user?.id]);
 
   // Función para cargar órdenes con paginación
   const loadOrders = async (page = 1) => {
@@ -144,6 +205,25 @@ const Profile = () => {
 
     fetchUser();
   }, [setUser, isLoggedIn]);
+
+  // Fetch students with enrollments for payment stats
+  useEffect(() => {
+    if (!isLoggedIn || !user?.member?.id) return;
+
+    const fetchStudentsWithEnrollments = async () => {
+      try {
+        const response = await api.get('/api/client/students?include=course_enrollments');
+        if (response.data && response.data.data) {
+          setStudentsWithEnrollments(response.data.data);
+        }
+      } catch (error) {
+        console.error('Error fetching students with enrollments:', error);
+        setStudentsWithEnrollments([]);
+      }
+    };
+
+    fetchStudentsWithEnrollments();
+  }, [isLoggedIn, user?.member?.id]);
 
   // Fetch additional data only for authenticated users
   useEffect(() => {
@@ -379,6 +459,10 @@ const Profile = () => {
     });
   };
 
+  // Calcular estadísticas de pagos de cursos
+  const coursePaymentStats = calculatePaymentStats(studentsWithEnrollments);
+  const totalPendingPayments = coursePaymentStats.overdue + coursePaymentStats.upcoming;
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -512,10 +596,16 @@ const Profile = () => {
                   </Button>
                   <Button 
                     variant={activeTab === "children" ? "default" : "ghost"} 
-                    className="w-full justify-start rounded-none h-12"
+                    className="w-full justify-start rounded-none h-12 relative"
                     onClick={() => setActiveTab("children")}
                   >
+                    <GraduationCap className="mr-2 h-5 w-5" />
                     Hijos Matriculados
+                    {totalPendingPayments > 0 && (
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] h-5 flex items-center justify-center">
+                        {totalPendingPayments}
+                      </span>
+                    )}
                   </Button>
                 </div>
               </CardContent>

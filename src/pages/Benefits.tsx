@@ -6,7 +6,7 @@ import { formatPrice, formatDate } from '@/lib/utils';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import BenefitCard, { Benefit } from '@/components/BenefitCard';
-import SearchBar from '@/components/SearchBar';
+import IndependentSearchBar from '@/components/IndependentSearchBar';
 import { 
   Pagination, 
   PaginationContent, 
@@ -18,72 +18,63 @@ import {
 import { useToast } from '@/components/ui/use-toast';
 
 const Benefits = () => {
+  
   const [benefits, setBenefits] = useState<Benefit[]>([]);
-  const [filteredBenefits, setFilteredBenefits] = useState<Benefit[]>([]);
+  // Categories state removed - handled by IndependentSearchBar
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   
-  useEffect(() => {
-    const page = searchParams.get('page') ? parseInt(searchParams.get('page') || '1') : 1;
-    setCurrentPage(page);
-    
-    const fetchBenefits = async () => {
-      setIsLoading(true);
-      try {
-        const response = await api.get('api/client/benefits', {
-          params: { page }
-        });
-        
-        setBenefits(response.data.data.data);
-        setFilteredBenefits(response.data.data.data);
-        setTotalPages(response.data.data.last_page || 1);
-        setIsLoading(false);
-      } catch (error) {
-        console.error('Error fetching benefits:', error);
-        toast({
-          title: "Error",
-          description: "No se pudieron cargar los beneficios. Intente nuevamente más tarde.",
-          variant: "destructive",
-        });
-        setIsLoading(false);
+
+
+  const fetchBenefits = async (search: string = '', categories: string[] = [], page: number = 1) => {
+    setIsLoading(true);
+    try {
+      const params: any = { page };
+      if (search.trim()) {
+        params.search = search.trim();
       }
-    };
-    
-    fetchBenefits();
-  }, [searchParams, toast]);
-  
-  const handleSearch = (term: string, categories: string[]) => {
-    let results = [...benefits];
-    
-    if (term) {
-      const searchTerm = term.toLowerCase();
-      results = results.filter(benefit => 
-        benefit.title.toLowerCase().includes(searchTerm) ||
-        benefit.description.toLowerCase().includes(searchTerm) ||
-        benefit.commerce.name.toLowerCase().includes(searchTerm) ||
-        benefit.category.name.toLowerCase().includes(searchTerm)
-      );
+      if (categories.length > 0) {
+        params.categories = categories;
+      }
+
+      const response = await api.get('api/client/benefits', { params });
+      
+      setBenefits(response.data.data.data);
+      setTotalPages(response.data.data.last_page || 1);
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error fetching benefits:', error);
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar los beneficios. Intente nuevamente más tarde.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
     }
-    
-    if (categories.length > 0) {
-      results = results.filter(benefit => 
-        categories.includes(benefit.category.name)
-      );
-    }
-    
-    setFilteredBenefits(results);
-  };
-  
-  const handlePageChange = (page: number) => {
-    setSearchParams({ page: page.toString() });
   };
 
-  const availableCategories = Array.from(
-    new Set(benefits.map(b => b.category.name))
-  );
+
+  useEffect(() => {
+    const page = searchParams.get('page') ? parseInt(searchParams.get('page') || '1') : 1;
+    const search = searchParams.get('search') || '';
+    const categoriesParam = searchParams.get('categories');
+    const categories = categoriesParam ? categoriesParam.split(',') : [];
+    
+    setCurrentPage(page);
+    
+    fetchBenefits(search, categories, page);
+  }, [searchParams]); // Remove toast from dependencies
+  
+  
+  const handlePageChange = (page: number) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('page', page.toString());
+    setSearchParams(newParams);
+  };
+
   
   return (
     <div className="min-h-screen flex flex-col">
@@ -105,7 +96,11 @@ const Benefits = () => {
             Explora todos los beneficios disponibles para los miembros de A.P.A.C. GOETHE.
           </p>
           
-          <SearchBar onSearch={handleSearch}  categories={availableCategories} />
+          <IndependentSearchBar 
+            placeholder="Buscar beneficios..."
+            showCategoryFilter={true}
+            module="benefits"
+          />
         </div>
       </section>
       
@@ -117,10 +112,10 @@ const Benefits = () => {
                 <div key={index} className="h-96 bg-muted/30 animate-pulse rounded-lg"></div>
               ))}
             </div>
-          ) : filteredBenefits.length > 0 ? (
+          ) : benefits.length > 0 ? (
             <div className="space-y-10">
               {Object.entries(
-                filteredBenefits.reduce((acc: Record<string, Benefit[]>, benefit) => {
+                benefits.reduce((acc: Record<string, Benefit[]>, benefit) => {
                   const category = benefit.category.name;
                   if (!acc[category]) acc[category] = [];
                   acc[category].push(benefit);
@@ -144,7 +139,10 @@ const Benefits = () => {
           ) : (
             <div className="text-center py-12">
               <p className="text-muted-foreground">
-                No se encontraron beneficios con los criterios seleccionados.
+                {searchParams.get('search') || searchParams.get('categories') ? 
+                  'No se encontraron beneficios con los criterios seleccionados.' :
+                  'No se encontraron beneficios disponibles.'
+                }
               </p>
             </div>
           )}

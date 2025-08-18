@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import SearchBar from '@/components/SearchBar';
+import IndependentSearchBar from '@/components/IndependentSearchBar';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { 
@@ -20,7 +20,6 @@ import api from '@/services/api';
 
 const Courses = () => {
   const [courses, setCourses] = useState<any[]>([]);
-  const [filteredCourses, setFilteredCourses] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -91,56 +90,46 @@ const Courses = () => {
     }
   ];
 
+  const fetchCourses = async (search: string = '', page: number = 1) => {
+    setIsLoading(true);
+    try {
+      const params: any = { 
+        page: page,
+        per_page: 12,
+        sort_by: 'start_date',
+        sort_order: 'asc'
+      };
+      if (search.trim()) {
+        params.search = search.trim();
+      }
+
+      const response = await api.get('api/client/courses', { params });
+      const data = response.data.data;
+      setCourses(data.data || []);
+      setTotalPages(data.last_page || 1);
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error fetching courses:', error);
+      setCourses([]);
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     const page = searchParams.get('page') ? parseInt(searchParams.get('page') || '1') : 1;
+    const search = searchParams.get('search') || '';
+    
     setCurrentPage(page);
     
-    const fetchCourses = async () => {
-      setIsLoading(true);
-      try {
-        const response = await api.get('api/client/courses', {
-          params: { 
-            page: page,
-            per_page: 12,
-            sort_by: 'start_date',
-            sort_order: 'asc'
-          }
-        });
-        const data = response.data.data;
-        setCourses(data.data || []);
-        setFilteredCourses(data.data || []);
-        setTotalPages(data.last_page || 1);
-        setIsLoading(false);
-      } catch (error) {
-        console.error('Error fetching courses:', error);
-        setCourses([]);
-        setFilteredCourses([]);
-        setIsLoading(false);
-      }
-    };
-    
-    fetchCourses();
+    fetchCourses(search, page);
   }, [searchParams]);
   
-  const handleSearch = (term: string, categories: string[]) => {
-    let results = [...courses];
-    
-    if (term) {
-      const searchTerm = term.toLowerCase();
-      results = results.filter(course => 
-        course.title?.toLowerCase().includes(searchTerm) ||
-        course.commerce?.name?.toLowerCase().includes(searchTerm) ||
-        course.short_description?.toLowerCase().includes(searchTerm) ||
-        course.description?.toLowerCase().includes(searchTerm) ||
-        course.location?.toLowerCase().includes(searchTerm)
-      );
-    }
-    
-    setFilteredCourses(results);
-  };
+  // Search functionality is now handled by IndependentSearchBar
   
   const handlePageChange = (page: number) => {
-    setSearchParams({ page: page.toString() });
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('page', page.toString());
+    setSearchParams(newParams);
   };
 
   return (
@@ -163,7 +152,11 @@ const Courses = () => {
             Desarrolla nuevas habilidades con nuestros cursos especializados disponibles para toda la familia.
           </p>
           
-          <SearchBar onSearch={handleSearch} categories={[]} />
+          <IndependentSearchBar 
+            placeholder="Buscar cursos..."
+            showCategoryFilter={false}
+            module="courses"
+          />
         </div>
       </section>
       
@@ -176,9 +169,9 @@ const Courses = () => {
                 <div key={index} className="h-96 bg-muted/30 animate-pulse rounded-lg"></div>
               ))}
             </div>
-          ) : filteredCourses.length > 0 ? (
+          ) : courses.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredCourses.map((course) => (
+              {courses.map((course) => (
               <Card key={course.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                 <div className="relative">
                   {course.cover_image_url ? (
@@ -266,7 +259,10 @@ const Courses = () => {
               <GraduationCap className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-xl font-semibold mb-2">No se encontraron cursos</h3>
               <p className="text-muted-foreground">
-                No se encontraron cursos con los criterios seleccionados.
+                {searchParams.get('search') ? 
+                  `No se encontraron cursos que contengan "${searchParams.get('search')}".` :
+                  'No se encontraron cursos disponibles.'
+                }
               </p>
             </div>
           )}

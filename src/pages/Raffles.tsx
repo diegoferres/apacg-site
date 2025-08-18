@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import SearchBar from '@/components/SearchBar';
+import IndependentSearchBar from '@/components/IndependentSearchBar';
 import { 
   Pagination, 
   PaginationContent, 
@@ -36,43 +36,43 @@ export interface Raffle {
 
 const Raffles = () => {
   const [raffles, setRaffles] = useState<Raffle[]>([]);
-  const [filteredRaffles, setFilteredRaffles] = useState<Raffle[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
-  const itemsPerPage = 6;
+
+  const fetchRaffles = async (search: string = '', page: number = 1) => {
+    setIsLoading(true);
+    try {
+      const params: any = { page };
+      if (search.trim()) {
+        params.search = search.trim();
+      }
+
+      const response = await api.get('api/client/raffles', { params });
+      
+      setRaffles(response.data.data.data);
+      setTotalPages(response.data.data.last_page || 1);
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error fetching raffles:', error);
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar las rifas. Intente nuevamente más tarde.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     const page = searchParams.get('page') ? parseInt(searchParams.get('page') || '1') : 1;
+    const search = searchParams.get('search') || '';
+    
     setCurrentPage(page);
     
-    // En el futuro, aquí se haría la llamada al API
-    const fetchRaffles = async () => {
-      setIsLoading(true);
-      try {
-        const response = await api.get('api/client/raffles', {
-          params: { page }
-        });
-        const rafflesData = response.data.data.data;
-        setRaffles(rafflesData);
-        setFilteredRaffles(rafflesData);
-        setTotalPages(Math.ceil(response.data.data.last_page || 1));
-      } catch (error) {
-        console.error('Error fetching raffles:', error);
-        toast({
-          title: "Error",
-          description: "No se pudieron cargar las rifas. Intente nuevamente más tarde.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchRaffles();
-    
-    setIsLoading(false);
+    fetchRaffles(search, page);
   }, [searchParams, toast]);
 
   // Helper function to strip HTML tags for short descriptions
@@ -81,27 +81,12 @@ const Raffles = () => {
     return doc.body.textContent || "";
   };
 
-  const handleSearch = (term: string, categories: string[]) => {
-    let results = [...raffles];
-    
-    if (term) {
-      const searchTerm = term.toLowerCase();
-      results = results.filter(raffle => 
-        raffle.title.toLowerCase().includes(searchTerm) ||
-        raffle.description.toLowerCase().includes(searchTerm) ||
-        raffle.short_description.toLowerCase().includes(searchTerm)
-      );
-    }
-    
-    // Las rifas no tienen categorías por ahora, pero se puede agregar en el futuro
-    setFilteredRaffles(results);
-    setTotalPages(Math.ceil(results.length / itemsPerPage));
-    setCurrentPage(1);
-    setSearchParams({ page: '1' });
-  };
+  // Search functionality is now handled by IndependentSearchBar
 
   const handlePageChange = (page: number) => {
-    setSearchParams({ page: page.toString() });
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('page', page.toString());
+    setSearchParams(newParams);
   };
 
 
@@ -127,7 +112,11 @@ const Raffles = () => {
             Participa en nuestras rifas benéficas y ayuda a A.P.A.C. GOETHE mientras ganas increíbles premios.
           </p>
           
-          <SearchBar onSearch={handleSearch} categories={[]} />
+          <IndependentSearchBar 
+            placeholder="Buscar rifas..."
+            showCategoryFilter={false}
+            module="raffles"
+          />
         </div>
       </section>
 
@@ -139,9 +128,9 @@ const Raffles = () => {
                 <div key={index} className="h-96 bg-muted/30 animate-pulse rounded-lg"></div>
               ))}
             </div>
-          ) : filteredRaffles.length > 0 ? (
+          ) : raffles.length > 0 ? (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredRaffles.map((raffle) => (
+              {raffles.map((raffle) => (
               <Link key={raffle.id} to={`/rifa/${raffle.slug}`} className="block">
                 <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 group cursor-pointer">
                 <CardHeader className="pb-4">
@@ -188,7 +177,10 @@ const Raffles = () => {
           ) : (
             <div className="text-center py-12">
               <p className="text-muted-foreground">
-                No se encontraron rifas con los criterios seleccionados.
+                {searchParams.get('search') ? 
+                  `No se encontraron rifas que contengan "${searchParams.get('search')}".` :
+                  'No se encontraron rifas disponibles.'
+                }
               </p>
             </div>
           )}

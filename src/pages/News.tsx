@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/pagination';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import SearchBar from '@/components/SearchBar';
+import IndependentSearchBar from '@/components/IndependentSearchBar';
 import { Calendar, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import api from '@/services/api';
@@ -36,57 +36,51 @@ export interface NewsItem {
 
 const News = () => {
   const [news, setNews] = useState<NewsItem[]>([]);
-  const [filteredNews, setFilteredNews] = useState<NewsItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
-  const itemsPerPage = 6;
   
+  const fetchNews = async (search: string = '', page: number = 1) => {
+    setIsLoading(true);
+    try {
+      const params: any = { page };
+      if (search.trim()) {
+        params.search = search.trim();
+      }
+
+      const response = await api.get('api/client/news', { params });
+      
+      setNews(response.data.data.data);
+      setTotalPages(response.data.data.last_page || 1);
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error fetching news:', error);
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar las noticias. Intente nuevamente más tarde.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     const page = searchParams.get('page') ? parseInt(searchParams.get('page') || '1') : 1;
+    const search = searchParams.get('search') || '';
+    
     setCurrentPage(page);
     
-    const loadNews = async () => {
-      setIsLoading(true);
-      
-      try {
-        const response = await api.get('api/client/news');
-        const newsData = response.data.data.data;
-        setNews(newsData);
-        setFilteredNews(newsData);
-        console.log('response.data.data.data', newsData);
-        setTotalPages(Math.ceil(response.data.data.last_page || 1));
-      } catch (error) {
-        console.error('Error fetching news:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    loadNews();
-  }, [searchParams]);
+    fetchNews(search, page);
+  }, [searchParams, toast]);
   
-  const handleSearch = (term: string) => {
-    let results = [...news];
-    
-    if (term) {
-      const searchTerm = term.toLowerCase();
-      results = results.filter(item => 
-        item.title.toLowerCase().includes(searchTerm) ||
-        item.excerpt.toLowerCase().includes(searchTerm)
-      );
-    }
-    
-    setFilteredNews(results);
-    setTotalPages(Math.ceil(results.length / itemsPerPage));
-    setCurrentPage(1); // Reset to first page when searching
-    setSearchParams({ page: '1' });
-  };
+  // Search functionality is now handled by IndependentSearchBar
   
   const handlePageChange = (page: number) => {
-    setSearchParams({ page: page.toString() });
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('page', page.toString());
+    setSearchParams(newParams);
   };
   
   
@@ -95,19 +89,6 @@ const News = () => {
     return doc.body.textContent || "";
   };
   
-  // Paginar resultados
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedNews = filteredNews.slice(startIndex, startIndex + itemsPerPage);
-  
-  console.log('Debug info:', {
-    currentPage,
-    totalPages,
-    itemsPerPage,
-    startIndex,
-    filteredNewsLength: filteredNews.length,
-    paginatedNewsLength: paginatedNews.length,
-    paginatedNews
-  });
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -129,7 +110,11 @@ const News = () => {
             Mantente al día con las últimas noticias y novedades de A.P.A.C. GOETHE.
           </p>
           
-          <SearchBar onSearch={handleSearch} categories={[]} />
+          <IndependentSearchBar 
+            placeholder="Buscar noticias..."
+            showCategoryFilter={false}
+            module="news"
+          />
         </div>
       </section>
       
@@ -141,9 +126,9 @@ const News = () => {
                 <div key={index} className="h-80 bg-muted/30 animate-pulse rounded-lg"></div>
               ))}
             </div>
-          ) : paginatedNews.length > 0 ? (
+          ) : news.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {paginatedNews.map((item, index) => (
+              {news.map((item, index) => (
                 <Link key={item.id} to={`/novedad/${item.slug}`} className="block">
                   <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 group animate-fade-up cursor-pointer" style={{ animationDelay: `${100 + index * 100}ms` }}>
                   {item.cover ? (
@@ -191,7 +176,12 @@ const News = () => {
             </div>
           ) : (
             <div className="text-center py-12">
-              <p className="text-muted-foreground">No se encontraron novedades con los criterios seleccionados.</p>
+              <p className="text-muted-foreground">
+                {searchParams.get('search') ? 
+                  `No se encontraron novedades que contengan "${searchParams.get('search')}".` :
+                  'No se encontraron novedades disponibles.'
+                }
+              </p>
             </div>
           )}
           
