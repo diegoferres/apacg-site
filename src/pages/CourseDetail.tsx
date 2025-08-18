@@ -160,27 +160,34 @@ const CourseDetail = () => {
             <div className="lg:col-span-2 space-y-6">
               {/* Hero image */}
               <div className="relative rounded-xl overflow-hidden">
-                <div className="w-full h-64 md:h-80 bg-muted flex items-center justify-center">
-                  {course.cover_image_url ? (
+                {course.cover_image_url ? (
+                  <div className="aspect-video">
                     <img 
                       src={course.cover_image_url} 
                       alt={course.title}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover object-center"
                     />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center">
-                      <GraduationCap className="h-16 w-16 text-primary/60" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                    <div className="absolute bottom-4 left-4 text-white">
+                      <Badge className="mb-2 bg-primary text-primary-foreground">
+                        {course.status === 'active' ? 'Activo' : course.status}
+                      </Badge>
+                      <h1 className="text-2xl md:text-3xl font-bold">{course.title}</h1>
+                      <p className="text-lg opacity-90">{course.commerce?.name || 'APAC'}</p>
                     </div>
-                  )}
-                </div>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                <div className="absolute bottom-4 left-4 text-white">
-                  <Badge className="mb-2 bg-primary text-primary-foreground">
-                    {course.status === 'active' ? 'Activo' : course.status}
-                  </Badge>
-                  <h1 className="text-2xl md:text-3xl font-bold">{course.title}</h1>
-                  <p className="text-lg opacity-90">{course.commerce?.name || 'APAC'}</p>
-                </div>
+                  </div>
+                ) : (
+                  <div className="aspect-video bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center relative">
+                    <GraduationCap className="h-16 w-16 text-primary/60" />
+                    <div className="absolute bottom-4 left-4">
+                      <Badge className="mb-2 bg-primary text-primary-foreground">
+                        {course.status === 'active' ? 'Activo' : course.status}
+                      </Badge>
+                      <h1 className="text-2xl md:text-3xl font-bold">{course.title}</h1>
+                      <p className="text-lg opacity-90">{course.commerce?.name || 'APAC'}</p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Description */}

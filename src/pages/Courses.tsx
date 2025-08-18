@@ -175,13 +175,15 @@ const Courses = () => {
               <Card key={course.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                 <div className="relative">
                   {course.cover_image_url ? (
-                    <img 
-                      src={course.cover_image_url} 
-                      alt={course.title}
-                      className="w-full h-48 object-cover"
-                    />
+                    <div className="aspect-[16/9] overflow-hidden">
+                      <img 
+                        src={course.cover_image_url} 
+                        alt={course.title}
+                        className="w-full h-full object-cover object-center"
+                      />
+                    </div>
                   ) : (
-                    <div className="w-full h-48 bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center">
+                    <div className="aspect-[16/9] bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center">
                       <GraduationCap className="h-12 w-12 text-primary/60" />
                     </div>
                   )}

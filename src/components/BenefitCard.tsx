@@ -61,16 +61,16 @@ const BenefitCard = ({ benefit, delay = 0 }: BenefitCardProps) => {
       }`}
     >
       {benefit.cover && !imageError ? (
-        <div className="relative w-full h-48 overflow-hidden">
+        <div className="relative w-full aspect-[16/9] overflow-hidden">
           <img
             src={benefit.cover?.storage_path_full}
             alt={benefit.title}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover object-center"
             onError={handleImageError}
           />
         </div>
       ) : (
-        <div className="bg-muted/30 w-full h-48 flex items-center justify-center">
+        <div className="bg-muted/30 w-full aspect-[16/9] flex items-center justify-center">
           <Image className="h-12 w-12 text-muted-foreground/60" />
         </div>
       )}

@@ -132,11 +132,11 @@ const News = () => {
                 <Link key={item.id} to={`/novedad/${item.slug}`} className="block">
                   <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 group animate-fade-up cursor-pointer" style={{ animationDelay: `${100 + index * 100}ms` }}>
                   {item.cover ? (
-                    <div className="relative h-48 overflow-hidden">
+                    <div className="relative aspect-[16/9] overflow-hidden">
                       <img
                         src={item.cover?.storage_path_full}
                         alt={item.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                       <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
@@ -145,7 +145,7 @@ const News = () => {
                       </Badge>
                     </div>
                   ) : (
-                    <div className="relative h-48 bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center">
+                    <div className="relative aspect-[16/9] bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center">
                       <div className="text-center">
                         <FileText className="h-12 w-12 text-primary/60 mx-auto mb-2" />
                         <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">

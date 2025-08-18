@@ -148,11 +148,11 @@ const Events = () => {
               <Link key={event.id} to={`/evento/${event.slug}`} className="block">
                 <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 group cursor-pointer">
                 {event.cover ? (
-                  <div className="relative h-48 overflow-hidden">
+                  <div className="relative aspect-[16/9] overflow-hidden">
                     <img
                       src={event.cover?.storage_path_full}
                       alt={event.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                     <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
@@ -161,7 +161,7 @@ const Events = () => {
                     </Badge>
                   </div>
                 ) : (
-                  <div className="relative h-48 bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center">
+                  <div className="relative aspect-[16/9] bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center">
                     <div className="text-center">
                       <Ticket className="h-12 w-12 text-primary/60 mx-auto mb-2" />
                       <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
