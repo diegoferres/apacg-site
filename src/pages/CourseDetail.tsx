@@ -223,7 +223,7 @@ const CourseDetail = () => {
                       <div>
                         <p className="font-medium">Período</p>
                         <p className="text-sm text-muted-foreground">
-                          {course.start_date_format} - {course.end_date_format}
+                          {formatDate(course.start_date_format)} - {formatDate(course.end_date_format)}
                         </p>
                       </div>
                     </div>

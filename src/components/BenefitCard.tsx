@@ -12,12 +12,18 @@ export interface Benefit {
   slug: string;
   title: string;
   commerce: {
+    id?: string;
     name: string;
   };
   description: string;
-  category: {
+  category?: {
+    id: string;
     name: string;
   };
+  categories?: Array<{
+    id: string;
+    name: string;
+  }>;
   start_date: string;
   end_date: string;
   claim_count?: number;
@@ -77,7 +83,7 @@ const BenefitCard = ({ benefit, delay = 0 }: BenefitCardProps) => {
       <CardHeader className="p-4 pb-2">
         <div className="flex justify-between items-start">
           <Badge variant="outline" className="mb-2 bg-primary/5 text-xs font-medium">
-            {benefit.category?.name}
+            {benefit.category?.name || benefit.categories?.[0]?.name || 'Sin categoría'}
           </Badge>
         </div>
         <h3 className="text-lg font-semibold line-clamp-2">{benefit.title}</h3>

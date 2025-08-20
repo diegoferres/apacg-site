@@ -1,14 +1,10 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { MapPin, Calendar, Clock, Ticket } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import IndependentSearchBar from '@/components/IndependentSearchBar';
-import { formatPrice, formatDate } from '@/lib/utils';
+import EventCard, { Event } from '@/components/EventCard';
 import { 
   Pagination, 
   PaginationContent, 
@@ -21,22 +17,6 @@ import { useToast } from '@/components/ui/use-toast';
 import EventPurchaseModal from '@/components/EventPurchaseModal';
 import api from '@/services/api';
 
-export interface Event {
-  id: number;
-  title: string;
-  slug: string;
-  description: string;
-  shortDescription: string;
-  date: string;
-  date_format: string;
-  time: string;
-  location: string;
-  price_from: number;
-  is_informational: boolean;
-  cover: {
-    storage_path_full: string;
-  };
-}
 
 
 
@@ -84,11 +64,6 @@ const Events = () => {
     fetchEvents(search, page);
   }, [searchParams, toast]);
 
-  // Helper function to strip HTML tags for short descriptions
-  const stripHtml = (html: string) => {
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    return doc.body.textContent || "";
-  };
 
   // Search functionality is now handled by IndependentSearchBar
 
@@ -143,73 +118,13 @@ const Events = () => {
               ))}
             </div>
           ) : events?.length > 0 ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {events?.map((event) => (
-              <Link key={event.id} to={`/evento/${event.slug}`} className="block">
-                <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 group cursor-pointer">
-                {event.cover ? (
-                  <div className="relative aspect-[16/9] overflow-hidden">
-                    <img
-                      src={event.cover?.storage_path_full}
-                      alt={event.title}
-                      className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-                    <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
-                      <Calendar className="h-3 w-3 mr-1" />
-                      {formatDate(event.date, { format: 'short' })}
-                    </Badge>
-                  </div>
-                ) : (
-                  <div className="relative aspect-[16/9] bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center">
-                    <div className="text-center">
-                      <Ticket className="h-12 w-12 text-primary/60 mx-auto mb-2" />
-                      <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
-                        <Calendar className="h-3 w-3 mr-1" />
-                        {formatDate(event.date, { format: 'short' })}
-                      </Badge>
-                    </div>
-                  </div>
-                )}
-                
-                <CardHeader>
-                  <CardTitle className="text-xl font-bold group-hover:text-primary transition-colors">
-                    {event.title}
-                  </CardTitle>
-                  <p className="text-muted-foreground text-sm line-clamp-3">
-                    {stripHtml(event.shortDescription)}
-                  </p>
-                </CardHeader>
-                
-                <CardContent className="space-y-3">
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <MapPin className="h-4 w-4 mr-2 text-primary" />
-                    {event.location}
-                  </div>
-                  
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <Clock className="h-4 w-4 mr-2 text-primary" />
-                    {event.time} hrs
-                  </div>
-                  
-                  <div className="flex items-center justify-between pt-4">
-                    <div>
-                      <span className="text-xs text-muted-foreground">Desde</span>
-                      <p className="text-2xl font-bold text-primary">
-                        {formatPrice(event.price_from)}
-                      </p>
-                    </div>
-                    
-                    <Button 
-                      className="bg-primary hover:bg-primary/90"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                        Ver Detalles
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-              </Link>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 auto-rows-fr">
+              {events?.map((event, index) => (
+                <EventCard 
+                  key={event.id} 
+                  event={event}
+                  delay={100 + index * 100}
+                />
               ))}
             </div>
           ) : (

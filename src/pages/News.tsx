@@ -1,9 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { formatDate } from '@/lib/utils';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import NewsCard, { NewsItem } from '@/components/NewsCard';
 import { 
   Pagination, 
   PaginationContent, 
@@ -15,22 +13,9 @@ import {
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import IndependentSearchBar from '@/components/IndependentSearchBar';
-import { Calendar, FileText } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import api from '@/services/api';
-
-export interface NewsItem {
-  id: number;
-  title: string;
-  slug: string;
-  excerpt: string;
-  date: string;
-  date_format: string;
-  cover?: {
-    storage_path_full: string;
-  };
-  content: string;
-}
 
 
 
@@ -84,11 +69,6 @@ const News = () => {
   };
   
   
-  const stripHtml = (html: string) => {
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    return doc.body.textContent || "";
-  };
-  
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -129,49 +109,12 @@ const News = () => {
           ) : news.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {news.map((item, index) => (
-                <Link key={item.id} to={`/novedad/${item.slug}`} className="block">
-                  <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 group animate-fade-up cursor-pointer" style={{ animationDelay: `${100 + index * 100}ms` }}>
-                  {item.cover ? (
-                    <div className="relative aspect-[16/9] overflow-hidden">
-                      <img
-                        src={item.cover?.storage_path_full}
-                        alt={item.title}
-                        className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-                      <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
-                        <Calendar className="h-3 w-3 mr-1" />
-                        {item.date_format || formatDate(item.date, { format: 'short' })}
-                      </Badge>
-                    </div>
-                  ) : (
-                    <div className="relative aspect-[16/9] bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center">
-                      <div className="text-center">
-                        <FileText className="h-12 w-12 text-primary/60 mx-auto mb-2" />
-                        <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
-                          <Calendar className="h-3 w-3 mr-1" />
-                          {item.date_format || formatDate(item.date, { format: 'short' })}
-                        </Badge>
-                      </div>
-                    </div>
-                  )}
-                  
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-xl font-bold group-hover:text-primary transition-colors line-clamp-2">
-                      {item.title}
-                    </CardTitle>
-                    <p className="text-muted-foreground text-sm line-clamp-3">
-                      {stripHtml(item.excerpt)}
-                    </p>
-                  </CardHeader>
-                  
-                  <CardContent className="pt-0">
-                    <span className="inline-flex items-center text-primary hover:text-primary/80 font-medium text-sm">
-                      Leer más
-                    </span>
-                  </CardContent>
-                </Card>
-                </Link>
+                <NewsCard 
+                  key={item.id} 
+                  newsItem={item}
+                  delay={100 + index * 100}
+                  showButton={false}
+                />
               ))}
             </div>
           ) : (

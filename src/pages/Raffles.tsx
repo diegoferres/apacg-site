@@ -2,13 +2,11 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { MapPin, Calendar, Clock, Ticket } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Ticket } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import IndependentSearchBar from '@/components/IndependentSearchBar';
+import RaffleCard, { Raffle } from '@/components/RaffleCard';
 import { 
   Pagination, 
   PaginationContent, 
@@ -18,21 +16,7 @@ import {
   PaginationPrevious 
 } from '@/components/ui/pagination';
 import { useToast } from '@/components/ui/use-toast';
-import { formatPrice, toNumber, formatDate } from '@/lib/utils';
 import api from '@/services/api';
-
-export interface Raffle {
-  id: number;
-  title: string;
-  short_description: string;
-  description: string;
-  end_date: string;
-  price: number;
-  cover: {
-    storage_path_full: string;
-  };
-  slug: string;
-}
 
 const Raffles = () => {
   const [raffles, setRaffles] = useState<Raffle[]>([]);
@@ -75,11 +59,6 @@ const Raffles = () => {
     fetchRaffles(search, page);
   }, [searchParams, toast]);
 
-  // Helper function to strip HTML tags for short descriptions
-  const stripHtml = (html: string) => {
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    return doc.body.textContent || "";
-  };
 
   // Search functionality is now handled by IndependentSearchBar
 
@@ -130,67 +109,12 @@ const Raffles = () => {
             </div>
           ) : raffles.length > 0 ? (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {raffles.map((raffle) => (
-              <Link key={raffle.id} to={`/rifa/${raffle.slug}`} className="block">
-                <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 group cursor-pointer">
-                {raffle.cover ? (
-                  <div className="relative aspect-[16/9] overflow-hidden">
-                    <img
-                      src={raffle.cover?.storage_path_full}
-                      alt={raffle.title}
-                      className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-                    <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
-                      <Calendar className="h-3 w-3 mr-1" />
-                      {formatDate(raffle.end_date, { format: 'short' })}
-                    </Badge>
-                  </div>
-                ) : (
-                  <div className="relative aspect-[16/9] bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center">
-                    <div className="text-center">
-                      <Ticket className="h-12 w-12 text-primary/60 mx-auto mb-2" />
-                      <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
-                        <Calendar className="h-3 w-3 mr-1" />
-                        {formatDate(raffle.end_date, { format: 'short' })}
-                      </Badge>
-                    </div>
-                  </div>
-                )}
-                
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-lg font-bold group-hover:text-primary transition-colors">
-                    {raffle.title}
-                  </CardTitle>
-                  <p className="text-muted-foreground text-sm line-clamp-3">
-                    {stripHtml(raffle.short_description)}
-                  </p>
-                </CardHeader>
-                
-                <CardContent className="space-y-3">
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <Clock className="h-4 w-4 mr-2 text-primary" />
-                    <span>Sortea el {formatDate(raffle.end_date, { format: 'short' })}</span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between pt-4">
-                    <div>
-                      <span className="text-xs text-muted-foreground">Precio</span>
-                      <p className="text-xl font-bold text-primary">
-                        {formatPrice(toNumber(raffle.price))}
-                      </p>
-                    </div>
-                    
-                    <Button 
-                      className="bg-primary hover:bg-primary/90"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                        Ver Detalles
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-              </Link>
+              {raffles.map((raffle, index) => (
+                <RaffleCard 
+                  key={raffle.id} 
+                  raffle={raffle}
+                  delay={100 + index * 100}
+                />
               ))}
             </div>
           ) : (

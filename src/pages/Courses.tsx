@@ -1,11 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import IndependentSearchBar from '@/components/IndependentSearchBar';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import CourseCard, { Course } from '@/components/CourseCard';
 import { 
   Pagination, 
   PaginationContent, 
@@ -14,12 +12,11 @@ import {
   PaginationNext, 
   PaginationPrevious 
 } from '@/components/ui/pagination';
-import { Clock, Users, MapPin, Calendar, GraduationCap } from 'lucide-react';
-import { formatPrice, toNumber, formatDate } from '@/lib/utils';
+import { GraduationCap } from 'lucide-react';
 import api from '@/services/api';
 
 const Courses = () => {
-  const [courses, setCourses] = useState<any[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -170,90 +167,14 @@ const Courses = () => {
               ))}
             </div>
           ) : courses.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {courses.map((course) => (
-              <Card key={course.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="relative">
-                  {course.cover_image_url ? (
-                    <div className="aspect-[16/9] overflow-hidden">
-                      <img 
-                        src={course.cover_image_url} 
-                        alt={course.title}
-                        className="w-full h-full object-cover object-center"
-                      />
-                    </div>
-                  ) : (
-                    <div className="aspect-[16/9] bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center">
-                      <GraduationCap className="h-12 w-12 text-primary/60" />
-                    </div>
-                  )}
-                  <Badge className="absolute top-3 right-3 bg-primary text-primary-foreground">
-                    {course.status === 'active' ? 'Activo' : course.status}
-                  </Badge>
-                </div>
-                
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <CardTitle className="text-lg line-clamp-2">{course.title}</CardTitle>
-                      <p className="text-sm text-primary font-medium">{course.commerce?.name || 'APAC'}</p>
-                    </div>
-                  </div>
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    {course.short_description || course.description}
-                  </p>
-                </CardHeader>
-
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span>{course.formatted_duration || course.duration_months + ' meses'}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <span className="truncate">{course.location}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span>{course.start_date_format}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <GraduationCap className="h-4 w-4 text-muted-foreground" />
-                      <span>{course.age_range}</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">Precio mensual:</p>
-                    <div className="text-sm">
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium">Socios</span>
-                        <span className="text-primary font-bold">
-                          {formatPrice(toNumber(course.monthly_fee_member))}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium">No socios</span>
-                        <span className="text-muted-foreground">
-                          {formatPrice(toNumber(course.monthly_fee_non_member))}
-                        </span>
-                      </div>
-                      {course.available_spots !== undefined && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {course.available_spots} cupos disponibles
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <Button asChild className="w-full">
-                    <Link to={`/curso/${course.slug}`}>
-                      Ver Detalles
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr">
+              {courses.map((course, index) => (
+                <CourseCard 
+                  key={course.id} 
+                  course={course}
+                  delay={100 + index * 50}
+                  showPricing={false}
+                />
               ))}
             </div>
           ) : (
