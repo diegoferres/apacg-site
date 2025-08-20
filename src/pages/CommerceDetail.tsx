@@ -5,6 +5,7 @@ import api from '@/services/api';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import BenefitCard, { Benefit } from '@/components/BenefitCard';
+import CourseCard, { Course } from '@/components/CourseCard';
 import { MapPin, Phone, Mail, Globe, ArrowLeft, Image } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +22,7 @@ interface CommerceDetail {
   email?: string;
   website?: string;
   benefits?: Benefit[];
+  courses?: Course[];
   user?: {
     email: string;
   };
@@ -33,6 +35,8 @@ const CommerceDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const [commerce, setCommerce] = useState<CommerceDetail | null>(null);
+  const [relatedBenefits, setRelatedBenefits] = useState<Benefit[]>([]);
+  const [relatedCourses, setRelatedCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const [imageError, setImageError] = useState(false);
@@ -43,6 +47,48 @@ const CommerceDetail = () => {
       try {
         const response = await api.get(`api/client/commerces/${slug}`);
         setCommerce(response.data.data);
+        
+        // Fetch more benefits and courses from the SAME commerce (for related section)
+        const commerceId = response.data.data.id;
+        const commerceName = response.data.data.name;
+        
+        // Fetch all benefits from this commerce (for related section)
+        try {
+          const benefitsResponse = await api.get('api/client/benefits', {
+            params: { per_page: 20 }
+          });
+          // Filter to get ONLY benefits from THIS commerce
+          const sameComerceeBenefits = benefitsResponse.data.data.data.filter(
+            (benefit: Benefit) => benefit.commerce?.id === commerceId
+          );
+          // Exclude the ones already shown in main section and take max 3
+          const currentBenefitIds = response.data.data.benefits?.map((b: Benefit) => b.id) || [];
+          const additionalBenefits = sameComerceeBenefits.filter(
+            (benefit: Benefit) => !currentBenefitIds.includes(benefit.id)
+          ).slice(0, 3);
+          setRelatedBenefits(additionalBenefits);
+        } catch (error) {
+          console.error('Error fetching related benefits:', error);
+        }
+        
+        // Fetch all courses from this commerce (for related section)
+        try {
+          const coursesResponse = await api.get('api/client/courses', {
+            params: { per_page: 20 }
+          });
+          // Filter to get ONLY courses from THIS commerce
+          const sameCommerceCourses = coursesResponse.data.data.data.filter(
+            (course: Course) => course.commerce?.name === commerceName || course.commerce?.id === commerceId
+          );
+          // Exclude the ones already shown in main section and take max 3
+          const currentCourseIds = response.data.data.courses?.map((c: Course) => c.id) || [];
+          const additionalCourses = sameCommerceCourses.filter(
+            (course: Course) => !currentCourseIds.includes(course.id)
+          ).slice(0, 3);
+          setRelatedCourses(additionalCourses);
+        } catch (error) {
+          console.error('Error fetching related courses:', error);
+        }
       } catch (error) {
         console.error('Error fetching commerce:', error);
         toast({
@@ -188,6 +234,43 @@ const CommerceDetail = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {commerce.benefits.map((benefit) => (
                   <BenefitCard key={benefit.slug} benefit={benefit} />
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+      
+      {/* Courses Section */}
+      {commerce.courses && commerce.courses.length > 0 && (
+        <section className="py-16">
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="max-w-6xl mx-auto">
+              <h2 className="text-2xl md:text-3xl font-bold mb-8">Cursos Disponibles</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {commerce.courses.map((course) => (
+                  <CourseCard key={course.slug} course={course} />
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+      
+      {/* Related Benefits and Courses Section */}
+      {(relatedBenefits.length > 0 || relatedCourses.length > 0) && (
+        <section className="py-16 bg-muted/30">
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="max-w-6xl mx-auto">
+              <h2 className="text-2xl md:text-3xl font-bold mb-8">
+                Más de {commerce?.name}
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {relatedBenefits.map((benefit) => (
+                  <BenefitCard key={benefit.slug} benefit={benefit} />
+                ))}
+                {relatedCourses.map((course) => (
+                  <CourseCard key={course.slug} course={course} />
                 ))}
               </div>
             </div>

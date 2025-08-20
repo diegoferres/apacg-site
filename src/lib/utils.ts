@@ -72,12 +72,50 @@ export function toNumber(value: any): number {
 export function renderSafeHtml(htmlContent: string): { __html: string } {
   if (!htmlContent) return { __html: '' };
   
-  // Limpiar HTML básico - en producción se debería usar una librería como DOMPurify
-  const cleanHtml = htmlContent
+  // Sanitizar HTML manteniendo tags seguros
+  let cleanHtml = htmlContent
     .replace(/<script[^>]*>.*?<\/script>/gi, '') // Remover scripts
     .replace(/<iframe[^>]*>.*?<\/iframe>/gi, '') // Remover iframes
+    .replace(/<object[^>]*>.*?<\/object>/gi, '') // Remover object
+    .replace(/<embed[^>]*>/gi, '') // Remover embed
+    .replace(/<applet[^>]*>.*?<\/applet>/gi, '') // Remover applet
+    .replace(/<meta[^>]*>/gi, '') // Remover meta tags
+    .replace(/<link[^>]*>/gi, '') // Remover link tags
+    .replace(/<style[^>]*>.*?<\/style>/gi, '') // Remover style tags
     .replace(/javascript:/gi, '') // Remover javascript: URLs
     .replace(/on\w+\s*=/gi, ''); // Remover event handlers
+  
+  // Permitir solo tags HTML seguros
+  const allowedTags = [
+    'p', 'div', 'span', 'br', 'hr',
+    'strong', 'b', 'em', 'i', 'u', 's', 'mark',
+    'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+    'ul', 'ol', 'li', 'dl', 'dt', 'dd',
+    'a', 'img',
+    'blockquote', 'q', 'cite', 'code', 'pre',
+    'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td',
+    'sup', 'sub', 'small', 'del', 'ins', 'kbd', 'var', 'samp'
+  ];
+  
+  // Remover atributos peligrosos de tags permitidos
+  allowedTags.forEach(tag => {
+    const regex = new RegExp(`<${tag}([^>]*)>`, 'gi');
+    cleanHtml = cleanHtml.replace(regex, (match, attributes) => {
+      // Limpiar atributos peligrosos pero mantener los seguros
+      const cleanedAttrs = attributes
+        .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '') // Remover event handlers
+        .replace(/javascript:/gi, '') // Remover javascript: en hrefs
+        .replace(/style\s*=\s*["'][^"']*["']/gi, (styleMatch: string) => {
+          // Permitir estilos seguros pero remover javascript
+          if (styleMatch.toLowerCase().includes('javascript') || 
+              styleMatch.toLowerCase().includes('expression')) {
+            return '';
+          }
+          return styleMatch;
+        });
+      return `<${tag}${cleanedAttrs}>`;
+    });
+  });
   
   return { __html: cleanHtml };
 }

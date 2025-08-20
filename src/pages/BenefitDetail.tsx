@@ -36,10 +36,14 @@ interface BenefitDetail {
   end_date: string;
   redemption_details: string;
   commerce?: {
+    id: string;
     name: string;
+    slug: string;
   };
   categories?: [{
+    id: string;
     name: string;
+    slug: string;
   }];
   cover?: {
     storage_path_full: string;
@@ -50,6 +54,7 @@ const BenefitDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const [benefit, setBenefit] = useState<BenefitDetail | null>(null);
+  const [relatedBenefits, setRelatedBenefits] = useState<Benefit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const [imageError, setImageError] = useState(false);
@@ -60,7 +65,11 @@ const BenefitDetail = () => {
       setIsLoading(true);
       try {
         const response = await api.get(`api/client/benefits/${slug}`);
-        setBenefit(response.data.data);
+        const benefitData = response.data.data;
+        setBenefit(benefitData);
+        
+        // Fetch related benefits (same commerce + same category)
+        await fetchRelatedBenefits(benefitData);
       } catch (error) {
         console.error('Error fetching benefit:', error);
         toast({
@@ -70,6 +79,84 @@ const BenefitDetail = () => {
         });
       } finally {
         setIsLoading(false);
+      }
+    };
+
+    const fetchRelatedBenefits = async (currentBenefit: BenefitDetail) => {
+      try {
+        console.log('Fetching related benefits for:', currentBenefit);
+        
+        const response = await api.get('api/client/benefits', {
+          params: { per_page: 30 }
+        });
+        
+        const allBenefits = response.data.data.data;
+        console.log('All benefits fetched:', allBenefits.length);
+        
+        const currentId = currentBenefit.id;
+        const currentCommerceId = currentBenefit.commerce?.id;
+        const currentCategoryIds = currentBenefit.categories?.map(c => c.id) || [];
+        
+        console.log('Filtering criteria:', {
+          currentId,
+          currentCommerceId,
+          currentCategoryIds
+        });
+        
+        // 1. Benefits from same commerce (max 3)
+        const sameCommerce = allBenefits.filter((b: Benefit) => 
+          b.id !== currentId && 
+          b.commerce?.id === currentCommerceId
+        ).slice(0, 3);
+        
+        console.log('Same commerce benefits:', sameCommerce.length);
+        console.log('Same commerce benefits data:', sameCommerce);
+        
+        // 2. Benefits from same categories (max 3, excluding same commerce ones)
+        const sameCategory = allBenefits.filter((b: Benefit) => {
+          if (b.id === currentId || b.commerce?.id === currentCommerceId) {
+            return false;
+          }
+          
+          // Handle both single category and categories array
+          const benefitCategoryIds = [];
+          if (b.category?.id) benefitCategoryIds.push(b.category.id);
+          if (b.categories) benefitCategoryIds.push(...b.categories.map(c => c.id));
+          
+          const hasMatchingCategory = benefitCategoryIds.some(catId => currentCategoryIds.includes(catId));
+          
+          if (hasMatchingCategory) {
+            console.log('Matching category benefit:', b.title, 'categories:', benefitCategoryIds);
+          }
+          
+          return hasMatchingCategory;
+        }).slice(0, 3);
+        
+        console.log('Same category benefits:', sameCategory.length);
+        console.log('Same category benefits data:', sameCategory);
+        
+        // 3. Combine and limit to 6 total
+        const related = [...sameCommerce, ...sameCategory].slice(0, 6);
+        console.log('Total related benefits:', related.length);
+        console.log('Setting related benefits:', related);
+        
+        // If no related benefits found, show some random ones for testing
+        if (related.length === 0) {
+          console.log('No related benefits found, showing random ones for testing');
+          const randomBenefits = allBenefits
+            .filter((b: Benefit) => b.id !== currentId)
+            .slice(0, 3);
+          console.log('Random benefits for fallback:', randomBenefits.length);
+          setRelatedBenefits(randomBenefits);
+        } else {
+          setRelatedBenefits(related);
+        }
+        
+        // Additional debugging
+        console.log('Related benefits state should be set to:', related.length || 'fallback', 'items');
+      } catch (error) {
+        console.error('Error fetching related benefits:', error);
+        // Silent fail - don't show section if it fails
       }
     };
 
@@ -231,6 +318,28 @@ const BenefitDetail = () => {
           </div>
         </div>
       </section>
+      
+      {/* Related Benefits Section */}
+      {(() => {
+        console.log('Rendering related benefits section. Length:', relatedBenefits.length);
+        console.log('Related benefits data at render:', relatedBenefits);
+        return relatedBenefits.length > 0;
+      })() && (
+        <section className="py-16">
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="max-w-6xl mx-auto">
+              <h2 className="text-2xl md:text-3xl font-bold mb-8">
+                Beneficios que te pueden interesar
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {relatedBenefits.map((relatedBenefit) => (
+                  <BenefitCard key={relatedBenefit.slug} benefit={relatedBenefit} />
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
       
       <Footer />
     </div>

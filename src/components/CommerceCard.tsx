@@ -14,6 +14,18 @@ export interface Commerce {
   address: string;
   description: string;
   claim_count?: number;
+  benefits_count?: number; // Now includes both benefits and courses from backend
+  courses_count?: number; // Still available for internal use
+  benefits?: Array<{
+    id: string;
+    slug: string;
+    title: string;
+  }>;
+  courses?: Array<{
+    id: number;
+    slug: string;
+    title: string;
+  }>;
   logo?: {
     storage_path_full: string;
   };
@@ -73,12 +85,17 @@ const CommerceCard = ({ commerce, delay = 0 }: CommerceCardProps) => {
           <h3 className="text-lg font-semibold line-clamp-2">{commerce.name}</h3>
         </CardHeader>
         <CardContent className="p-4 pt-2">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold">{commerce.name}</h3>
-          </div>
-          
           <div className="text-sm text-muted-foreground">
-            {commerce.claim_count} {commerce.claim_count === 1 ? 'beneficio' : 'beneficios'} disponibles
+            {(() => {
+              // benefits_count now includes both benefits and courses from the backend
+              const totalCount = commerce.benefits_count ?? commerce.benefits?.length ?? 0;
+              
+              if (totalCount === 0) {
+                return 'Sin beneficios disponibles';
+              }
+              
+              return `${totalCount} ${totalCount === 1 ? 'beneficio disponible' : 'beneficios disponibles'}`;
+            })()}
           </div>
         </CardContent>
       </Card>
