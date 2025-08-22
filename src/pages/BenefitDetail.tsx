@@ -26,6 +26,7 @@ import Footer from '@/components/Footer';
 import BenefitCard, { Benefit } from '@/components/BenefitCard';
 import api from '@/services/api';
 import { useStore } from '@/stores/store';
+import analytics from '@/services/analytics';
 
 interface BenefitDetail {
   id: string;
@@ -67,6 +68,16 @@ const BenefitDetail = () => {
         const response = await api.get(`api/client/benefits/${slug}`);
         const benefitData = response.data.data;
         setBenefit(benefitData);
+        
+        // Track visualización del beneficio
+        if (benefitData) {
+          analytics.trackViewItem(
+            benefitData.id,
+            benefitData.name,
+            'benefit',
+            0
+          );
+        }
         
         // Fetch related benefits (same commerce + same category)
         await fetchRelatedBenefits(benefitData);
@@ -194,6 +205,15 @@ const BenefitDetail = () => {
   };
 
   const handleClaimBenefit = () => {
+    // Track uso de beneficio en GA4
+    if (benefit) {
+      analytics.trackBenefitUse(
+        benefit.id,
+        benefit.name,
+        benefit.commerce?.name || 'Comercio'
+      );
+    }
+    
     if (isLoggedIn) {
       // Si está logueado, llevar directamente al perfil
       navigate('/perfil');

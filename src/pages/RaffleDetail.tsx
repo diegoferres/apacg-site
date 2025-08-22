@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { formatPrice, toNumber, formatDate } from '@/lib/utils';
 import { useStore } from '@/stores/store';
 import api from '@/services/api';
+import analytics from '@/services/analytics';
 
 interface Raffle {
   id: number;
@@ -57,6 +58,17 @@ const RaffleDetail = () => {
         setIsLoading(true);
         const response = await api.get(`/api/client/raffles/${slug}`);
         setRaffle(response.data.data);
+        
+        // Track visualización de la rifa
+        if (response.data.data) {
+          const raffleData = response.data.data;
+          analytics.trackViewItem(
+            raffleData.id.toString(),
+            raffleData.title,
+            'raffle',
+            raffleData.price
+          );
+        }
       } catch (error) {
         console.error('Error fetching raffle:', error);
       } finally {
@@ -126,6 +138,22 @@ const RaffleDetail = () => {
 
   const updateQuantity = (change: number) => {
     const newQuantity = Math.max(0, quantity + change);
+    
+    // Track agregar al carrito (solo cuando se agrega)
+    if (change > 0 && raffle) {
+      analytics.trackEvent('add_to_cart', {
+        currency: 'PYG',
+        value: raffle.price,
+        items: [{
+          item_id: `raffle_${raffle.id}`,
+          item_name: raffle.title,
+          item_category: 'raffle',
+          price: raffle.price,
+          quantity: 1
+        }]
+      });
+    }
+    
     setQuantity(newQuantity);
   };
 
@@ -148,6 +176,14 @@ const RaffleDetail = () => {
         variant: "destructive"
       });
       return;
+    }
+    
+    // Track inscripción a rifa
+    if (raffle) {
+      analytics.trackRaffleEntry(
+        raffle.id.toString(),
+        raffle.title
+      );
     }
 
     // Obtener código de referido si existe

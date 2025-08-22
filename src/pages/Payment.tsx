@@ -8,6 +8,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { formatPrice, formatDate } from '@/lib/utils';
 import api from '@/services/api';
+import analytics from '@/services/analytics';
 
 interface TicketDetail {
   id: number;
@@ -106,6 +107,14 @@ const PaymentPage = () => {
         
         
         setPaymentData(parsedData);
+        
+        // Track evento de agregar información de pago
+        analytics.trackEvent('add_payment_info', {
+          payment_type: parsedData.type,
+          value: parsedData.totalAmount,
+          currency: 'PYG'
+        });
+        
         setIsLoading(false);
         
         // Si ya tiene checkout_data (como en membresía), usar directamente
@@ -304,6 +313,16 @@ const PaymentPage = () => {
   const handlePaymentSuccess = (data: any) => {
     console.log('Payment success:', data);
     
+    // Track intento de pago exitoso
+    if (paymentData) {
+      analytics.trackEvent('payment_success', {
+        payment_type: paymentData.type,
+        value: paymentData.totalAmount,
+        currency: 'PYG',
+        payment_method: 'bancard'
+      });
+    }
+    
     // Limpiar datos del localStorage (pero preservar checkout_form_data para guests)
     localStorage.removeItem('payment_data');
     localStorage.removeItem('checkout_data');
@@ -317,6 +336,17 @@ const PaymentPage = () => {
 
   const handlePaymentError = (error: any) => {
     console.error('Payment error:', error);
+    
+    // Track error de pago
+    if (paymentData) {
+      analytics.trackEvent('payment_error', {
+        payment_type: paymentData.type,
+        value: paymentData.totalAmount,
+        currency: 'PYG',
+        error_message: error?.message || 'Unknown error'
+      });
+    }
+    
     setError('Hubo un problema procesando el pago. Por favor, verifique sus datos e intente nuevamente.');
   };
 

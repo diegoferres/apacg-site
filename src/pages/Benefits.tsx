@@ -16,6 +16,7 @@ import {
   PaginationPrevious 
 } from '@/components/ui/pagination';
 import { useToast } from '@/components/ui/use-toast';
+import analytics from '@/services/analytics';
 
 const Benefits = () => {
   
@@ -44,6 +45,34 @@ const Benefits = () => {
       
       setBenefits(response.data.data.data);
       setTotalPages(response.data.data.last_page || 1);
+      
+      // Track visualización de lista de beneficios
+      if (response.data.data.data && response.data.data.data.length > 0) {
+        analytics.trackEvent('view_item_list', {
+          item_list_name: 'Beneficios',
+          item_list_id: 'benefits_page',
+          items: response.data.data.data.slice(0, 5).map((benefit: any) => ({
+            item_id: benefit.id,
+            item_name: benefit.name,
+            item_category: 'benefit'
+          }))
+        });
+        
+        // Track búsqueda si hay término
+        if (search && search.trim()) {
+          analytics.trackSearch(search.trim());
+        }
+        
+        // Track filtros de categoría si hay
+        if (categories && categories.length > 0) {
+          analytics.trackEvent('filter_applied', {
+            filter_type: 'category',
+            filter_values: categories,
+            content_type: 'benefits'
+          });
+        }
+      }
+      
       setIsLoading(false);
     } catch (error) {
       console.error('Error fetching benefits:', error);

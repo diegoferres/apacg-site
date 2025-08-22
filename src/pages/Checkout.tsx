@@ -10,6 +10,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { formatPrice, formatDate } from '@/lib/utils';
 import { useStore } from '@/stores/store';
+import analytics from '@/services/analytics';
 
 interface CheckoutData {
   name: string;
@@ -225,6 +226,41 @@ const Checkout = () => {
         ...eventData,
         customerData: formData
       };
+      
+      // Track inicio de checkout en GA4
+      const items = [];
+      if (eventData.type === 'event' && eventData.tickets) {
+        eventData.tickets.forEach(ticket => {
+          items.push({
+            item_id: `ticket_${ticket.id}`,
+            item_name: ticket.name,
+            item_category: 'event_ticket',
+            price: ticket.price,
+            quantity: ticket.quantity,
+            currency: 'PYG'
+          });
+        });
+      } else if (eventData.type === 'course') {
+        items.push({
+          item_id: `course_${eventData.eventId}`,
+          item_name: eventData.eventTitle || 'Curso',
+          item_category: 'course',
+          price: eventData.totalAmount,
+          quantity: 1,
+          currency: 'PYG'
+        });
+      } else if (eventData.type === 'raffle') {
+        items.push({
+          item_id: `raffle_${eventData.eventId}`,
+          item_name: eventData.eventTitle || 'Rifa',
+          item_category: 'raffle',
+          price: eventData.totalAmount,
+          quantity: 1,
+          currency: 'PYG'
+        });
+      }
+      
+      analytics.trackBeginCheckout(eventData.totalAmount, items);
       
       // Guardar datos del pago
       localStorage.setItem('payment_data', JSON.stringify(paymentData));

@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
+import analytics from '@/services/analytics';
 
 interface CommerceDetail {
   id: string;
@@ -47,6 +48,42 @@ const CommerceDetail = () => {
       try {
         const response = await api.get(`api/client/commerces/${slug}`);
         setCommerce(response.data.data);
+        
+        // Track visualización del comercio
+        if (response.data.data) {
+          const commerceData = response.data.data;
+          analytics.trackViewItem(
+            commerceData.id,
+            commerceData.name,
+            'commerce',
+            0
+          );
+          
+          // Track visualización de lista de beneficios/cursos si los tiene
+          if (commerceData.benefits && commerceData.benefits.length > 0) {
+            analytics.trackEvent('view_item_list', {
+              item_list_name: `${commerceData.name} - Beneficios`,
+              item_list_id: `commerce_benefits_${commerceData.id}`,
+              items: commerceData.benefits.slice(0, 5).map((benefit: any) => ({
+                item_id: benefit.id,
+                item_name: benefit.name,
+                item_category: 'benefit'
+              }))
+            });
+          }
+          
+          if (commerceData.courses && commerceData.courses.length > 0) {
+            analytics.trackEvent('view_item_list', {
+              item_list_name: `${commerceData.name} - Cursos`,
+              item_list_id: `commerce_courses_${commerceData.id}`,
+              items: commerceData.courses.slice(0, 5).map((course: any) => ({
+                item_id: course.id,
+                item_name: course.title,
+                item_category: 'course'
+              }))
+            });
+          }
+        }
         
         // Fetch more benefits and courses from the SAME commerce (for related section)
         const commerceId = response.data.data.id;

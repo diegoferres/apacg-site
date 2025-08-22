@@ -8,6 +8,7 @@ import Footer from '@/components/Footer';
 import { formatPrice, formatDate, toNumber } from '@/lib/utils';
 import { useStore } from '@/stores/store';
 import api from '@/services/api';
+import analytics from '@/services/analytics';
 
 interface PaymentDetails {
   id: number;
@@ -125,6 +126,36 @@ const PaymentSuccess = () => {
       
       if (response.data.success) {
         setPaymentDetails(response.data.data);
+        
+        // Track compra completada en GA4
+        const payment = response.data.data;
+        const items = [];
+        
+        if (payment.order && payment.order.items) {
+          payment.order.items.forEach((item: any) => {
+            const itemType = item.orderable_type?.toLowerCase() || '';
+            let category = 'other';
+            
+            if (itemType.includes('ticket')) category = 'event_ticket';
+            else if (itemType.includes('course')) category = 'course';
+            else if (itemType.includes('raffle')) category = 'raffle';
+            
+            items.push({
+              item_id: `${item.orderable_type}_${item.orderable_id}`,
+              item_name: item.details?.name || 'Item',
+              item_category: category,
+              price: item.unit_price,
+              quantity: item.quantity,
+              currency: 'PYG'
+            });
+          });
+        }
+        
+        analytics.trackPurchase(
+          payment.ticket_number || payment.id.toString(),
+          payment.amount,
+          items
+        );
         
         // Limpiar datos del localStorage solo DESPUÉS de obtener exitosamente los detalles
         localStorage.removeItem('checkout_form_data');

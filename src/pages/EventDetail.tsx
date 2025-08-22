@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { formatPrice, formatDate } from '@/lib/utils';
 import { useStore } from '@/stores/store';
 import api from '@/services/api';
+import analytics from '@/services/analytics';
 
 interface TicketType {
   id: number;
@@ -68,6 +69,17 @@ const EventDetail = () => {
         setIsLoading(true);
         const response = await api.get(`/api/client/events/${slug}`);
         setEvent(response.data.data);
+        
+        // Track visualización del evento
+        if (response.data.data) {
+          const eventData = response.data.data;
+          analytics.trackViewItem(
+            eventData.id.toString(),
+            eventData.title,
+            'event',
+            eventData.price_from
+          );
+        }
       } catch (error) {
         console.error('Error fetching event:', error);
       } finally {
@@ -140,6 +152,21 @@ const EventDetail = () => {
     const ticketType = event.ticket_types.find(t => t.id === ticketId);
     
     if (ticketType && newQuantity <= ticketType.stock) {
+      // Track selección de tickets (solo cuando se agrega)
+      if (change > 0 && newQuantity > currentQuantity) {
+        analytics.trackEvent('add_to_cart', {
+          currency: 'PYG',
+          value: ticketType.price,
+          items: [{
+            item_id: `ticket_${ticketId}`,
+            item_name: ticketType.name,
+            item_category: 'event_ticket',
+            price: ticketType.price,
+            quantity: 1
+          }]
+        });
+      }
+      
       setSelectedTickets(prev => ({
         ...prev,
         [ticketId]: newQuantity
@@ -166,6 +193,16 @@ const EventDetail = () => {
         variant: "destructive"
       });
       return;
+    }
+    
+    // Track intención de compra de tickets
+    if (event) {
+      analytics.trackTicketPurchase(
+        event.id.toString(),
+        event.title,
+        getTotalTickets(),
+        getTotalPrice()
+      );
     }
 
     // Obtener código de referido si existe

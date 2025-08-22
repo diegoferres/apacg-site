@@ -10,6 +10,7 @@ import CourseEnrollmentModal from '@/components/CourseEnrollmentModal';
 import { Clock, Users, MapPin, Calendar, GraduationCap, ArrowLeft } from 'lucide-react';
 import { formatPrice, toNumber, renderSafeHtml, formatDate } from '@/lib/utils';
 import api from '@/services/api';
+import analytics from '@/services/analytics';
 
 const CourseDetail = () => {
   const { slug } = useParams();
@@ -28,6 +29,17 @@ const CourseDetail = () => {
       try {
         const response = await api.get(`api/client/courses/${slug}`);
         setCourse(response.data.data);
+        
+        // Track visualización del curso
+        if (response.data.data) {
+          const courseData = response.data.data;
+          analytics.trackViewItem(
+            courseData.id.toString(),
+            courseData.title,
+            'course',
+            courseData.enrollment_fee + courseData.monthly_fee
+          );
+        }
       } catch (error) {
         console.error('Error fetching course:', error);
         // Redirigir a 404 o mostrar error
@@ -95,6 +107,20 @@ const CourseDetail = () => {
   };
 
   const handleEnroll = (groupId: number | null) => {
+    // Track intención de inscripción en GA4
+    if (course) {
+      analytics.trackSelectContent('course_enrollment', course.id.toString());
+      
+      // Si hay selección de grupo específico, trackear también
+      if (groupId) {
+        analytics.trackEvent('select_course_group', {
+          course_id: course.id,
+          course_name: course.title,
+          group_id: groupId
+        });
+      }
+    }
+    
     if (groupId === null) {
       // Inscripción general (sin grupo específico)
       setEnrollmentGroup(null);

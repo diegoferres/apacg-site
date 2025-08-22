@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import Index from "./pages/Index";
 import BenefitDetail from "./pages/BenefitDetail";
 import Benefits from "./pages/Benefits";
@@ -12,6 +12,7 @@ import CommerceDetail from "./pages/CommerceDetail";
 import Events from "./pages/Events";
 import EventDetail from "./pages/EventDetail";
 import Login from "./pages/Login";
+import ResetPassword from "./pages/ResetPassword";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import PaymentPage from "./pages/PaymentPage";
@@ -36,8 +37,33 @@ import ProtectedWithStudentsRequired from "./components/ProtectedWithStudentsReq
 import { useStore } from "./stores/store";
 import { useEffect, useState } from "react";
 import api from "./services/api";
+import analytics from "./services/analytics";
 
 const queryClient = new QueryClient();
+
+// Componente para rastrear cambios de ruta
+const RouteTracker = () => {
+  const location = useLocation();
+  const { user } = useStore();
+
+  useEffect(() => {
+    // Rastrear página vista cada vez que cambia la ruta
+    const pagePath = location.pathname + location.search;
+    analytics.trackPageView(pagePath);
+    
+    // Si hay usuario logueado, configurar propiedades
+    if (user) {
+      analytics.setUserId(user.id);
+      analytics.setUserProperties({
+        user_type: user.member ? 'member' : 'guest',
+        membership_status: user.member?.status,
+        students_count: user.member?.students?.length || 0,
+      });
+    }
+  }, [location, user]);
+
+  return null;
+};
 
 const App = () => {
   const { setIsLoading, setUser, setIsLoggedIn, user, isLoggedIn, isLoading } = useStore();
@@ -174,6 +200,11 @@ const App = () => {
     checkAndShowSplash();
   }, [isLoggedIn, user, isLoading, membershipStatus]);
   
+  // Inicializar Google Analytics al cargar la app
+  useEffect(() => {
+    analytics.initialize();
+  }, []);
+
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -221,6 +252,9 @@ const App = () => {
             v7_relativeSplatPath: true
           }}
         >
+          {/* Route Tracker para Google Analytics */}
+          <RouteTracker />
+          
           {/* Student Data Splash Screen */}
           <StudentDataSplash 
             isOpen={showStudentSplash}
@@ -275,6 +309,7 @@ const App = () => {
             <Route path="/novedades" element={<News />} />
             <Route path="/novedad/:slug" element={<NewsDetail />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/register" element={<Register />} />
             <Route path="/perfil" element={
               <ProtectedRoute>

@@ -16,6 +16,7 @@ import api from '@/services/api';
 import CommerceCard, { Commerce } from '@/components/CommerceCard';
 import { useStore } from '@/stores/store';
 import { formatPrice, toNumber, formatDate, renderSafeHtml } from '@/lib/utils';
+import analytics from '@/services/analytics';
 
 // Mock data para eventos destacados en el home
 const featuredEvents = [
@@ -130,6 +131,13 @@ const Index = () => {
         const response = await api.get('api/client/news/list');
         setNews(response.data.data.data || []);
         setIsLoaded(true);
+        
+        // Track visualización de home con noticias
+        if (response.data.data.data && response.data.data.data.length > 0) {
+          analytics.trackEvent('view_home_news', {
+            news_count: response.data.data.data.length
+          });
+        }
       } catch (error) {
         console.error('Error fetching news:', error);
         setNews([]);
@@ -141,6 +149,13 @@ const Index = () => {
         const response = await api.get('api/client/events/list');
         setEvents(response.data.data.data || []);
         setIsLoaded(true);
+        
+        // Track visualización de home con eventos
+        if (response.data.data.data && response.data.data.data.length > 0) {
+          analytics.trackEvent('view_home_events', {
+            events_count: response.data.data.data.length
+          });
+        }
       } catch (error) {
         console.error('Error fetching events:', error);
         setEvents([]);
