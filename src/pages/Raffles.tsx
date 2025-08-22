@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/pagination';
 import { useToast } from '@/components/ui/use-toast';
 import api from '@/services/api';
+import analytics from '@/services/analytics';
 
 const Raffles = () => {
   const [raffles, setRaffles] = useState<Raffle[]>([]);
@@ -38,6 +39,25 @@ const Raffles = () => {
       
       setRaffles(response.data.data.data);
       setTotalPages(response.data.data.last_page || 1);
+      
+      // Track visualización de lista de rifas
+      if (response.data.data.data && response.data.data.data.length > 0) {
+        analytics.trackEvent('view_item_list', {
+          item_list_name: 'Rifas',
+          item_list_id: 'raffles_page',
+          items: response.data.data.data.slice(0, 5).map((raffle: any) => ({
+            item_id: raffle.id,
+            item_name: raffle.title,
+            item_category: 'raffle'
+          }))
+        });
+        
+        // Track búsqueda si hay término
+        if (search && search.trim()) {
+          analytics.trackSearch(search.trim());
+        }
+      }
+      
       setIsLoading(false);
     } catch (error) {
       console.error('Error fetching raffles:', error);

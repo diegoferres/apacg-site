@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/pagination';
 import { GraduationCap } from 'lucide-react';
 import api from '@/services/api';
+import analytics from '@/services/analytics';
 
 const Courses = () => {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -104,6 +105,25 @@ const Courses = () => {
       const data = response.data.data;
       setCourses(data.data || []);
       setTotalPages(data.last_page || 1);
+      
+      // Track visualización de lista de cursos
+      if (data.data && data.data.length > 0) {
+        analytics.trackEvent('view_item_list', {
+          item_list_name: 'Cursos',
+          item_list_id: 'courses_page',
+          items: data.data.slice(0, 5).map((course: any) => ({
+            item_id: course.id,
+            item_name: course.title,
+            item_category: 'course'
+          }))
+        });
+        
+        // Track búsqueda si hay término
+        if (search && search.trim()) {
+          analytics.trackSearch(search.trim());
+        }
+      }
+      
       setIsLoading(false);
     } catch (error) {
       console.error('Error fetching courses:', error);

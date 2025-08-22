@@ -17,6 +17,7 @@ import { useStore } from "@/stores/store";
 import { FaUserAlt } from 'react-icons/fa';
 import api from "@/services/api";
 import { ChildrenManager, calculatePaymentStats } from "@/components/ChildrenManager";
+import analytics from '@/services/analytics';
 
 const Profile = () => {
   const [activeTab, setActiveTab] = useState("membership");
@@ -54,7 +55,13 @@ const Profile = () => {
       navigate('/login');
       return;
     }
-  }, [isLoggedIn, navigate]);
+    
+    // Track visualización de perfil
+    analytics.trackEvent('view_profile', {
+      user_type: user?.member ? 'member' : 'guest',
+      membership_status: user?.member?.status
+    });
+  }, [isLoggedIn, navigate, user]);
 
   // Handle payment success/error parameters
   useEffect(() => {

@@ -16,6 +16,7 @@ import {
 import { useToast } from '@/components/ui/use-toast';
 import EventPurchaseModal from '@/components/EventPurchaseModal';
 import api from '@/services/api';
+import analytics from '@/services/analytics';
 
 
 
@@ -43,6 +44,25 @@ const Events = () => {
       
       setEvents(response.data.data.data);
       setTotalPages(response.data.data.last_page || 1);
+      
+      // Track visualización de lista de eventos
+      if (response.data.data.data && response.data.data.data.length > 0) {
+        analytics.trackEvent('view_item_list', {
+          item_list_name: 'Eventos',
+          item_list_id: 'events_page',
+          items: response.data.data.data.slice(0, 5).map((event: any) => ({
+            item_id: event.id,
+            item_name: event.title,
+            item_category: 'event'
+          }))
+        });
+        
+        // Track búsqueda si hay término
+        if (search && search.trim()) {
+          analytics.trackSearch(search.trim());
+        }
+      }
+      
       setIsLoading(false);
     } catch (error) {
       console.error('Error fetching events:', error);

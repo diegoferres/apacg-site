@@ -12,6 +12,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import analytics from '@/services/analytics';
 
 // Mock API call - Replace with actual API call later
 const mockRegisterUser = async (userData: any) => {
@@ -57,6 +58,9 @@ const Register = () => {
       const result = await mockRegisterUser(values);
       
       if (result.success) {
+        // Track registro exitoso en GA4
+        analytics.trackSignUp('email');
+        
         toast({
           title: "Registro exitoso",
           description: "Tu cuenta ha sido creada correctamente.",

@@ -9,6 +9,7 @@ import Footer from '@/components/Footer';
 import { Calendar, ArrowLeft, FileText } from 'lucide-react';
 import { NewsItem } from './News';
 import api from '@/services/api';
+import analytics from '@/services/analytics';
 
 
 
@@ -23,6 +24,17 @@ const NewsDetail = () => {
       try {
         const response = await api.get(`/api/client/news/${slug}`);
         setNewsItem(response.data.data);
+        
+        // Track visualización de la noticia
+        if (response.data.data) {
+          const newsData = response.data.data;
+          analytics.trackViewItem(
+            newsData.id,
+            newsData.title,
+            'news',
+            0
+          );
+        }
       } catch (error) {
         console.error('Error fetching news detail:', error);
       }
