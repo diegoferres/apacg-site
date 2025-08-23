@@ -36,7 +36,7 @@ import analytics from '@/services/analytics';
 
 const formSchema = z.object({
   identifier: z.string().min(1, "Este campo es requerido"),
-  password: z.string().min(1, "La contraseña es requerida"),
+  password: z.string().optional(),
 });
 
 const Login = () => {
@@ -61,6 +61,16 @@ const Login = () => {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     // Validar formato según el modo
     const identifier = values.identifier.trim();
+    
+    // Validar password solo en modo login
+    if (mode === 'login' && (!values.password || values.password.trim() === '')) {
+      toast({
+        title: "Error",
+        description: "La contraseña es requerida",
+        variant: "destructive",
+      });
+      return;
+    }
     
     if (loginMode === 'email') {
       // Validar que sea un email válido
@@ -137,8 +147,8 @@ const Login = () => {
       await api.get('sanctum/csrf-cookie');
 
       const payload = loginMode === 'email'
-        ? { email: identifier, password: values.password }
-        : { cedula: identifier, password: values.password };
+        ? { email: identifier, password: values.password! }
+        : { cedula: identifier, password: values.password! };
 
       try {
         const response = await api.post('api/login', payload);
