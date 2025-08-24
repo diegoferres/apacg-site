@@ -65,6 +65,26 @@ const RouteTracker = () => {
   return null;
 };
 
+// Componente para manejar StudentDataSplash con acceso a location
+const StudentDataSplashController = ({ showStudentSplash, handleStudentDataComplete, membershipStatus, fetchMembershipStatus }) => {
+  const location = useLocation();
+  
+  // Rutas donde NO debe aparecer el splash automáticamente
+  const excludedPaths = ['/pago'];
+  
+  // Determinar si debemos mostrar el splash basado en la ubicación
+  const shouldShowBasedOnLocation = !excludedPaths.includes(location.pathname);
+  
+  return (
+    <StudentDataSplash 
+      isOpen={showStudentSplash && shouldShowBasedOnLocation}
+      onDataComplete={handleStudentDataComplete}
+      membershipStatus={membershipStatus}
+      onRefreshMembershipStatus={fetchMembershipStatus}
+    />
+  );
+};
+
 const App = () => {
   const { setIsLoading, setUser, setIsLoggedIn, user, isLoggedIn, isLoading } = useStore();
   const [showStudentSplash, setShowStudentSplash] = useState(false);
@@ -162,6 +182,27 @@ const App = () => {
     
     // Check membership status asynchronously
     const checkAndShowSplash = async () => {
+      // Debug logging
+      console.log('App.tsx - checkAndShowSplash called:', {
+        isLoggedIn,
+        user: user?.name,
+        member: !!user?.member,
+        students: user?.member?.students?.length || 0,
+        isLoading,
+        membershipStatus: !!membershipStatus
+      });
+      
+      // Verificar que tenemos los datos mínimos necesarios
+      if (!isLoggedIn || !user?.member) {
+        console.log('App.tsx - No user or member, skipping splash check');
+        return;
+      }
+      
+      if (isLoading) {
+        console.log('App.tsx - Still loading, skipping splash check');
+        return;
+      }
+      
       let currentMembershipStatus = membershipStatus;
       
       // If we don't have membership status yet, fetch it
@@ -199,6 +240,50 @@ const App = () => {
     
     checkAndShowSplash();
   }, [isLoggedIn, user, isLoading, membershipStatus]);
+  
+  // Effect específico para post-login con delay para asegurar carga completa
+  useEffect(() => {
+    if (!isLoggedIn || !user?.member) return;
+    
+    // Delay específico después del login para asegurar que los datos estén cargados
+    const timer = setTimeout(async () => {
+      console.log('App.tsx - Post-login splash check with delay');
+      if (!showStudentSplash) { // Solo si no se está mostrando ya
+        // Recrear la lógica de checkAndShowSplash aquí para tener acceso al scope
+        const students = user.member.students || [];
+        const studentsWithoutCI = students.filter(student => !student.ci || student.ci.trim() === '');
+        const hasStudentsWithoutCI = studentsWithoutCI.length > 0;
+        const setupCompleted = !!user.setup_completed;
+        
+        // Verificar membresía si hay estudiantes
+        let needsMembershipPayment = false;
+        if (students.length > 0 && studentsWithoutCI.length === 0) {
+          try {
+            const statusResponse = await fetchMembershipStatus();
+            needsMembershipPayment = !statusResponse?.is_active_member;
+          } catch (error) {
+            console.log('App.tsx - Error checking membership in delayed effect:', error);
+          }
+        }
+        
+        const shouldShowSplash = hasStudentsWithoutCI || needsMembershipPayment || (!setupCompleted && students.length > 0);
+        
+        console.log('App.tsx - Post-login delayed decision:', {
+          hasStudentsWithoutCI,
+          needsMembershipPayment,
+          needsSetup: !setupCompleted,
+          shouldShowSplash,
+          totalStudents: students.length
+        });
+        
+        if (shouldShowSplash) {
+          setShowStudentSplash(true);
+        }
+      }
+    }, 1000); // 1 segundo de delay
+    
+    return () => clearTimeout(timer);
+  }, [isLoggedIn]);
   
   // Inicializar Google Analytics al cargar la app
   useEffect(() => {
@@ -255,12 +340,12 @@ const App = () => {
           {/* Route Tracker para Google Analytics */}
           <RouteTracker />
           
-          {/* Student Data Splash Screen */}
-          <StudentDataSplash 
-            isOpen={showStudentSplash}
-            onDataComplete={handleStudentDataComplete}
+          {/* Student Data Splash Controller con acceso a location */}
+          <StudentDataSplashController 
+            showStudentSplash={showStudentSplash}
+            handleStudentDataComplete={handleStudentDataComplete}
             membershipStatus={membershipStatus}
-            onRefreshMembershipStatus={fetchMembershipStatus}
+            fetchMembershipStatus={fetchMembershipStatus}
           />
           <Routes>
             <Route path="/" element={<Index />} />

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ import analytics from '@/services/analytics';
 const CourseDetail = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [course, setCourse] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedGroup, setSelectedGroup] = useState<number | null>(null);
@@ -50,6 +51,46 @@ const CourseDetail = () => {
 
     fetchCourse();
   }, [slug]);
+
+  // Efecto para reabrir modal después del login
+  useEffect(() => {
+    if (!course) return; // Esperar a que el curso esté cargado
+    
+    const urlParams = new URLSearchParams(location.search);
+    const openModal = urlParams.get('openModal');
+    const courseIdParam = urlParams.get('courseId');
+    const groupIdParam = urlParams.get('groupId');
+    
+    // Debug logging
+    console.log('CourseDetail - Modal reopen check:', {
+      hasUrlParams: !!location.search,
+      openModal,
+      courseIdParam,
+      groupIdParam,
+      courseId: course.id,
+      courseGroups: course.groups?.length || 0,
+      currentPath: location.pathname
+    });
+    
+    if (openModal === 'course' && courseIdParam && courseIdParam === course.id.toString()) {
+      console.log('CourseDetail - Reopening modal for course:', course.id);
+      
+      // Encontrar y pre-seleccionar el grupo si está especificado
+      if (groupIdParam && course.groups) {
+        const group = course.groups.find((g: any) => g.id.toString() === groupIdParam);
+        if (group) {
+          console.log('CourseDetail - Pre-selecting group:', group.name);
+          setEnrollmentGroup(group);
+        }
+      }
+      
+      // Abrir el modal
+      setIsEnrollmentModalOpen(true);
+      
+      // Limpiar parámetros URL para evitar reaperturas no deseadas
+      navigate(location.pathname, { replace: true });
+    }
+  }, [course, location.search, navigate, location.pathname]);
 
   // Mock data structure for reference
   const mockCourse = {
