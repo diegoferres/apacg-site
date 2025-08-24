@@ -49,6 +49,7 @@ const RouteTracker = () => {
   useEffect(() => {
     // Rastrear página vista cada vez que cambia la ruta
     const pagePath = location.pathname + location.search;
+    console.log('RouteTracker: Tracking page view for:', pagePath);
     analytics.trackPageView(pagePath);
     
     // Si hay usuario logueado, configurar propiedades
