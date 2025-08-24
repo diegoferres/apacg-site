@@ -73,8 +73,8 @@ const Login = () => {
     }
     
     if (loginMode === 'email') {
-      // Validar que sea un email válido
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      // Validar que sea un email válido (permite formatos como admin@apacg sin TLD)
+      const emailRegex = /^[^\s@]+@[^\s@]+$/;
       if (!emailRegex.test(identifier)) {
         toast({
           title: "Error de validación",
@@ -171,11 +171,35 @@ const Login = () => {
         // Verificar si hay un parámetro de retorno
         const returnTo = searchParams.get('returnTo');
         
+        // Debug logging
+        console.log('Login.tsx - Redirect debug:', {
+          returnTo,
+          redirect_to,
+          searchParams: searchParams.toString(),
+          currentURL: window.location.href
+        });
+        
         setTimeout(() => {
-          if (returnTo) {
-            navigate(returnTo);
-          } else {
+          if (returnTo && returnTo.trim()) {
+            console.log('Login.tsx - Navigating to returnTo:', returnTo);
+            try {
+              // Usar navigate para URLs internas, window.location para URLs externas
+              if (returnTo.startsWith('/')) {
+                navigate(returnTo);
+              } else {
+                window.location.href = returnTo;
+              }
+            } catch (error) {
+              console.error('Login.tsx - Error navigating to returnTo:', error);
+              // Fallback al redirect_to del backend si hay error
+              window.location = redirect_to || '/';
+            }
+          } else if (redirect_to) {
+            console.log('Login.tsx - Using backend redirect_to:', redirect_to);
             window.location = redirect_to;
+          } else {
+            console.log('Login.tsx - No redirect specified, going to home');
+            navigate('/');
           }
         }, 500);
         console.log('user', userData);

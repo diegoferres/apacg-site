@@ -17,6 +17,7 @@ import { useStore } from "@/stores/store";
 import { FaUserAlt } from 'react-icons/fa';
 import api from "@/services/api";
 import { ChildrenManager, calculatePaymentStats } from "@/components/ChildrenManager";
+import StudentDataSplash from "@/components/StudentDataSplash";
 import analytics from '@/services/analytics';
 
 const Profile = () => {
@@ -46,6 +47,7 @@ const Profile = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [studentsWithEnrollments, setStudentsWithEnrollments] = useState([]);
+  const [showStudentSplash, setShowStudentSplash] = useState(false);
 
   const isPending = user?.member?.status === "En Mora";
 
@@ -541,7 +543,7 @@ const Profile = () => {
               <CardContent className="flex flex-col items-center">
                 <div className="mb-4 p-2 bg-white rounded-lg">
                   <img 
-                    src={user?.member?.image?.storage_path_full} 
+                    src={user?.member?.qr_code_base64 || user?.member?.image?.storage_path_full} 
                     alt="QR Code" 
                     className="h-32 w-32" 
                   />
@@ -732,33 +734,62 @@ const Profile = () => {
                               </p>
                             </div>
                           </div>
+                          
+                          {/* Botón para completar datos solo si hay estudiantes sin CI */}
+                          {(() => {
+                            const studentsWithoutCI = user?.member?.students?.filter(student => 
+                              !student.ci || student.ci.trim() === ''
+                            ) || [];
+                            
+                            return studentsWithoutCI.length > 0 && (
+                              <div className="mt-4 pt-4 border-t border-gray-200">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => setShowStudentSplash(true)}
+                                  className="text-blue-700 border-blue-200 hover:bg-blue-50"
+                                >
+                                  <Users className="h-4 w-4 mr-2" />
+                                  Completar cédulas de estudiantes ({studentsWithoutCI.length})
+                                </Button>
+                              </div>
+                            );
+                          })()}
                         </div>
 
-                        {/* Estado por estudiante - Solo mostrar los que han pagado */}
+                        {/* Estado por estudiante - Mostrar todos los estudiantes */}
                         {membershipStatus.student_payment_status && 
-                         membershipStatus.student_payment_status.filter(student => student.current_year_paid).length > 0 && (
+                         membershipStatus.student_payment_status.length > 0 && (
                           <div className="space-y-3">
                             <h4 className="font-medium text-sm text-gray-600 uppercase tracking-wide">
-                              Pagos Anuales {membershipStatus.current_year}
+                              Estado de Pagos Anuales {membershipStatus.current_year}
                             </h4>
                             {membershipStatus.student_payment_status
-                              .filter(student => student.current_year_paid)
                               .map((student) => (
                               <div key={student.student_id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                                 <div className="flex items-center gap-3">
-                                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                                  <div className={`w-3 h-3 rounded-full ${
+                                    student.current_year_paid ? 'bg-green-500' : 'bg-orange-500'
+                                  }`}></div>
                                   <span className="font-medium">{student.student_name}</span>
                                 </div>
                                 <div className="text-sm">
-                                  <span className="text-green-700 flex items-center gap-1">
-                                    <CheckCircle className="h-4 w-4" />
-                                    Pagado {membershipStatus.current_year}
-                                    {student.payment_date && (
-                                      <span className="text-gray-500 ml-2">
-                                        - {formatDate(student.payment_date)}
-                                      </span>
-                                    )}
-                                  </span>
+                                  {student.current_year_paid ? (
+                                    <span className="text-green-700 flex items-center gap-1">
+                                      <CheckCircle className="h-4 w-4" />
+                                      Pagado {membershipStatus.current_year}
+                                      {student.payment_date && (
+                                        <span className="text-gray-500 ml-2">
+                                          - {formatDate(student.payment_date)}
+                                        </span>
+                                      )}
+                                    </span>
+                                  ) : (
+                                    <span className="text-orange-700 flex items-center gap-1">
+                                      <XCircle className="h-4 w-4" />
+                                      Pendiente {membershipStatus.current_year}
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                             ))}
@@ -1481,6 +1512,18 @@ const Profile = () => {
           </div>
         </DialogContent>
       </Dialog>
+      
+      {/* Student Data Splash - Solo desde perfil manualmente */}
+      <StudentDataSplash 
+        isOpen={showStudentSplash}
+        onClose={() => setShowStudentSplash(false)}
+        onSaved={() => {
+          setShowStudentSplash(false);
+          // Refrescar datos del usuario después de guardar
+          window.location.reload();
+        }}
+        skipAutoShow={true}
+      />
       
       <Footer />
     </div>

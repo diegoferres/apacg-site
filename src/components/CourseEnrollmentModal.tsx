@@ -458,7 +458,35 @@ const CourseEnrollmentModal = ({ isOpen, onClose, course, group }: CourseEnrollm
                           </button>
                         </>
                       )
-                      : 'Se aplicarán las tarifas regulares'
+                      : (
+                        <>
+                          Se aplicarán las tarifas regulares.{' '}
+                          <button 
+                            onClick={() => {
+                              const currentPath = window.location.pathname + window.location.search;
+                              const returnTo = `${currentPath}?openModal=course&courseId=${course.id}&groupId=${group?.id || ''}`;
+                              const encodedReturnTo = encodeURIComponent(returnTo);
+                              const loginUrl = `/login?returnTo=${encodedReturnTo}`;
+                              
+                              // Debug logging
+                              console.log('CourseEnrollmentModal - Login redirect debug:', {
+                                currentPath,
+                                courseId: course.id,
+                                groupId: group?.id,
+                                returnTo,
+                                encodedReturnTo,
+                                loginUrl
+                              });
+                              
+                              navigate(loginUrl);
+                            }}
+                            className="underline hover:opacity-80 text-inherit font-medium"
+                            type="button"
+                          >
+                            Iniciar como socio
+                          </button>
+                        </>
+                      )
                   }
                 </p>
               </div>
