@@ -33,10 +33,11 @@ class Analytics {
 
   // Inicializar GA4
   initialize() {
-    // Solo inicializar en producción o si hay un ID configurado
+    // Solo inicializar si hay un ID configurado
     const gaId = import.meta.env.VITE_GA4_MEASUREMENT_ID || 'G-89V72T7N4S';
     
     if (!gaId || this.initialized) {
+      console.log('GA4 already initialized or no ID provided');
       return;
     }
 
@@ -55,10 +56,9 @@ class Analytics {
       this.measurementId = gaId;
       this.initialized = true;
 
-      // Enviar el primer page view
-      this.trackPageView(window.location.pathname + window.location.search);
-
-      console.log('Google Analytics 4 initialized with ID:', gaId);
+      console.log('Google Analytics 4 initialized successfully with ID:', gaId);
+      
+      // No enviar page view aquí, lo hará RouteTracker
     } catch (error) {
       console.error('Error initializing Google Analytics:', error);
     }
@@ -71,13 +71,25 @@ class Analytics {
 
   // Rastrear página vista
   trackPageView(path?: string) {
-    if (!this.initialized) return;
+    if (!this.initialized) {
+      console.log('GA4 not initialized, skipping page view');
+      return;
+    }
 
     try {
-      ReactGA.send({
-        hitType: 'pageview',
-        page: path || window.location.pathname + window.location.search,
+      const pagePath = path || window.location.pathname + window.location.search;
+      
+      // Método moderno para GA4 usando gtag directamente
+      ReactGA.gtag('event', 'page_view', {
+        page_title: document.title,
+        page_location: window.location.href,
+        page_path: pagePath
+      });
+      
+      console.log('GA4 Page view tracked:', {
+        path: pagePath,
         title: document.title,
+        url: window.location.href
       });
     } catch (error) {
       console.error('Error tracking page view:', error);
