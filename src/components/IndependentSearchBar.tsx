@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import api from '@/services/api';
+import analytics from '@/services/analytics';
 
 interface IndependentSearchBarProps {
   placeholder?: string;
@@ -101,6 +102,11 @@ const IndependentSearchBar = ({
     
     debounceRef.current = setTimeout(() => {
       performSearch(value, localSelectedCategories);
+      
+      // Track search event if there's a search term
+      if (value.trim()) {
+        analytics.trackSearch(value.trim(), module);
+      }
     }, 300);
   };
 
@@ -120,9 +126,13 @@ const IndependentSearchBar = ({
       ? localSelectedCategories.filter(c => c !== category)
       : [...localSelectedCategories, category];
     
-    
     setLocalSelectedCategories(newSelection);
     performSearch(localSearchTerm, newSelection);
+    
+    // Track filter applied event
+    if (newSelection.length > 0) {
+      analytics.trackFilterApplied('category', newSelection, module);
+    }
     
     // Mantener focus
     setTimeout(() => {

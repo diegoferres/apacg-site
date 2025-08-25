@@ -38,33 +38,9 @@ import { useStore } from "./stores/store";
 import { useEffect, useState } from "react";
 import api from "./services/api";
 import analytics from "./services/analytics";
+import RouteTracker from "./components/RouteTracker";
 
 const queryClient = new QueryClient();
-
-// Componente para rastrear cambios de ruta
-const RouteTracker = () => {
-  const location = useLocation();
-  const { user } = useStore();
-
-  useEffect(() => {
-    // Rastrear página vista cada vez que cambia la ruta
-    const pagePath = location.pathname + location.search;
-    console.log('RouteTracker: Tracking page view for:', pagePath);
-    analytics.trackPageView(pagePath);
-    
-    // Si hay usuario logueado, configurar propiedades
-    if (user) {
-      analytics.setUserId(user.id);
-      analytics.setUserProperties({
-        user_type: user.member ? 'member' : 'guest',
-        membership_status: user.member?.status,
-        students_count: user.member?.students?.length || 0,
-      });
-    }
-  }, [location, user]);
-
-  return null;
-};
 
 // Componente para manejar StudentDataSplash con acceso a location
 const StudentDataSplashController = ({ showStudentSplash, handleStudentDataComplete, membershipStatus, fetchMembershipStatus }) => {
@@ -339,7 +315,9 @@ const App = () => {
           }}
         >
           {/* Route Tracker para Google Analytics */}
-          <RouteTracker />
+          <RouteTracker 
+            userType={user?.member ? 'member' : 'guest'}
+          />
           
           {/* Student Data Splash Controller con acceso a location */}
           <StudentDataSplashController 

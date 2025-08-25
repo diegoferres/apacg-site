@@ -78,6 +78,9 @@ const Login = () => {
 
         const response = await api.post('api/password/forgot', payload);
         
+        // Track successful form submission
+        analytics.trackFormSubmit('forgot_password');
+        
         toast({
           title: "Enlace enviado",
           description: response.data.message || "Se ha enviado un enlace de recuperación",
@@ -91,6 +94,9 @@ const Login = () => {
         
       } catch (error) {
         const errorData = error.response?.data;
+        
+        // Track form error
+        analytics.trackFormError('forgot_password', errorData?.message || 'Request failed');
         
         toast({
           title: "Error",
@@ -157,11 +163,11 @@ const Login = () => {
             } catch (error) {
               console.error('Login.tsx - Error navigating to returnTo:', error);
               // Fallback al redirect_to del backend si hay error
-              window.location = redirect_to || '/';
+              navigate(redirect_to || '/');
             }
           } else if (redirect_to) {
             console.log('Login.tsx - Using backend redirect_to:', redirect_to);
-            window.location = redirect_to;
+            navigate(redirect_to);
           } else {
             console.log('Login.tsx - No redirect specified, going to home');
             navigate('/');
@@ -173,6 +179,9 @@ const Login = () => {
         console.log(error.response?.data);
 
         const errorMessage = error.response?.data?.message || "Correo o contraseña incorrectos";
+        
+        // Track login error
+        analytics.trackFormError('login', errorMessage);
 
         toast({
           title: "Error al iniciar sesión",
@@ -181,6 +190,9 @@ const Login = () => {
         });
       }
     } catch (error) {
+      // Track unexpected error
+      analytics.trackFormError('login', 'Unexpected error occurred');
+      
       toast({
         title: "Error al iniciar sesión",
         description: "Ha ocurrido un error inesperado. Intente nuevamente.",

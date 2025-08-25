@@ -6,6 +6,7 @@ import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { formatPrice, formatDate } from '@/lib/utils';
+import analytics from '@/services/analytics';
 
 export interface Benefit {
   id: string;
@@ -35,6 +36,8 @@ export interface Benefit {
 interface BenefitCardProps {
   benefit: Benefit;
   delay?: number;
+  position?: number;
+  listName?: string;
 }
 
 const removeHTMLTags = (text: string) => {
@@ -42,7 +45,7 @@ const removeHTMLTags = (text: string) => {
   return doc.body.textContent || "";
 };
 
-const BenefitCard = ({ benefit, delay = 0 }: BenefitCardProps) => {
+const BenefitCard = ({ benefit, delay = 0, position = 0, listName = 'benefits_list' }: BenefitCardProps) => {
   const [isVisible, setIsVisible] = useState(false);
   const [imageError, setImageError] = useState(false);
 
@@ -59,8 +62,19 @@ const BenefitCard = ({ benefit, delay = 0 }: BenefitCardProps) => {
     setImageError(true);
   };
 
+  const handleClick = () => {
+    // Track item click for analytics
+    analytics.trackItemClick(
+      benefit.id,
+      benefit.title,
+      'benefit',
+      position,
+      listName
+    );
+  };
+
   return (
-    <Link to={`/beneficio/${benefit.slug}`} className="block">
+    <Link to={`/beneficio/${benefit.slug}`} className="block" onClick={handleClick}>
     <Card 
         className={`overflow-hidden transition-all duration-500 transform hover:shadow-md hover:-translate-y-1 cursor-pointer ${
         isVisible ? 'opacity-100' : 'opacity-0 translate-y-4'
@@ -101,12 +115,12 @@ const BenefitCard = ({ benefit, delay = 0 }: BenefitCardProps) => {
       </CardContent>
       <CardFooter className="p-4 pt-2 flex justify-end items-center border-t border-border/40">
         <Button 
+          asChild
           variant="ghost" 
           size="sm"
-          onClick={(e) => e.stopPropagation()}
           className="flex items-center"
         >
-            Ver más <ChevronRight className="h-4 w-4 ml-1" />
+          <span>Ver más <ChevronRight className="h-4 w-4 ml-1" /></span>
         </Button>
       </CardFooter>
     </Card>
