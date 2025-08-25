@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/utils';
+import analytics from '@/services/analytics';
 
 export interface NewsItem {
   id: number;
@@ -23,6 +24,8 @@ interface NewsCardProps {
   newsItem: NewsItem;
   delay?: number;
   showButton?: boolean;
+  position?: number;
+  listName?: string;
 }
 
 const removeHTMLTags = (text: string) => {
@@ -30,7 +33,7 @@ const removeHTMLTags = (text: string) => {
   return doc.body.textContent || "";
 };
 
-const NewsCard = ({ newsItem, delay = 0, showButton = true }: NewsCardProps) => {
+const NewsCard = ({ newsItem, delay = 0, showButton = true, position = 0, listName = 'news_list' }: NewsCardProps) => {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -44,8 +47,19 @@ const NewsCard = ({ newsItem, delay = 0, showButton = true }: NewsCardProps) => 
     }
   }, [delay]);
 
+  const handleClick = () => {
+    // Track item click for analytics
+    analytics.trackItemClick(
+      newsItem.id.toString(),
+      newsItem.title,
+      'news',
+      position,
+      listName
+    );
+  };
+
   return (
-    <Link to={`/novedad/${newsItem.slug}`} className="block">
+    <Link to={`/novedad/${newsItem.slug}`} className="block" onClick={handleClick}>
       <Card 
         className={`overflow-hidden hover:shadow-lg transition-all duration-300 group cursor-pointer ${
           delay > 0 ? (isVisible ? 'opacity-100' : 'opacity-0 translate-y-4') : ''

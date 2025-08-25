@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { formatPrice, toNumber, formatDate } from '@/lib/utils';
+import analytics from '@/services/analytics';
 
 export interface Raffle {
   id: number;
@@ -22,6 +23,8 @@ export interface Raffle {
 interface RaffleCardProps {
   raffle: Raffle;
   delay?: number;
+  position?: number;
+  listName?: string;
 }
 
 const removeHTMLTags = (text: string) => {
@@ -29,7 +32,7 @@ const removeHTMLTags = (text: string) => {
   return doc.body.textContent || "";
 };
 
-const RaffleCard = ({ raffle, delay = 0 }: RaffleCardProps) => {
+const RaffleCard = ({ raffle, delay = 0, position = 0, listName = 'raffles_list' }: RaffleCardProps) => {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -43,8 +46,19 @@ const RaffleCard = ({ raffle, delay = 0 }: RaffleCardProps) => {
     }
   }, [delay]);
 
+  const handleClick = () => {
+    // Track item click for analytics
+    analytics.trackItemClick(
+      raffle.id.toString(),
+      raffle.title,
+      'raffle',
+      position,
+      listName
+    );
+  };
+
   return (
-    <Link to={`/rifa/${raffle.slug}`} className="block">
+    <Link to={`/rifa/${raffle.slug}`} className="block" onClick={handleClick}>
       <Card 
         className={`overflow-hidden hover:shadow-lg transition-all duration-300 group cursor-pointer ${
           delay > 0 ? (isVisible ? 'opacity-100' : 'opacity-0 translate-y-4') : ''

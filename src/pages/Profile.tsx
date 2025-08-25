@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams, Link } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -498,7 +498,9 @@ const Profile = () => {
         <Breadcrumb className="mb-6">
           <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbLink href="/">Inicio</BreadcrumbLink>
+              <BreadcrumbLink asChild>
+                <Link to="/">Inicio</Link>
+              </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
@@ -1082,7 +1084,7 @@ const Profile = () => {
                         Aún no has reclamado ningún beneficio. Explora los beneficios disponibles para comenzar.
                       </p>
                       <Button className="mt-4" asChild>
-                        <a href="/beneficios">Ver Beneficios Disponibles</a>
+                        <Link to="/beneficios">Ver Beneficios Disponibles</Link>
                       </Button>
                     </div>
                   )}
@@ -1380,13 +1382,13 @@ const Profile = () => {
                       </p>
                       <div className="flex gap-2 mt-4 justify-center">
                         <Button asChild variant="outline">
-                          <a href="/eventos">Ver Eventos</a>
+                          <Link to="/eventos">Ver Eventos</Link>
                         </Button>
                         <Button asChild variant="outline">
-                          <a href="/cursos">Ver Cursos</a>
+                          <Link to="/cursos">Ver Cursos</Link>
                         </Button>
                         <Button asChild>
-                          <a href="/rifas">Ver Rifas</a>
+                          <Link to="/rifas">Ver Rifas</Link>
                         </Button>
                       </div>
                     </div>

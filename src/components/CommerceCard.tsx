@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
+import analytics from '@/services/analytics';
 
 export interface Commerce {
   id: string;
@@ -34,6 +35,8 @@ export interface Commerce {
 interface CommerceCardProps {
   commerce: Commerce;
   delay?: number;
+  position?: number;
+  listName?: string;
 }
 
 const removeHTMLTags = (text: string) => {
@@ -41,7 +44,7 @@ const removeHTMLTags = (text: string) => {
   return doc.body.textContent || "";
 };
 
-const CommerceCard = ({ commerce, delay = 0 }: CommerceCardProps) => {
+const CommerceCard = ({ commerce, delay = 0, position = 0, listName = 'commerces_list' }: CommerceCardProps) => {
   const [isVisible, setIsVisible] = useState(false);
   const [imageError, setImageError] = useState(false);
 
@@ -57,10 +60,22 @@ const CommerceCard = ({ commerce, delay = 0 }: CommerceCardProps) => {
     setImageError(true);
   };
 
+  const handleClick = () => {
+    // Track item click for analytics
+    analytics.trackItemClick(
+      commerce.id,
+      commerce.name,
+      'commerce',
+      position,
+      listName
+    );
+  };
+
   return (
     <Link 
       key={commerce.slug} 
       to={`/comercio/${commerce.slug}`}
+      onClick={handleClick}
     >
       <Card 
         className={`overflow-hidden transition-all duration-500 transform hover:shadow-md hover:-translate-y-1 ${
