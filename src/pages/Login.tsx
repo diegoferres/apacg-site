@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -57,6 +57,15 @@ const Login = () => {
       password: "",
     },
   });
+
+  // Clear form when switching between email and cedula modes
+  useEffect(() => {
+    form.reset({
+      identifier: "",
+      password: "",
+    });
+    form.clearErrors();
+  }, [loginMode, form]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     // Validar formato según el modo
