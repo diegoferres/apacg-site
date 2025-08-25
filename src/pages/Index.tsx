@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import SearchBar from '@/components/SearchBar';
+import QuickNav from '@/components/QuickNav';
 import BenefitCard, { Benefit } from '@/components/BenefitCard';
 import EventCard from '@/components/EventCard';
 import CourseCard from '@/components/CourseCard';
@@ -254,8 +255,11 @@ const Index = () => {
         </div>
       </section>
       
+      {/* Quick Navigation - Mobile Only */}
+      <QuickNav />
+      
       {/* Benefits Section */}
-      <section className="py-16 px-4">
+      <section id="beneficios-section" className="py-16 px-4">
         <div className="container mx-auto max-w-6xl">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-2xl md:text-3xl font-bold animate-fade-up">
@@ -281,7 +285,7 @@ const Index = () => {
       </section>
 
       {/* Events Section */}
-      <section className="py-16 px-4 bg-muted/30">
+      <section id="eventos-section" className="py-16 px-4 bg-muted/30">
         <div className="container mx-auto max-w-6xl">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-2xl md:text-3xl font-bold animate-fade-up">
@@ -317,7 +321,7 @@ const Index = () => {
       </section>
 
       {/* Courses Section */}
-      <section className="py-16 px-4">
+      <section id="cursos-section" className="py-16 px-4">
         <div className="container mx-auto max-w-6xl">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-2xl md:text-3xl font-bold animate-fade-up">
@@ -353,7 +357,7 @@ const Index = () => {
       </section>
 
       {/* Raffles Section */}
-      <section className="py-16 px-4 bg-muted/30">
+      <section id="rifas-section" className="py-16 px-4 bg-muted/30">
         <div className="container mx-auto max-w-6xl">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-2xl md:text-3xl font-bold animate-fade-up">
@@ -389,7 +393,7 @@ const Index = () => {
       </section>
       
       {/* Featured Stores Section */}
-      <section className="py-12 px-4 bg-secondary/50">
+      <section id="comercios-section" className="py-12 px-4 bg-secondary/50">
         <div className="container mx-auto max-w-6xl">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-2xl md:text-3xl font-bold animate-fade-up">
@@ -415,7 +419,7 @@ const Index = () => {
       </section>
 
       {/* News Section */}
-      <section className="py-16 px-4 bg-muted/30">
+      <section id="novedades-section" className="py-16 px-4 bg-muted/30">
         <div className="container mx-auto max-w-6xl">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-2xl md:text-3xl font-bold animate-fade-up">
