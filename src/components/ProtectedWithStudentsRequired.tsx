@@ -1,6 +1,7 @@
 import { useStore } from "@/stores/store";
 import { Navigate } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 interface Props {
   children: React.ReactNode;
@@ -8,6 +9,7 @@ interface Props {
 
 const ProtectedWithStudentsRequired = ({ children }: Props) => {
   const { user, isLoggedIn, isLoading } = useStore();
+  const { toast } = useToast();
 
   // Show loading while auth is still loading
   if (isLoading) {
@@ -61,6 +63,14 @@ const ProtectedWithStudentsRequired = ({ children }: Props) => {
     
     if (!hasStudents || !allStudentsHaveCI) {
       console.log('ProtectedWithStudentsRequired - Redirecting to home - missing students or missing CI');
+      
+      // Show informative message to user
+      toast({
+        title: "Registro de estudiantes requerido",
+        description: "Para acceder a esta sección, primero debes registrar a tus estudiantes.",
+        variant: "default",
+      });
+      
       return <Navigate to="/" replace />;
     }
     
