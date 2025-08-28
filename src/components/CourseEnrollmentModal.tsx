@@ -62,14 +62,46 @@ interface Student {
   ci: string;
 }
 
+interface AppliedCoupon {
+  coupon: {
+    code: string;
+    name: string;
+    discount_type: 'percentage' | 'fixed';
+    discount_value: number;
+  };
+  pricing: {
+    // Para compatibilidad con eventos/productos
+    original_price?: number;
+    discount_amount?: number;
+    final_price?: number;
+    discount_percentage: number;
+    
+    // Para cursos - matrícula
+    enrollment_fee_original?: number;
+    enrollment_fee_discounted?: number;
+    enrollment_discount_amount?: number;
+    
+    // Para cursos - mensualidad
+    monthly_fee_original?: number;
+    monthly_fee_discounted?: number;
+    monthly_discount_amount?: number;
+    
+    // Para cursos - totales
+    total_original?: number;
+    total_discounted?: number;
+    total_discount_amount?: number;
+  };
+}
+
 interface CourseEnrollmentModalProps {
   isOpen: boolean;
   onClose: () => void;
   course: Course;
   group: Group | null;
+  appliedCoupon?: AppliedCoupon | null;
 }
 
-const CourseEnrollmentModal = ({ isOpen, onClose, course, group }: CourseEnrollmentModalProps) => {
+const CourseEnrollmentModal = ({ isOpen, onClose, course, group, appliedCoupon }: CourseEnrollmentModalProps) => {
   const navigate = useNavigate();
   const user = useStore((state) => state.user);
   const [studentName, setStudentName] = useState('');
@@ -207,7 +239,17 @@ const CourseEnrollmentModal = ({ isOpen, onClose, course, group }: CourseEnrollm
 
   const enrollmentFee = getEnrollmentFee();
   const monthlyPrice = getMonthlyFee();
-  const totalCost = enrollmentFee + monthlyPrice;
+  
+  // Aplicar descuentos si hay cupón
+  const enrollmentFeeWithDiscount = appliedCoupon && appliedCoupon.pricing.enrollment_fee_discounted !== undefined
+    ? appliedCoupon.pricing.enrollment_fee_discounted
+    : enrollmentFee;
+    
+  const monthlyPriceWithDiscount = appliedCoupon && appliedCoupon.pricing.monthly_fee_discounted !== undefined
+    ? appliedCoupon.pricing.monthly_fee_discounted
+    : monthlyPrice;
+    
+  const totalCost = enrollmentFeeWithDiscount + monthlyPriceWithDiscount;
 
   // Debug logging (temporal)
   console.log('Course price debugging:', {
@@ -268,8 +310,11 @@ const CourseEnrollmentModal = ({ isOpen, onClose, course, group }: CourseEnrollm
       },
       totalAmount: totalCost,
       totalTickets: 1,
-      enrollmentFee: enrollmentFee,
-      monthlyFee: monthlyPrice,
+      enrollmentFee: enrollmentFeeWithDiscount,
+      originalEnrollmentFee: enrollmentFee,
+      monthlyFee: monthlyPriceWithDiscount,
+      originalMonthlyFee: monthlyPrice,
+      appliedCoupon: appliedCoupon,
       courseData: {
         title: course.title,
         location: course.location,
@@ -496,17 +541,67 @@ const CourseEnrollmentModal = ({ isOpen, onClose, course, group }: CourseEnrollm
           {/* Cost Summary */}
           <Card>
             <CardContent className="pt-4">
+              {/* Sección del cupón aplicado */}
+              {appliedCoupon && (
+                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="text-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-green-800">Cupón aplicado</span>
+                      <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
+                        {appliedCoupon.coupon.code}
+                      </span>
+                    </div>
+                    <div className="text-green-700 mb-1">{appliedCoupon.coupon.name}</div>
+                    <div className="text-xs text-green-600">
+                      Descuento: {appliedCoupon.coupon.discount_type === 'fixed' 
+                        ? `Gs. ${(appliedCoupon.pricing.total_discount_amount || appliedCoupon.pricing.discount_amount || 0).toLocaleString()}`
+                        : `${appliedCoupon.coupon.discount_value}%`
+                      }
+                      <div className="mt-1">
+                        Ahorras: Gs. {(appliedCoupon.pricing.total_discount_amount || appliedCoupon.pricing.discount_amount || 0).toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-2">
                 <h4 className="font-medium">Resumen de Costos</h4>
                 {enrollmentFee > 0 && (
                   <div className="flex justify-between text-sm">
                     <span>Matrícula {isMember ? '(Socio)' : '(No Socio)'}:</span>
-                    <span>{formatPrice(enrollmentFee)}</span>
+                    <span>
+                      {appliedCoupon && enrollmentFee > 0 && appliedCoupon.pricing.enrollment_fee_original ? (
+                        <div className="flex flex-col items-end">
+                          <span className="line-through text-gray-400 text-xs">
+                            {formatPrice(enrollmentFee)}
+                          </span>
+                          <span className="text-green-600 font-medium">
+                            {formatPrice(enrollmentFeeWithDiscount)}
+                          </span>
+                        </div>
+                      ) : (
+                        formatPrice(enrollmentFee)
+                      )}
+                    </span>
                   </div>
                 )}
                 <div className="flex justify-between text-sm">
                   <span>Mensualidad ({isMember ? 'Socio' : 'No Socio'}):</span>
-                  <span>{formatPrice(monthlyPrice)}</span>
+                  <span>
+                    {appliedCoupon && appliedCoupon.pricing.monthly_fee_original ? (
+                      <div className="flex flex-col items-end">
+                        <span className="line-through text-gray-400 text-xs">
+                          {formatPrice(monthlyPrice)}
+                        </span>
+                        <span className="text-green-600 font-medium">
+                          {formatPrice(monthlyPriceWithDiscount)}
+                        </span>
+                      </div>
+                    ) : (
+                      formatPrice(monthlyPrice)
+                    )}
+                  </span>
                 </div>
                 <div className="border-t pt-2 flex justify-between font-medium">
                   <span>Total a pagar hoy:</span>

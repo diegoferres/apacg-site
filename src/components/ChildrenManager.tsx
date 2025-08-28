@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
-import { GraduationCap, Clock, AlertTriangle, CheckCircle, CreditCard, Users } from "lucide-react";
+import { GraduationCap, Clock, AlertTriangle, CheckCircle, CreditCard, Users, Gift } from "lucide-react";
 import api from '@/services/api';
 import { useStore } from '@/stores/store';
 import { formatPrice } from '@/lib/utils';
@@ -271,6 +271,19 @@ export const ChildrenManager = () => {
                                 <Users className="h-3 w-3" />
                                 {enrollment.course_group.name}
                               </p>
+                            )}
+                            
+                            {/* Información de descuento recurrente activo */}
+                            {(enrollment as any).recurring_discount && (
+                              <div className="flex items-center gap-2 p-2 bg-green-50 rounded border border-green-200">
+                                <Gift className="h-4 w-4 text-green-600" />
+                                <div className="text-sm text-green-700">
+                                  <span className="font-medium">Descuento recurrente activo</span>
+                                  <div className="text-xs">
+                                    {(enrollment as any).recurring_discount.discount_percentage}% de descuento mensual
+                                  </div>
+                                </div>
+                              </div>
                             )}
                           </div>
                         </div>
