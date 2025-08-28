@@ -39,6 +39,7 @@ import { useEffect, useState } from "react";
 import api from "./services/api";
 import analytics from "./services/analytics";
 import RouteTracker from "./components/RouteTracker";
+import ScrollToTop from "./components/ScrollToTop";
 
 const queryClient = new QueryClient();
 
@@ -249,6 +250,9 @@ const App = () => {
             v7_relativeSplatPath: true
           }}
         >
+          {/* Scroll to Top on Route Change */}
+          <ScrollToTop />
+          
           {/* Route Tracker para Google Analytics */}
           <RouteTracker 
             userType={user?.member ? 'member' : 'guest'}

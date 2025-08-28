@@ -402,7 +402,7 @@ const CourseDetail = () => {
                               )}
                             </div>
                             <Badge variant="outline" className="text-xs">
-                              {group.confirmed_enrollments_count}/{group.capacity} alumnos
+                              {group.active_enrollments_count}/{group.capacity} alumnos
                             </Badge>
                           </div>
 
@@ -493,7 +493,7 @@ const CourseDetail = () => {
                           </p>
                         </div>
                         <Badge variant="outline" className="text-xs">
-                          {course.confirmed_enrollments_count || 0}/{course.capacity} alumnos
+                          {course.active_enrollments_count || 0}/{course.capacity} alumnos
                         </Badge>
                       </div>
 
