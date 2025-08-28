@@ -11,6 +11,8 @@ import { Clock, Users, MapPin, Calendar, GraduationCap, ArrowLeft } from 'lucide
 import { formatPrice, toNumber, renderSafeHtml, formatDate } from '@/lib/utils';
 import api from '@/services/api';
 import analytics from '@/services/analytics';
+import useUrlCoupon from '@/hooks/useUrlCoupon';
+import CouponAppliedBanner from '@/components/coupon/CouponAppliedBanner';
 
 const CourseDetail = () => {
   const { slug } = useParams();
@@ -21,6 +23,20 @@ const CourseDetail = () => {
   const [selectedGroup, setSelectedGroup] = useState<number | null>(null);
   const [isEnrollmentModalOpen, setIsEnrollmentModalOpen] = useState(false);
   const [enrollmentGroup, setEnrollmentGroup] = useState<any>(null);
+  const [forceRerender, setForceRerender] = useState(0);
+  
+  // Hook para manejar cupones - SOLO cuando el curso esté completamente cargado
+  const couponHookEnabled = !!(course && course.id);
+  const { appliedCoupon, removeCoupon, status, error } = useUrlCoupon({
+    itemType: 'course',
+    itemId: course?.id || 0,
+    autoApply: couponHookEnabled
+  });
+
+  // Force re-render when coupon state changes
+  useEffect(() => {
+    setForceRerender(prev => prev + 1);
+  }, [appliedCoupon, status]);
 
   useEffect(() => {
     const fetchCourse = async () => {
@@ -79,7 +95,6 @@ const CourseDetail = () => {
       if (groupIdParam && course.groups) {
         const group = course.groups.find((g: any) => g.id.toString() === groupIdParam);
         if (group) {
-          console.log('CourseDetail - Pre-selecting group:', group.name);
           setEnrollmentGroup(group);
         }
       }
@@ -319,6 +334,49 @@ const CourseDetail = () => {
 
             {/* Sidebar */}
             <div className="space-y-6">
+              
+              {/* Banner de cupón aplicado */}
+              {appliedCoupon && status === 'valid' && (
+                <Card className="border-green-200 bg-green-50">
+                  <CardContent className="p-4">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-green-800">Cupón aplicado</span>
+                        <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
+                          {appliedCoupon.coupon.code}
+                        </span>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="text-sm text-green-700">
+                          <span className="font-medium">{appliedCoupon.coupon.name}</span>
+                        </div>
+                        
+                        <div className="text-sm">
+                          <span className="text-green-600">Descuento aplicado:</span>
+                          <div className="font-semibold text-green-800">
+                            {appliedCoupon.coupon.discount_type === 'fixed' 
+                              ? `Gs. ${(appliedCoupon.pricing.total_discount_amount || appliedCoupon.pricing.discount_amount || 0).toLocaleString()}`
+                              : `${appliedCoupon.coupon.discount_value}%`
+                            }
+                          </div>
+                          <div className="text-xs text-green-600 mt-1">
+                            Ahorras: Gs. {(appliedCoupon.pricing.total_discount_amount || appliedCoupon.pricing.discount_amount || 0).toLocaleString()}
+                          </div>
+                        </div>
+                        
+                        {(appliedCoupon.coupon as any).is_recurring && (
+                          <div className="text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded p-2">
+                            <div className="font-medium">Descuento recurrente</div>
+                            <div>Se aplicará automáticamente todos los meses durante el curso</div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               <Card>
                 <CardHeader>
                   <CardTitle>
@@ -374,13 +432,35 @@ const CourseDetail = () => {
                             <div className="flex justify-between">
                               <span className="text-sm">Socios:</span>
                               <span className="text-sm font-medium">
-                                {formatPrice(toNumber(group.monthly_fee_member) !== 0 ? toNumber(group.monthly_fee_member) : toNumber(course.monthly_fee_member))}/mes
+                                {appliedCoupon ? (
+                                  <div className="flex flex-col items-end">
+                                    <span className="line-through text-gray-400 text-xs">
+                                      {formatPrice(toNumber(group.monthly_fee_member) !== 0 ? toNumber(group.monthly_fee_member) : toNumber(course.monthly_fee_member))}
+                                    </span>
+                                    <span className="text-green-600 font-bold">
+                                      {formatPrice(Math.round((toNumber(group.monthly_fee_member) !== 0 ? toNumber(group.monthly_fee_member) : toNumber(course.monthly_fee_member)) * (1 - appliedCoupon.pricing.discount_percentage / 100)))}/mes
+                                    </span>
+                                  </div>
+                                ) : (
+                                  `${formatPrice(toNumber(group.monthly_fee_member) !== 0 ? toNumber(group.monthly_fee_member) : toNumber(course.monthly_fee_member))}/mes`
+                                )}
                               </span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-sm">No socios:</span>
                               <span className="text-sm font-medium">
-                                {formatPrice(toNumber(group.monthly_fee_non_member) !== 0 ? toNumber(group.monthly_fee_non_member) : toNumber(course.monthly_fee_non_member))}/mes
+                                {appliedCoupon ? (
+                                  <div className="flex flex-col items-end">
+                                    <span className="line-through text-gray-400 text-xs">
+                                      {formatPrice(toNumber(group.monthly_fee_non_member) !== 0 ? toNumber(group.monthly_fee_non_member) : toNumber(course.monthly_fee_non_member))}
+                                    </span>
+                                    <span className="text-green-600 font-bold">
+                                      {formatPrice(Math.round((toNumber(group.monthly_fee_non_member) !== 0 ? toNumber(group.monthly_fee_non_member) : toNumber(course.monthly_fee_non_member)) * (1 - appliedCoupon.pricing.discount_percentage / 100)))}/mes
+                                    </span>
+                                  </div>
+                                ) : (
+                                  `${formatPrice(toNumber(group.monthly_fee_non_member) !== 0 ? toNumber(group.monthly_fee_non_member) : toNumber(course.monthly_fee_non_member))}/mes`
+                                )}
                               </span>
                             </div>
                             <p className="text-xs text-muted-foreground">
@@ -437,19 +517,50 @@ const CourseDetail = () => {
                         <div className="flex justify-between">
                           <span className="text-sm">Socios:</span>
                           <span className="text-sm font-medium">
-                            {formatPrice(toNumber(course.monthly_fee_member))}/mes
+                            {(() => {
+                              if (appliedCoupon) {
+                                return (
+                                  <div>
+                                    <span className="line-through text-gray-400 mr-2">
+                                      Gs. {toNumber(course.monthly_fee_member).toLocaleString()}
+                                    </span>
+                                    <span className="text-green-600 font-bold">
+                                      Gs. {Math.round(toNumber(course.monthly_fee_member) * (1 - appliedCoupon.pricing.discount_percentage / 100)).toLocaleString()}
+                                    </span>
+                                    /mes
+                                  </div>
+                                );
+                              } else {
+                                return `Gs. ${toNumber(course.monthly_fee_member).toLocaleString()}/mes`;
+                              }
+                            })()}
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-sm">No socios:</span>
                           <span className="text-sm font-medium">
-                            {formatPrice(toNumber(course.monthly_fee_non_member))}/mes
+                            {appliedCoupon ? (
+                              <div>
+                                <span className="line-through text-gray-400 mr-2">
+                                  Gs. {toNumber(course.monthly_fee_non_member).toLocaleString()}
+                                </span>
+                                <span className="text-green-600 font-bold">
+                                  Gs. {Math.round(toNumber(course.monthly_fee_non_member) * (1 - appliedCoupon.pricing.discount_percentage / 100)).toLocaleString()}
+                                </span>
+                                /mes
+                              </div>
+                            ) : (
+                              `Gs. ${toNumber(course.monthly_fee_non_member).toLocaleString()}/mes`
+                            )}
                           </span>
                         </div>
                         <p className="text-xs text-muted-foreground">
                           {course.available_spots} cupos disponibles
                         </p>
                       </div>
+
+
+
 
                       <Button 
                         onClick={() => handleEnroll(null)}
@@ -477,6 +588,7 @@ const CourseDetail = () => {
         onClose={() => setIsEnrollmentModalOpen(false)}
         course={course}
         group={enrollmentGroup}
+        appliedCoupon={appliedCoupon}
       />
     </div>
   );

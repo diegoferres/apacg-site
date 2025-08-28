@@ -61,6 +61,38 @@ interface CheckoutEventData {
   referralCode?: string;
   enrollmentFee?: number;
   monthlyFee?: number;
+  originalEnrollmentFee?: number;
+  originalMonthlyFee?: number;
+  appliedCoupon?: {
+    coupon: {
+      code: string;
+      name: string;
+      discount_type: 'percentage' | 'fixed';
+      discount_value: number;
+    };
+    pricing: {
+      // Para compatibilidad con eventos/productos
+      original_price?: number;
+      discount_amount?: number;
+      final_price?: number;
+      discount_percentage: number;
+      
+      // Para cursos - matrícula
+      enrollment_fee_original?: number;
+      enrollment_fee_discounted?: number;
+      enrollment_discount_amount?: number;
+      
+      // Para cursos - mensualidad
+      monthly_fee_original?: number;
+      monthly_fee_discounted?: number;
+      monthly_discount_amount?: number;
+      
+      // Para cursos - totales
+      total_original?: number;
+      total_discounted?: number;
+      total_discount_amount?: number;
+    };
+  };
   courseData?: CourseData;
 }
 
@@ -475,6 +507,30 @@ const Checkout = () => {
 
                   {eventData.type === 'course' ? (
                     <div className="space-y-3">
+                      {/* Sección del cupón aplicado */}
+                      {eventData.appliedCoupon && (
+                        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                          <div className="text-sm">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="font-medium text-green-800">Cupón aplicado</span>
+                              <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
+                                {eventData.appliedCoupon.coupon.code}
+                              </span>
+                            </div>
+                            <div className="text-green-700 mb-1">{eventData.appliedCoupon.coupon.name}</div>
+                            <div className="text-xs text-green-600">
+                              Descuento: {eventData.appliedCoupon.coupon.discount_type === 'fixed' 
+                                ? `Gs. ${(eventData.appliedCoupon.pricing.total_discount_amount || eventData.appliedCoupon.pricing.discount_amount || 0).toLocaleString()}`
+                                : `${eventData.appliedCoupon.coupon.discount_value}%`
+                              }
+                              <div className="mt-1">
+                                Ahorras: Gs. {(eventData.appliedCoupon.pricing.total_discount_amount || eventData.appliedCoupon.pricing.discount_amount || 0).toLocaleString()}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       <h4 className="font-medium">Detalle de inscripción:</h4>
                       {eventData.enrollmentFee && eventData.enrollmentFee > 0 && (
                         <div className="flex justify-between items-center py-2 border-b border-gray-100">
@@ -485,7 +541,18 @@ const Checkout = () => {
                             </p>
                           </div>
                           <span className="font-semibold">
-                            {formatPrice(eventData.enrollmentFee)}
+                            {eventData.appliedCoupon && eventData.originalEnrollmentFee && eventData.originalEnrollmentFee > 0 ? (
+                              <div className="flex flex-col items-end">
+                                <span className="line-through text-gray-400 text-xs">
+                                  {formatPrice(eventData.originalEnrollmentFee)}
+                                </span>
+                                <span className="text-green-600">
+                                  {formatPrice(eventData.enrollmentFee || 0)}
+                                </span>
+                              </div>
+                            ) : (
+                              formatPrice(eventData.enrollmentFee || 0)
+                            )}
                           </span>
                         </div>
                       )}
@@ -497,7 +564,18 @@ const Checkout = () => {
                           </p>
                         </div>
                         <span className="font-semibold">
-                          {formatPrice(eventData.monthlyFee || 0)}
+                          {eventData.appliedCoupon && eventData.originalMonthlyFee ? (
+                            <div className="flex flex-col items-end">
+                              <span className="line-through text-gray-400 text-xs">
+                                {formatPrice(eventData.originalMonthlyFee)}
+                              </span>
+                              <span className="text-green-600">
+                                {formatPrice(eventData.monthlyFee || 0)}
+                              </span>
+                            </div>
+                          ) : (
+                            formatPrice(eventData.monthlyFee || 0)
+                          )}
                         </span>
                       </div>
                       {eventData.enrollmentFee && eventData.enrollmentFee > 0 && (

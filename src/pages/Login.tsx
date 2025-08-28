@@ -154,19 +154,16 @@ const Login = () => {
           if (returnTo && returnTo.trim()) {
             console.log('Login.tsx - Navigating to returnTo:', returnTo);
             try {
-              // Usar navigate para URLs internas, window.location para URLs externas
-              if (returnTo.startsWith('/')) {
-                navigate(returnTo);
-              } else {
-                window.location.href = returnTo;
-              }
+              // Siempre usar navigate para URLs de returnTo ya que son rutas internas
+              navigate(returnTo);
             } catch (error) {
               console.error('Login.tsx - Error navigating to returnTo:', error);
-              // Fallback al redirect_to del backend si hay error
-              navigate(redirect_to || '/');
+              // Fallback a la página principal si hay error
+              navigate('/');
             }
           } else if (redirect_to) {
             console.log('Login.tsx - Using backend redirect_to:', redirect_to);
+            // El backend ahora siempre devuelve paths relativos, así que usar navigate directamente
             navigate(redirect_to);
           } else {
             console.log('Login.tsx - No redirect specified, going to home');
