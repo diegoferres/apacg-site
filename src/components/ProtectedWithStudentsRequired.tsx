@@ -12,6 +12,7 @@ const ProtectedWithStudentsRequired = ({ children }: Props) => {
   const { toast } = useToast();
 
 
+
   // Show loading while auth is still loading
   if (isLoading) {
     return (
@@ -56,6 +57,7 @@ const ProtectedWithStudentsRequired = ({ children }: Props) => {
       
       return <Navigate to="/" replace />;
     }
+    
     
   }
 

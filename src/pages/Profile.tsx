@@ -40,16 +40,27 @@ const Profile = () => {
   const [showStudentsModal, setShowStudentsModal] = useState(false);
   const [selectedRaffle, setSelectedRaffle] = useState(null);
   const navigate = useNavigate();
-  const [first_name, setFirstName] = useState("");
-  const [last_name, setLastName] = useState("");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [passwordConfirmation, setPasswordConfirmation] = useState("");
+  const [passwordsMatch, setPasswordsMatch] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [studentsWithEnrollments, setStudentsWithEnrollments] = useState([]);
   const [showStudentSplash, setShowStudentSplash] = useState(false);
 
   const isPending = user?.member?.status === "En Mora";
+
+  // Validate password match in real time
+  useEffect(() => {
+    if (password || passwordConfirmation) {
+      setPasswordsMatch(password === passwordConfirmation);
+    } else {
+      setPasswordsMatch(true); // Both empty is OK
+    }
+  }, [password, passwordConfirmation]);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -202,8 +213,11 @@ const Profile = () => {
         // Set form values from response
         setEmail(response.data.email);
         setPhone(response.data.member?.phone || "");
-        setFirstName(response.data.member?.first_name || "");
-        setLastName(response.data.member?.last_name || "");
+        // Combinar first_name y last_name del member o usar el name del usuario
+        const fullName = response.data.member?.first_name && response.data.member?.last_name 
+          ? `${response.data.member.first_name} ${response.data.member.last_name}`.trim()
+          : response.data.name || "";
+        setName(fullName);
         
         setIsLoading(false);
       } catch (error) {
@@ -391,27 +405,103 @@ const Profile = () => {
       return;
     }
 
-    try {
-      const response = await api.put(`/api/client/members/${user.member.id}`, {
-        first_name,
-        last_name,
-        phone,
-        avatar: null
+    // Validate password fields if provided
+    if (password && password !== passwordConfirmation) {
+      toast({
+        title: "Error de validación",
+        description: "Las contraseñas no coinciden.",
+        variant: "destructive",
       });
+      return;
+    }
+
+    if (password && password.length < 6) {
+      toast({
+        title: "Error de validación",
+        description: "La contraseña debe tener al menos 6 caracteres.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      if (password) {
+        // If password is provided, update everything through credentials endpoint
+        const credentialsResponse = await api.post('/api/client/profile/update-credentials', {
+          name,
+          email,
+          password,
+          password_confirmation: passwordConfirmation
+        });
+        
+        // Also update member data 
+        const nameParts = name.trim().split(' ');
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+        
+        const memberResponse = await api.put(`/api/client/members/${user.member.id}`, {
+          name,
+          email,
+          first_name: firstName,
+          last_name: lastName,
+          phone,
+          avatar: null
+        });
+        
+        toast({
+          title: "Perfil y credenciales actualizados",
+          description: "Tu perfil y contraseña se han actualizado correctamente.",
+          variant: "default",
+        });
+      } else {
+        // If no password, just update member data
+        const nameParts = name.trim().split(' ');
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+        
+        const memberResponse = await api.put(`/api/client/members/${user.member.id}`, {
+          name,
+          email,
+          first_name: firstName,
+          last_name: lastName,
+          phone,
+          avatar: null
+        });
+        
+        toast({
+          title: "Perfil actualizado",
+          description: "Tu perfil se ha actualizado correctamente.",
+          variant: "default",
+        });
+      }
+      
+      const nameParts = name.trim().split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
       
       setUser({
         ...user,
-        name: `${first_name} ${last_name}`,
+        name,
         email,
         member: {
           ...user.member,
-          first_name,
-          last_name,
+          first_name: firstName,
+          last_name: lastName,
           phone
         }
       });
+      
+      // Clear password fields after successful update
+      setPassword("");
+      setPasswordConfirmation("");
+      
     } catch (error) {
       console.error('Error updating profile:', error);
+      toast({
+        title: "Error al actualizar",
+        description: error.response?.data?.message || "Ocurrió un error al actualizar el perfil.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -523,7 +613,7 @@ const Profile = () => {
                   </Avatar>
                 </div>
                 <CardTitle className="flex items-center justify-center gap-2">
-                  {user?.name || `${first_name} ${last_name}`}
+                  {user?.name || name}
                   {user?.member?.status === "Activo" ? (
                     <CheckCircle className="h-5 w-5 text-green-500" />
                   ) : (
@@ -1108,28 +1198,16 @@ const Profile = () => {
                     e.preventDefault();
                     handleUpdateProfile(e);
                   }}>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium" htmlFor="first_name">Nombre</label>
-                        <input 
-                          id="first_name"
-                          type="text" 
-                          value={first_name}
-                          onChange={(e) => setFirstName(e.target.value)}
-                          className="w-full p-2 border rounded-md"
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium" htmlFor="last_name">Apellido</label>
-                        <input 
-                          id="last_name"
-                          type="text" 
-                          value={last_name}
-                          onChange={(e) => setLastName(e.target.value)}
-                          className="w-full p-2 border rounded-md"
-                        />
-                      </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium" htmlFor="name">Nombre Completo</label>
+                      <input 
+                        id="name"
+                        type="text" 
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="w-full p-2 border rounded-md"
+                        placeholder="Ej: Adriana Aranda"
+                      />
                     </div>
                     
                     <div className="space-y-2">
@@ -1140,7 +1218,6 @@ const Profile = () => {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         className="w-full p-2 border rounded-md"
-                        disabled // Email usually requires special handling for updates
                       />
                     </div>
                     
@@ -1155,7 +1232,58 @@ const Profile = () => {
                       />
                     </div>
                     
-                    <Button type="submit" className="w-full">Guardar Cambios</Button>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium" htmlFor="password">Nueva Contraseña</label>
+                        <input 
+                          id="password"
+                          type="password" 
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className={`w-full p-2 border rounded-md ${
+                            password && password.length < 6 
+                              ? 'border-red-500 focus:border-red-500' 
+                              : 'border-gray-300 focus:border-blue-500'
+                          }`}
+                          placeholder="Deja en blanco para mantener la actual"
+                        />
+                        {password && password.length < 6 && (
+                          <p className="text-sm text-red-600">Mínimo 6 caracteres</p>
+                        )}
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium" htmlFor="password_confirmation">Confirmar Contraseña</label>
+                        <input 
+                          id="password_confirmation"
+                          type="password" 
+                          value={passwordConfirmation}
+                          onChange={(e) => setPasswordConfirmation(e.target.value)}
+                          className={`w-full p-2 border rounded-md ${
+                            passwordConfirmation && !passwordsMatch 
+                              ? 'border-red-500 focus:border-red-500' 
+                              : passwordConfirmation && passwordsMatch && password
+                              ? 'border-green-500 focus:border-green-500'
+                              : 'border-gray-300 focus:border-blue-500'
+                          }`}
+                          placeholder="Confirma la nueva contraseña"
+                        />
+                        {passwordConfirmation && !passwordsMatch && (
+                          <p className="text-sm text-red-600">Las contraseñas no coinciden</p>
+                        )}
+                        {passwordConfirmation && passwordsMatch && password && (
+                          <p className="text-sm text-green-600">Las contraseñas coinciden ✓</p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <Button 
+                      type="submit" 
+                      className="w-full" 
+                      disabled={password && (!passwordsMatch || password.length < 6)}
+                    >
+                      Guardar Cambios
+                    </Button>
                   </form>
                 </CardContent>
               </Card>
