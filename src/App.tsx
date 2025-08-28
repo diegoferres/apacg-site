@@ -83,14 +83,12 @@ const App = () => {
   useEffect(() => {
     // Don't show splash while still loading user data
     if (isLoading) {
-      console.log('App.tsx - Still loading user data, not showing splash');
       setShowStudentSplash(false);
       return;
     }
     
     // Only evaluate when we have complete user data (not loading and user exists)
     if (!isLoggedIn || !user) {
-      console.log('App.tsx - Not logged in or no user data, hiding splash');
       setShowStudentSplash(false);
       return;
     }
@@ -98,48 +96,26 @@ const App = () => {
     // Additional check: make sure we have complete user data including setup_completed field
     // This ensures we don't show splash prematurely after login
     if (user.setup_completed === undefined) {
-      console.log('App.tsx - User data incomplete (missing setup_completed), not showing splash yet');
       setShowStudentSplash(false);
       return;
     }
     
-    // Debug: Log full user structure to understand role data
-    console.log('App.tsx - Full user data for role check:', {
-      name: user.name,
-      role: user.role,
-      roles: user.roles,
-      member: !!user.member,
-      fullUser: user
-    });
     
     // If user is admin, don't show splash (admins bypass this validation)
     // Check Laravel Permissions structure: user.roles array with role objects
     const isAdmin = user.roles?.some((role: any) => role.name === 'admin' || role.name === 'Administrador');
-    console.log('App.tsx - Admin check:', { isAdmin, roles: user.roles });
     
     if (isAdmin) {
-      console.log('App.tsx - User is admin, hiding splash');
       setShowStudentSplash(false);
       return;
     }
     
     // If user doesn't have member data, don't show splash
     if (!user.member) {
-      console.log('App.tsx - User has no member data, hiding splash');
       setShowStudentSplash(false);
       return;
     }
     
-    console.log('App.tsx - Checking student data and setup:', { 
-      isLoggedIn, 
-      user: user?.name, 
-      role: user?.role,
-      roles: user?.roles,
-      member: !!user?.member, 
-      students: user?.member?.students,
-      setupCompleted: user?.setup_completed,
-      isLoading 
-    });
     
     const students = user.member.students || [];
     const hasStudents = students.length > 0;
@@ -149,34 +125,16 @@ const App = () => {
     const allStudentsHaveCI = students.length > 0 && studentsWithoutCI.length === 0;
     const setupCompleted = !!user.setup_completed; // Convert to boolean (handles 1, true, etc.)
     
-    console.log('App.tsx - Analysis:', {
-      totalStudents: students.length,
-      studentsWithoutCI: studentsWithoutCI.length,
-      allStudentsHaveCI,
-      setupCompleted,
-      students: students.map(s => ({ name: s.full_name, ci: s.ci }))
-    });
     
     // Check membership status asynchronously
     const checkAndShowSplash = async () => {
-      // Debug logging
-      console.log('App.tsx - checkAndShowSplash called:', {
-        isLoggedIn,
-        user: user?.name,
-        member: !!user?.member,
-        students: user?.member?.students?.length || 0,
-        isLoading,
-        membershipStatus: !!membershipStatus
-      });
       
       // Verificar que tenemos los datos mínimos necesarios
       if (!isLoggedIn || !user?.member) {
-        console.log('App.tsx - No user or member, skipping splash check');
         return;
       }
       
       if (isLoading) {
-        console.log('App.tsx - Still loading, skipping splash check');
         return;
       }
       
@@ -197,20 +155,10 @@ const App = () => {
       
       const shouldShowSplash = hasStudentsWithoutCI || needsMembershipPayment || needsSetup;
       
-      console.log('App.tsx - Decision:', {
-        hasStudentsWithoutCI,
-        needsMembershipPayment,
-        needsSetup,
-        shouldShowSplash,
-        membershipActive: currentMembershipStatus?.is_active_member,
-        membershipReason: currentMembershipStatus?.reason
-      });
       
       if (shouldShowSplash) {
-        console.log('App.tsx - Showing splash -', { hasStudentsWithoutCI, needsMembershipPayment, needsSetup });
         setShowStudentSplash(true);
       } else {
-        console.log('App.tsx - Hiding splash (everything complete)');
         setShowStudentSplash(false);
       }
     };
@@ -224,7 +172,6 @@ const App = () => {
     
     // Delay específico después del login para asegurar que los datos estén cargados
     const timer = setTimeout(async () => {
-      console.log('App.tsx - Post-login splash check with delay');
       if (!showStudentSplash) { // Solo si no se está mostrando ya
         // Recrear la lógica de checkAndShowSplash aquí para tener acceso al scope
         const students = user.member.students || [];
@@ -239,19 +186,11 @@ const App = () => {
             const statusResponse = await fetchMembershipStatus();
             needsMembershipPayment = !statusResponse?.is_active_member;
           } catch (error) {
-            console.log('App.tsx - Error checking membership in delayed effect:', error);
           }
         }
         
         const shouldShowSplash = hasStudentsWithoutCI || needsMembershipPayment || (!setupCompleted && students.length > 0);
         
-        console.log('App.tsx - Post-login delayed decision:', {
-          hasStudentsWithoutCI,
-          needsMembershipPayment,
-          needsSetup: !setupCompleted,
-          shouldShowSplash,
-          totalStudents: students.length
-        });
         
         if (shouldShowSplash) {
           setShowStudentSplash(true);
@@ -273,10 +212,6 @@ const App = () => {
         // Use the client user endpoint that loads member, students and setup_completed
         const response = await api.get('api/user');
         if (response.data) {
-          console.log('App.tsx - User loaded:', response.data);
-          console.log('App.tsx - User roles:', response.data.roles);
-          console.log('App.tsx - User roles type:', typeof response.data.roles);
-          console.log('App.tsx - User roles length:', response.data.roles?.length);
           setUser(response.data);
           setIsLoggedIn(true);
         }
