@@ -98,48 +98,26 @@ const App = () => {
     // Additional check: make sure we have complete user data including setup_completed field
     // This ensures we don't show splash prematurely after login
     if (user.setup_completed === undefined) {
-      console.log('App.tsx - User data incomplete (missing setup_completed), not showing splash yet');
       setShowStudentSplash(false);
       return;
     }
     
-    // Debug: Log full user structure to understand role data
-    console.log('App.tsx - Full user data for role check:', {
-      name: user.name,
-      role: user.role,
-      roles: user.roles,
-      member: !!user.member,
-      fullUser: user
-    });
     
     // If user is admin, don't show splash (admins bypass this validation)
     // Check Laravel Permissions structure: user.roles array with role objects
     const isAdmin = user.roles?.some((role: any) => role.name === 'admin' || role.name === 'Administrador');
-    console.log('App.tsx - Admin check:', { isAdmin, roles: user.roles });
     
     if (isAdmin) {
-      console.log('App.tsx - User is admin, hiding splash');
       setShowStudentSplash(false);
       return;
     }
     
     // If user doesn't have member data, don't show splash
     if (!user.member) {
-      console.log('App.tsx - User has no member data, hiding splash');
       setShowStudentSplash(false);
       return;
     }
     
-    console.log('App.tsx - Checking student data and setup:', { 
-      isLoggedIn, 
-      user: user?.name, 
-      role: user?.role,
-      roles: user?.roles,
-      member: !!user?.member, 
-      students: user?.member?.students,
-      setupCompleted: user?.setup_completed,
-      isLoading 
-    });
     
     const students = user.member.students || [];
     const hasStudents = students.length > 0;
@@ -149,13 +127,6 @@ const App = () => {
     const allStudentsHaveCI = students.length > 0 && studentsWithoutCI.length === 0;
     const setupCompleted = !!user.setup_completed; // Convert to boolean (handles 1, true, etc.)
     
-    console.log('App.tsx - Analysis:', {
-      totalStudents: students.length,
-      studentsWithoutCI: studentsWithoutCI.length,
-      allStudentsHaveCI,
-      setupCompleted,
-      students: students.map(s => ({ name: s.full_name, ci: s.ci }))
-    });
     
     // Check membership status asynchronously
     const checkAndShowSplash = async () => {
