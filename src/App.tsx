@@ -216,40 +216,26 @@ const App = () => {
     checkAuth();
   }, [setIsLoading, setUser, setIsLoggedIn]);
 
-  // Additional effect to refresh data after login to ensure we have complete member.students data
+  // Additional effect to load membershipStatus after login if not loaded yet
   useEffect(() => {
-    const refreshDataAfterLogin = async () => {
-      if (isLoggedIn && user && !isLoading) {
-        // Check if we have incomplete user data (missing member.students)
-        const hasIncompleteData = !user.member || !user.member.students;
-        
-        if (hasIncompleteData) {
-          console.log('App.tsx - Refreshing incomplete user data after login');
+    const loadMembershipStatusAfterLogin = async () => {
+      if (isLoggedIn && user && !isLoading && !membershipStatus) {
+        // If user has students but membershipStatus is not loaded, load it
+        if (user.member?.students?.length > 0) {
+          console.log('App.tsx - Loading membershipStatus after login');
           try {
-            const response = await api.get('api/user');
-            if (response.data) {
-              setUser(response.data);
-              
-              // Load membership status if user has students
-              if (response.data.member?.students?.length > 0) {
-                try {
-                  await fetchMembershipStatus();
-                } catch (error) {
-                  console.error('Error loading membership status after data refresh:', error);
-                }
-              }
-            }
+            await fetchMembershipStatus();
           } catch (error) {
-            console.error('Error refreshing user data after login:', error);
+            console.error('Error loading membership status after login:', error);
           }
         }
       }
     };
 
     // Small delay to ensure login process is complete
-    const timer = setTimeout(refreshDataAfterLogin, 200);
+    const timer = setTimeout(loadMembershipStatusAfterLogin, 200);
     return () => clearTimeout(timer);
-  }, [isLoggedIn, user, isLoading]);
+  }, [isLoggedIn, user, isLoading, membershipStatus]);
 
   const handleStudentDataComplete = () => {
     setShowStudentSplash(false);
