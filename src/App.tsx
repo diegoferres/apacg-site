@@ -139,6 +139,13 @@ const App = () => {
       return;
     }
     
+    // If user has students and all have CI, we need to wait for membershipStatus before deciding
+    if (hasStudents && allStudentsHaveCI && !membershipStatus) {
+      // Don't change splash state yet, wait for membership status to load
+      console.log('App.tsx - Waiting for membershipStatus to load before evaluation');
+      return;
+    }
+    
     // Show splash ONLY if:
     // 1. User has students without CI (at least 1 student missing CI)
     // 2. OR all students have CI but membership is inactive (!is_active_member)
