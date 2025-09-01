@@ -216,6 +216,41 @@ const App = () => {
     checkAuth();
   }, [setIsLoading, setUser, setIsLoggedIn]);
 
+  // Additional effect to refresh data after login to ensure we have complete member.students data
+  useEffect(() => {
+    const refreshDataAfterLogin = async () => {
+      if (isLoggedIn && user && !isLoading) {
+        // Check if we have incomplete user data (missing member.students)
+        const hasIncompleteData = !user.member || !user.member.students;
+        
+        if (hasIncompleteData) {
+          console.log('App.tsx - Refreshing incomplete user data after login');
+          try {
+            const response = await api.get('api/user');
+            if (response.data) {
+              setUser(response.data);
+              
+              // Load membership status if user has students
+              if (response.data.member?.students?.length > 0) {
+                try {
+                  await fetchMembershipStatus();
+                } catch (error) {
+                  console.error('Error loading membership status after data refresh:', error);
+                }
+              }
+            }
+          } catch (error) {
+            console.error('Error refreshing user data after login:', error);
+          }
+        }
+      }
+    };
+
+    // Small delay to ensure login process is complete
+    const timer = setTimeout(refreshDataAfterLogin, 200);
+    return () => clearTimeout(timer);
+  }, [isLoggedIn, user, isLoading]);
+
   const handleStudentDataComplete = () => {
     setShowStudentSplash(false);
     // Reset membership status to trigger a refresh on next evaluation
