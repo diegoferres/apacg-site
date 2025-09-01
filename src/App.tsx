@@ -96,7 +96,8 @@ const App = () => {
     
     // Additional check: make sure we have complete user data including setup_completed field
     // This ensures we don't show splash prematurely after login
-    if (user.setup_completed === undefined) {
+    // Note: setup_completed can be false, null, or undefined - only undefined means data is still loading
+    if (user.setup_completed === undefined && isLoading) {
       setShowStudentSplash(false);
       return;
     }
@@ -127,80 +128,44 @@ const App = () => {
     const setupCompleted = !!user.setup_completed; // Convert to boolean (handles 1, true, etc.)
     
     
-    // Check membership status asynchronously
-    const checkAndShowSplash = async () => {
-      
-      // Verificar que tenemos los datos mínimos necesarios
-      if (!isLoggedIn || !user?.member) {
-        return;
-      }
-      
-      if (isLoading) {
-        return;
-      }
-      
-      let currentMembershipStatus = membershipStatus;
-      
-      // If we don't have membership status yet, fetch it
-      if (!currentMembershipStatus && hasStudents) {
-        currentMembershipStatus = await fetchMembershipStatus();
-      }
-      
-      // Show splash ONLY if:
-      // 1. User has students without CI (at least 1 student missing CI)
-      // 2. OR all students have CI but membership is inactive (!is_active_member)
-      // 3. OR all students have CI, membership is active, but setup is not completed
-      const hasStudentsWithoutCI = studentsWithoutCI.length > 0;
-      const needsMembershipPayment = allStudentsHaveCI && hasStudents && currentMembershipStatus && !currentMembershipStatus.is_active_member;
-      const needsSetup = allStudentsHaveCI && (!currentMembershipStatus || currentMembershipStatus.is_active_member) && !setupCompleted;
-      
-      const shouldShowSplash = hasStudentsWithoutCI || needsMembershipPayment || needsSetup;
-      
-      
-      if (shouldShowSplash) {
-        setShowStudentSplash(true);
-      } else {
-        setShowStudentSplash(false);
-      }
-    };
+    // Verificar que tenemos los datos mínimos necesarios
+    if (!isLoggedIn || !user?.member) {
+      setShowStudentSplash(false);
+      return;
+    }
     
-    checkAndShowSplash();
+    if (isLoading) {
+      setShowStudentSplash(false);
+      return;
+    }
+    
+    // Show splash ONLY if:
+    // 1. User has students without CI (at least 1 student missing CI)
+    // 2. OR all students have CI but membership is inactive (!is_active_member)
+    // 3. OR all students have CI, membership is active, but setup is not completed
+    const hasStudentsWithoutCI = studentsWithoutCI.length > 0;
+    const needsMembershipPayment = allStudentsHaveCI && hasStudents && membershipStatus && !membershipStatus.is_active_member;
+    const needsSetup = allStudentsHaveCI && (!membershipStatus || membershipStatus.is_active_member) && !setupCompleted;
+    
+    const shouldShowSplash = hasStudentsWithoutCI || needsMembershipPayment || needsSetup;
+    
+    console.log('App.tsx - Splash evaluation:', {
+      user_id: user.id,
+      hasStudents,
+      studentsWithoutCI: studentsWithoutCI.length,
+      allStudentsHaveCI,
+      setupCompleted,
+      membershipActive: membershipStatus?.is_active_member,
+      membershipStatusLoaded: !!membershipStatus,
+      shouldShowSplash,
+      hasStudentsWithoutCI,
+      needsMembershipPayment,
+      needsSetup
+    });
+    
+    setShowStudentSplash(shouldShowSplash);
   }, [isLoggedIn, user, isLoading, membershipStatus]);
   
-  // Effect específico para post-login con delay para asegurar carga completa
-  useEffect(() => {
-    if (!isLoggedIn || !user?.member) return;
-    
-    // Delay específico después del login para asegurar que los datos estén cargados
-    const timer = setTimeout(async () => {
-      if (!showStudentSplash) { // Solo si no se está mostrando ya
-        // Recrear la lógica de checkAndShowSplash aquí para tener acceso al scope
-        const students = user.member.students || [];
-        const studentsWithoutCI = students.filter(student => !student.ci || student.ci.trim() === '');
-        const hasStudentsWithoutCI = studentsWithoutCI.length > 0;
-        const setupCompleted = !!user.setup_completed;
-        
-        // Verificar membresía si hay estudiantes
-        let needsMembershipPayment = false;
-        if (students.length > 0 && studentsWithoutCI.length === 0) {
-          try {
-            const statusResponse = await fetchMembershipStatus();
-            needsMembershipPayment = !statusResponse?.is_active_member;
-          } catch (error) {
-          }
-        }
-        
-        const shouldShowSplash = hasStudentsWithoutCI || needsMembershipPayment || (!setupCompleted && students.length > 0);
-        
-        
-        if (shouldShowSplash) {
-          setShowStudentSplash(true);
-        }
-      }
-    }, 1000); // 1 segundo de delay
-    
-    return () => clearTimeout(timer);
-  }, [isLoggedIn]);
   
   // Inicializar Google Analytics al cargar la app
   useEffect(() => {
@@ -215,6 +180,17 @@ const App = () => {
         if (response.data) {
           setUser(response.data);
           setIsLoggedIn(true);
+          
+          // If user is a member with students, automatically load membership status
+          if (response.data.member?.students?.length > 0) {
+            try {
+              const membershipStatusResponse = await fetchMembershipStatus();
+              // membershipStatus state is already updated by fetchMembershipStatus
+            } catch (error) {
+              console.error('Error loading membership status during auth check:', error);
+              // Continue anyway, membership status will be loaded later if needed
+            }
+          }
         }
       } catch (error: any) {
         // No registrar error 401 (Unauthorized) ya que simplemente significa que no hay sesión activa
@@ -224,6 +200,7 @@ const App = () => {
         // Para cualquier error (incluyendo 401), simplemente no hay sesión activa
         setIsLoggedIn(false);
         setUser(null);
+        setMembershipStatus(null);
       } finally {
         setIsLoading(false);
       }
