@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { formatDate } from '@/lib/utils';
+import { formatDate, renderSafeHtml } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Navbar from '@/components/Navbar';
@@ -99,7 +99,7 @@ const NewsDetail = () => {
       <article className="pt-28 pb-16 px-4 flex-1">
         <div className="container mx-auto max-w-4xl">
           {/* Breadcrumb */}
-          <nav className="flex items-center space-x-2 text-sm text-muted-foreground mb-6">
+          <nav aria-label="Breadcrumb" className="flex items-center space-x-2 text-sm text-muted-foreground mb-6">
             <Link to="/" className="hover:text-foreground transition-colors">Inicio</Link>
             <span>/</span>
             <Link to="/novedades" className="hover:text-foreground transition-colors">Novedades</Link>
@@ -124,7 +124,7 @@ const NewsDetail = () => {
               </Badge>
             </div>
             
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 animate-fade-up">
+            <h1 className="text-3xl md:text-4xl font-bold mb-4 animate-fade-up">
               {newsItem.title}
             </h1>
             
@@ -155,7 +155,7 @@ const NewsDetail = () => {
           {/* Content */}
           <div className="prose prose-lg max-w-none animate-fade-up">
             <div 
-              dangerouslySetInnerHTML={{ __html: newsItem.content }}
+              dangerouslySetInnerHTML={renderSafeHtml(newsItem.content)}
               className="text-foreground/90 leading-relaxed"
             />
           </div>

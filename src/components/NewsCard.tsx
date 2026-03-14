@@ -4,7 +4,7 @@ import { Calendar, FileText } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { formatDate } from '@/lib/utils';
+import { formatDate, removeHTMLTags } from '@/lib/utils';
 import analytics from '@/services/analytics';
 
 export interface NewsItem {
@@ -27,11 +27,6 @@ interface NewsCardProps {
   position?: number;
   listName?: string;
 }
-
-const removeHTMLTags = (text: string) => {
-  const doc = new DOMParser().parseFromString(text, 'text/html');
-  return doc.body.textContent || "";
-};
 
 const NewsCard = ({ newsItem, delay = 0, showButton = true, position = 0, listName = 'news_list' }: NewsCardProps) => {
   const [isVisible, setIsVisible] = useState(false);
@@ -61,7 +56,7 @@ const NewsCard = ({ newsItem, delay = 0, showButton = true, position = 0, listNa
   return (
     <Link to={`/novedad/${newsItem.slug}`} className="block" onClick={handleClick}>
       <Card 
-        className={`overflow-hidden hover:shadow-lg transition-all duration-300 group cursor-pointer ${
+        className={`overflow-hidden hover:shadow-lg transition-all duration-300 group cursor-pointer flex flex-col h-full ${
           delay > 0 ? (isVisible ? 'opacity-100' : 'opacity-0 translate-y-4') : ''
         }`}
         style={delay > 0 ? { animationDelay: `${delay}ms` } : undefined}
@@ -72,6 +67,7 @@ const NewsCard = ({ newsItem, delay = 0, showButton = true, position = 0, listNa
               src={newsItem.cover?.storage_path_full}
               alt={newsItem.title}
               className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
+              loading="lazy"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
             <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
@@ -100,16 +96,12 @@ const NewsCard = ({ newsItem, delay = 0, showButton = true, position = 0, listNa
           </p>
         </CardHeader>
         
-        <CardContent className="pt-0">
-          {showButton ? (
-            <Button asChild className="w-full bg-primary hover:bg-primary/90">
+        <CardContent className="pt-0 flex flex-col flex-1">
+          <div className="flex justify-end pt-4 mt-auto">
+            <Button asChild className="bg-primary hover:bg-primary/90">
               <span>Leer Más</span>
             </Button>
-          ) : (
-            <span className="inline-flex items-center text-primary hover:text-primary/80 font-medium text-sm">
-              Leer más
-            </span>
-          )}
+          </div>
         </CardContent>
       </Card>
     </Link>

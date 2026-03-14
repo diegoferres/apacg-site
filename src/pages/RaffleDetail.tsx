@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useToast } from '@/hooks/use-toast';
-import { formatPrice, toNumber, formatDate } from '@/lib/utils';
+import { formatPrice, toNumber, formatDate, renderSafeHtml } from '@/lib/utils';
 import { useStore } from '@/stores/store';
 import api from '@/services/api';
 import analytics from '@/services/analytics';
@@ -219,10 +219,10 @@ const RaffleDetail = () => {
       <Navbar />
       
       {/* Hero Section */}
-      <section className="pt-24 pb-12">
+      <section className="pt-24 pb-20 lg:pb-12">
         <div className="container mx-auto px-4 md:px-6">
           {/* Breadcrumb */}
-          <nav className="flex items-center space-x-2 text-sm text-muted-foreground mb-6">
+          <nav aria-label="Breadcrumb" className="flex items-center space-x-2 text-sm text-muted-foreground mb-6">
             <Link to="/" className="hover:text-foreground transition-colors">Inicio</Link>
             <span>/</span>
             <Link to="/rifas" className="hover:text-foreground transition-colors">Rifas</Link>
@@ -245,7 +245,7 @@ const RaffleDetail = () => {
                     <Calendar className="h-3 w-3 mr-1" />
                     {formatDate(raffle.end_date, { format: 'short' })}
                   </Badge>
-                  <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground mb-2">
+                  <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
                     {raffle.title}
                   </h1>
                 </div>
@@ -289,9 +289,7 @@ const RaffleDetail = () => {
                 <CardContent>
                   <div 
                     className="text-muted-foreground leading-relaxed prose prose-sm max-w-none"
-                    dangerouslySetInnerHTML={{ 
-                      __html: isDescriptionExpanded ? raffle.description : truncateText(raffle.description)
-                    }}
+                    dangerouslySetInnerHTML={renderSafeHtml(isDescriptionExpanded ? raffle.description : truncateText(raffle.description))}
                   />
                   {shouldShowReadMore && (
                     <Button
@@ -328,11 +326,12 @@ const RaffleDetail = () => {
                         <Button
                           variant="outline"
                           size="icon"
+                          aria-label="Disminuir cantidad"
                           onClick={() => updateQuantity(-1)}
                           disabled={quantity === 0}
                           className="h-8 w-8"
                         >
-                          -
+                          <Minus className="h-4 w-4" />
                         </Button>
                         
                         <span className="w-8 text-center font-semibold">
@@ -342,10 +341,11 @@ const RaffleDetail = () => {
                         <Button
                           variant="outline"
                           size="icon"
+                          aria-label="Aumentar cantidad"
                           onClick={() => updateQuantity(1)}
                           className="h-8 w-8"
                         >
-                          +
+                          <Plus className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
@@ -377,7 +377,43 @@ const RaffleDetail = () => {
           </div>
         </div>
       </section>
-      
+
+      {/* Mobile sticky CTA */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-background/95 backdrop-blur-md border-t border-border/40 p-4">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label="Disminuir cantidad"
+              onClick={() => updateQuantity(-1)}
+              disabled={quantity === 0}
+              className="h-9 w-9"
+            >
+              <Minus className="h-4 w-4" />
+            </Button>
+            <span className="w-8 text-center font-semibold">{quantity}</span>
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label="Aumentar cantidad"
+              onClick={() => updateQuantity(1)}
+              className="h-9 w-9"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+          <Button
+            onClick={handlePurchase}
+            disabled={isLoading || quantity === 0}
+            className="flex-1"
+            size="lg"
+          >
+            {quantity > 0 ? `Comprar ${formatPrice(getTotalPrice())}` : 'Seleccionar números'}
+          </Button>
+        </div>
+      </div>
+
       <Footer />
     </div>
   );

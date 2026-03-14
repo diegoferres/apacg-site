@@ -107,61 +107,6 @@ const CourseDetail = () => {
     }
   }, [course, location.search, navigate, location.pathname]);
 
-  // Mock data structure for reference
-  const mockCourse = {
-    id: 1,
-    slug: 'robotica-educativa-lego',
-    title: 'Robótica Educativa con LEGO',
-    academy: 'APAC',
-    shortDescription: 'Curso de robótica educativa para niños usando tecnología LEGO',
-    description: 'Curso completo de robótica educativa que desarrolla habilidades STEM en niños y adolescentes. Los estudiantes aprenderán conceptos fundamentales de programación, mecánica y electrónica a través de proyectos prácticos con tecnología LEGO. El curso está diseñado para fomentar la creatividad, el pensamiento lógico y las habilidades de resolución de problemas.',
-    duration: '4 meses',
-    startDate: '05/09/2025',
-    endDate: '05/01/2026',
-    location: 'APAC - Sede Central',
-    schedule: 'Viernes 15:00-17:00 hs y 18:00-20:00 hs',
-    maxCapacity: 20,
-    minAge: 7,
-    maxAge: 18,
-    status: 'Activo',
-    image: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&h=600&fit=crop',
-    groups: [
-      {
-        id: 1,
-        name: 'Kids (7-9 años)',
-        schedule: 'Martes y Jueves 16:00-17:30',
-        capacity: 15,
-        enrolled: 8,
-        enrollment: 0,
-        memberPrice: 350000,
-        nonMemberPrice: 500000,
-        description: 'Grupo diseñado especialmente para los más pequeños, con actividades adaptadas a su edad y nivel de desarrollo.'
-      },
-      {
-        id: 2,
-        name: 'Teens 1 (15-17 años)',
-        schedule: 'Jueves 17:30-19:00, Viernes 17:45-19:15',
-        capacity: 12,
-        enrolled: 5,
-        enrollment: 500000,
-        memberPrice: 300000,
-        nonMemberPrice: 400000,
-        description: 'Para adolescentes avanzados que buscan profundizar en conceptos de programación y robótica.'
-      },
-      {
-        id: 3,
-        name: 'Teens 2 (10-14 años)',
-        schedule: 'Martes y Miércoles 18:15-19:45',
-        capacity: 10,
-        enrolled: 3,
-        enrollment: 500000,
-        memberPrice: 300000,
-        nonMemberPrice: 400000,
-        description: 'Grupo intermedio perfecto para preadolescentes que quieren iniciarse en la robótica.'
-      }
-    ]
-  };
-
   const handleEnroll = (groupId: number | null) => {
     // Track intención de inscripción en GA4
     if (course) {
@@ -225,7 +170,7 @@ const CourseDetail = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      <div className="pt-24 pb-16">
+      <div className="pt-24 pb-24 lg:pb-16">
         <div className="container mx-auto px-4">
           {/* Back button */}
           <Button 
@@ -580,8 +525,20 @@ const CourseDetail = () => {
         </div>
       </div>
 
+      {/* Mobile sticky CTA */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-background/95 backdrop-blur-md border-t border-border/40 p-4">
+        <Button
+          onClick={() => handleEnroll(null)}
+          className="w-full"
+          size="lg"
+          disabled={!course.is_available}
+        >
+          {!course.is_available ? 'No Disponible' : 'Inscribirse al Curso'}
+        </Button>
+      </div>
+
       <Footer />
-      
+
       {/* Enrollment Modal */}
       <CourseEnrollmentModal
         isOpen={isEnrollmentModalOpen}

@@ -4,7 +4,7 @@ import { Calendar, Clock, Ticket } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { formatPrice, toNumber, formatDate } from '@/lib/utils';
+import { formatPrice, toNumber, formatDate, removeHTMLTags } from '@/lib/utils';
 import analytics from '@/services/analytics';
 
 export interface Raffle {
@@ -26,11 +26,6 @@ interface RaffleCardProps {
   position?: number;
   listName?: string;
 }
-
-const removeHTMLTags = (text: string) => {
-  const doc = new DOMParser().parseFromString(text, 'text/html');
-  return doc.body.textContent || "";
-};
 
 const RaffleCard = ({ raffle, delay = 0, position = 0, listName = 'raffles_list' }: RaffleCardProps) => {
   const [isVisible, setIsVisible] = useState(false);
@@ -71,6 +66,7 @@ const RaffleCard = ({ raffle, delay = 0, position = 0, listName = 'raffles_list'
               src={raffle.cover?.storage_path_full}
               alt={raffle.title}
               className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
+              loading="lazy"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
             <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
@@ -91,12 +87,6 @@ const RaffleCard = ({ raffle, delay = 0, position = 0, listName = 'raffles_list'
         )}
         
         <CardHeader className="pb-4">
-          <div className="flex justify-between items-start mb-2">
-            <Badge className="bg-primary/10 text-primary hover:bg-primary/20">
-              <Calendar className="h-3 w-3 mr-1" />
-              {formatDate(raffle.end_date, { format: 'short' })}
-            </Badge>
-          </div>
           <CardTitle className="text-lg font-bold group-hover:text-primary transition-colors">
             {raffle.title}
           </CardTitle>

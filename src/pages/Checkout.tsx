@@ -10,6 +10,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { formatPrice, formatDate } from '@/lib/utils';
 import { useStore } from '@/stores/store';
+import api from '@/services/api';
 import analytics from '@/services/analytics';
 
 interface CheckoutData {
@@ -59,6 +60,7 @@ interface CheckoutEventData {
   totalAmount: number;
   totalTickets: number;
   referralCode?: string;
+  is_member?: boolean;
   enrollmentFee?: number;
   monthlyFee?: number;
   originalEnrollmentFee?: number;
@@ -110,6 +112,9 @@ const Checkout = () => {
   });
   const [errors, setErrors] = useState<Partial<CheckoutData>>({});
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const isLoggedIn = useStore((state) => state.isLoggedIn);
+  const [isMember, setIsMember] = useState(false);
+  const [checkingMembership, setCheckingMembership] = useState(false);
 
   // Precargar datos del usuario autenticado o datos guardados del formulario
   useEffect(() => {
@@ -152,6 +157,25 @@ const Checkout = () => {
       }
     }
   }, [user, isUserLoading]);
+
+  // Verificar membresía para eventos (precios diferenciales)
+  useEffect(() => {
+    if (eventData?.type === 'event' && user?.member) {
+      setCheckingMembership(true);
+      api.get('/api/client/members/check-membership-status')
+        .then(response => {
+          setIsMember(response.data.is_active_member);
+        })
+        .catch(() => {
+          setIsMember(false);
+        })
+        .finally(() => {
+          setCheckingMembership(false);
+        });
+    } else {
+      setIsMember(eventData?.is_member || false);
+    }
+  }, [eventData, user]);
 
   useEffect(() => {
     // Verificar si hay error de pago en los parámetros de URL
@@ -586,6 +610,64 @@ const Checkout = () => {
                     </div>
                   ) : eventData.tickets && eventData.tickets.length > 0 && (
                     <div className="space-y-3">
+                      {/* Badge de membresía para eventos */}
+                      {eventData.type === 'event' && (
+                        <div className="mb-2">
+                          {checkingMembership ? (
+                            <div className="p-3 rounded-md text-sm bg-gray-50 border border-gray-200">
+                              <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                                <span>Verificando membresía...</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className={`p-3 rounded-md text-sm ${isMember ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-orange-50 border border-orange-200 text-orange-800'}`}>
+                              <div className="flex items-center gap-2">
+                                <div className={`w-2 h-2 rounded-full ${isMember ? 'bg-green-500' : 'bg-orange-500'}`}></div>
+                                <span className="font-medium">
+                                  {isMember ? 'Socio Activo' : 'No Socio'}
+                                </span>
+                              </div>
+                              <p className="text-xs mt-1 opacity-80">
+                                {isMember
+                                  ? 'Se aplicaron las tarifas preferenciales para socios'
+                                  : !isLoggedIn
+                                    ? (
+                                      <>
+                                        Se aplicaron las tarifas regulares.{' '}
+                                        <button
+                                          onClick={() => {
+                                            const returnTo = encodeURIComponent(`/evento/${eventData.eventSlug}`);
+                                            navigate(`/login?returnTo=${returnTo}`);
+                                          }}
+                                          className="underline hover:opacity-80 text-inherit font-medium"
+                                          type="button"
+                                        >
+                                          Iniciá sesión como socio
+                                        </button>
+                                      </>
+                                    )
+                                    : user?.member
+                                      ? (
+                                        <>
+                                          Tenés pagos pendientes.{' '}
+                                          <button
+                                            onClick={() => navigate('/perfil')}
+                                            className="underline hover:opacity-80 text-inherit font-medium"
+                                            type="button"
+                                          >
+                                            Ponete al día para acceder a tarifas de socio
+                                          </button>
+                                        </>
+                                      )
+                                      : 'Se aplicaron las tarifas regulares.'
+                                }
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       <h4 className="font-medium">Detalle de entradas:</h4>
                       {eventData.tickets.map((ticket, index) => (
                         <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100">
@@ -593,6 +675,11 @@ const Checkout = () => {
                             <p className="font-medium text-sm">{ticket.name}</p>
                             <p className="text-xs text-muted-foreground">
                               {ticket.quantity} × {formatPrice(ticket.price)}
+                              {eventData.is_member !== undefined && (
+                                <span className={isMember ? 'text-green-600 ml-1' : 'text-orange-600 ml-1'}>
+                                  ({isMember ? 'Socio' : 'No Socio'})
+                                </span>
+                              )}
                             </p>
                           </div>
                           <span className="font-semibold">

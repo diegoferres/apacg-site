@@ -76,6 +76,7 @@ const CourseCard = ({ course, delay = 0, showPricing = true, position = 0, listN
               src={course.cover_image_url}
               alt={course.title}
               className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
+              loading="lazy"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
             <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">

@@ -1,10 +1,11 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Heart } from 'lucide-react';
+import { useStore } from '@/stores/store';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
+  const user = useStore((state) => state.user);
 
   return (
     <footer className="w-full bg-secondary/50 border-t border-border/40 mt-20">
@@ -16,7 +17,7 @@ const Footer = () => {
               Asociación dedicada a proporcionar beneficios exclusivos para sus miembros a través de alianzas con comercios y establecimientos.
             </p>
           </div>
-          
+
           <div className="animate-fade-up" style={{ animationDelay: '0.2s' }}>
             <h3 className="text-lg font-semibold mb-4">Enlaces</h3>
             <nav className="flex flex-col space-y-3">
@@ -29,23 +30,32 @@ const Footer = () => {
               <Link to="/comercios" className="text-muted-foreground hover:text-foreground text-sm transition-colors">
                 Comercios
               </Link>
-              <Link to="/login" className="text-muted-foreground hover:text-foreground text-sm transition-colors">
-                Iniciar Sesión
-              </Link>
+              {user && user.id ? (
+                <Link to="/perfil" className="text-muted-foreground hover:text-foreground text-sm transition-colors">
+                  Mi Perfil
+                </Link>
+              ) : (
+                <Link to="/login" className="text-muted-foreground hover:text-foreground text-sm transition-colors">
+                  Iniciar Sesión
+                </Link>
+              )}
             </nav>
           </div>
           
           <div className="animate-fade-up" style={{ animationDelay: '0.3s' }}>
-            <h3 className="text-lg font-semibold mb-4">Legal</h3>
+            <h3 className="text-lg font-semibold mb-4">Secciones</h3>
             <nav className="flex flex-col space-y-3">
-              <Link to="/terminos" className="text-muted-foreground hover:text-foreground text-sm transition-colors">
-                Términos y Condiciones
+              <Link to="/eventos" className="text-muted-foreground hover:text-foreground text-sm transition-colors">
+                Eventos
               </Link>
-              <Link to="/privacidad" className="text-muted-foreground hover:text-foreground text-sm transition-colors">
-                Política de Privacidad
+              <Link to="/cursos" className="text-muted-foreground hover:text-foreground text-sm transition-colors">
+                Cursos
               </Link>
-              <Link to="/contacto" className="text-muted-foreground hover:text-foreground text-sm transition-colors">
-                Contacto
+              <Link to="/rifas" className="text-muted-foreground hover:text-foreground text-sm transition-colors">
+                Rifas
+              </Link>
+              <Link to="/novedades" className="text-muted-foreground hover:text-foreground text-sm transition-colors">
+                Novedades
               </Link>
             </nav>
           </div>

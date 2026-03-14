@@ -27,27 +27,21 @@ const Navbar = () => {
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
-
-    // fetchUser();
   }, [scrolled]);
 
-  // useEffect(() => {
-  //   const fetchUser = async () => {
-  //     try {
-  //       const response = await api.get('api/user');
-  //       setUser(response.data);
-  //       console.log(user);
-  //     } catch (error) {
-  //       console.error('Error fetching user:', error);
-  //     }
-  //   }
-
-  //   if(!user) {
-  //     fetchUser();
-  //   }
-  // }, []);
-
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+
+  const isActiveLink = (path: string) => {
+    if (path === '/') return location.pathname === '/';
+    return location.pathname.startsWith(path);
+  };
+
+  const navLinkClass = (path: string) =>
+    `font-medium transition-colors ${
+      isActiveLink(path)
+        ? 'text-primary'
+        : 'text-foreground/90 hover:text-foreground'
+    }`;
 
   const handleLogout = async () => {
     try {
@@ -83,46 +77,25 @@ const Navbar = () => {
 
           {/* Desktop menu */}
           <nav className="hidden md:flex items-center space-x-6">
-            <Link
-              to="/"
-              className="text-foreground/90 hover:text-foreground font-medium transition-colors"
-            >
+            <Link to="/" className={navLinkClass('/')}>
               Inicio
             </Link>
-            <Link
-              to="/beneficios"
-              className="text-foreground/90 hover:text-foreground font-medium transition-colors"
-            >
+            <Link to="/beneficios" className={navLinkClass('/beneficios')}>
               Beneficios
             </Link>
-            <Link
-              to="/comercios"
-              className="text-foreground/90 hover:text-foreground font-medium transition-colors"
-            >
+            <Link to="/comercios" className={navLinkClass('/comercios')}>
               Comercios
             </Link>
-            <Link
-              to="/eventos"
-              className="text-foreground/90 hover:text-foreground font-medium transition-colors"
-            >
+            <Link to="/eventos" className={navLinkClass('/eventos')}>
               Eventos
             </Link>
-            <Link
-              to="/rifas"
-              className="text-foreground/90 hover:text-foreground font-medium transition-colors"
-            >
+            <Link to="/rifas" className={navLinkClass('/rifas')}>
               Rifas
             </Link>
-            <Link
-              to="/cursos"
-              className="text-foreground/90 hover:text-foreground font-medium transition-colors"
-            >
+            <Link to="/cursos" className={navLinkClass('/cursos')}>
               Cursos
             </Link>
-            <Link
-              to="/novedades"
-              className="text-foreground/90 hover:text-foreground font-medium transition-colors"
-            >
+            <Link to="/novedades" className={navLinkClass('/novedades')}>
               Novedades
             </Link>
             {user &&user.id ? (
@@ -212,53 +185,25 @@ const Navbar = () => {
         <div className="md:hidden glass-navbar absolute top-full left-0 w-full py-4 animate-fade-in">
           <div className="container mx-auto px-4">
             <nav className="flex flex-col space-y-4">
-              <Link
-                to="/"
-                className="text-foreground/90 hover:text-foreground font-medium transition-colors py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
+              <Link to="/" className={`${navLinkClass('/')} py-2`} onClick={() => setIsMenuOpen(false)}>
                 Inicio
               </Link>
-              <Link
-                to="/beneficios"
-                className="text-foreground/90 hover:text-foreground font-medium transition-colors py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
+              <Link to="/beneficios" className={`${navLinkClass('/beneficios')} py-2`} onClick={() => setIsMenuOpen(false)}>
                 Beneficios
               </Link>
-              <Link
-                to="/comercios"
-                className="text-foreground/90 hover:text-foreground font-medium transition-colors py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
+              <Link to="/comercios" className={`${navLinkClass('/comercios')} py-2`} onClick={() => setIsMenuOpen(false)}>
                 Comercios
               </Link>
-              <Link
-                to="/eventos"
-                className="text-foreground/90 hover:text-foreground font-medium transition-colors py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
+              <Link to="/eventos" className={`${navLinkClass('/eventos')} py-2`} onClick={() => setIsMenuOpen(false)}>
                 Eventos
               </Link>
-              <Link
-                to="/rifas"
-                className="text-foreground/90 hover:text-foreground font-medium transition-colors py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
+              <Link to="/rifas" className={`${navLinkClass('/rifas')} py-2`} onClick={() => setIsMenuOpen(false)}>
                 Rifas
               </Link>
-              <Link
-                to="/cursos"
-                className="text-foreground/90 hover:text-foreground font-medium transition-colors py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
+              <Link to="/cursos" className={`${navLinkClass('/cursos')} py-2`} onClick={() => setIsMenuOpen(false)}>
                 Cursos
               </Link>
-              <Link
-                to="/novedades"
-                className="text-foreground/90 hover:text-foreground font-medium transition-colors py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
+              <Link to="/novedades" className={`${navLinkClass('/novedades')} py-2`} onClick={() => setIsMenuOpen(false)}>
                 Novedades
               </Link>
             </nav>
