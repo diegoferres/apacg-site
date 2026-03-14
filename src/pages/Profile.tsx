@@ -640,7 +640,7 @@ const Profile = () => {
                     className="h-32 w-32" 
                   />
                 </div>
-                <p className="text-sm font-medium mb-4">Código de Socio: {user?.member?.member_number}</p>
+                <p className="text-sm font-medium mb-4">CI: {user?.member?.document_number || user?.member?.member_number}</p>
                 <Button 
                   variant="destructive" 
                   className="w-full"
