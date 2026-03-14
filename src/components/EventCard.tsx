@@ -77,10 +77,9 @@ const EventCard = ({ event, delay = 0, position = 0, listName = 'events_list' }:
             <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
             <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
               <Calendar className="h-3 w-3 mr-1" />
-              {event.date_format || formatDate(event.date, { format: 'short' })}
-              {event.end_date_format && ` - ${event.end_date_format}`}
-              {!event.end_date_format && event.end_date && ` - ${formatDate(event.end_date, { format: 'short' })}`}
-            </Badge>
+              {formatDate(event.date, { format: 'short' })}
+              {event.end_date && ` - ${formatDate(event.end_date, { format: 'short' })}`}
+                          </Badge>
           </div>
         ) : (
           <div className="relative aspect-[16/9] bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center">
@@ -88,10 +87,9 @@ const EventCard = ({ event, delay = 0, position = 0, listName = 'events_list' }:
               <Ticket className="h-12 w-12 text-primary/60 mx-auto mb-2" />
               <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
                 <Calendar className="h-3 w-3 mr-1" />
-                {event.date_format || formatDate(event.date, { format: 'short' })}
-                {event.end_date_format && ` - ${event.end_date_format}`}
-                {!event.end_date_format && event.end_date && ` - ${formatDate(event.end_date, { format: 'short' })}`}
-              </Badge>
+                {formatDate(event.date, { format: 'short' })}
+                {event.end_date && ` - ${formatDate(event.end_date, { format: 'short' })}`}
+                              </Badge>
             </div>
           </div>
         )}

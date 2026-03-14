@@ -243,17 +243,17 @@ const RaffleDetail = () => {
                 <div>
                   <Badge className="mb-3 bg-primary/10 text-primary hover:bg-primary/20">
                     <Calendar className="h-3 w-3 mr-1" />
-                    {formatDate(raffle.end_date, { format: 'short' })}
+                    {formatDate(raffle.end_date, { format: 'long' })}
                   </Badge>
                   <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
                     {raffle.title}
                   </h1>
                 </div>
-                
+
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div className="flex items-center text-muted-foreground">
                     <Clock className="h-5 w-5 mr-3 text-primary flex-shrink-0" />
-                    <span>Sortea el {formatDate(raffle.end_date)}</span>
+                    <span>Sortea el {formatDate(raffle.end_date, { format: 'long' })}</span>
                   </div>
                 </div>
               </div>

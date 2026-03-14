@@ -72,7 +72,7 @@ const NewsCard = ({ newsItem, delay = 0, showButton = true, position = 0, listNa
             <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
             <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
               <Calendar className="h-3 w-3 mr-1" />
-              {newsItem.date_format || formatDate(newsItem.date, { format: 'short' })}
+              {formatDate(newsItem.date, { format: 'short' })}
             </Badge>
           </div>
         ) : (
@@ -81,7 +81,7 @@ const NewsCard = ({ newsItem, delay = 0, showButton = true, position = 0, listNa
               <FileText className="h-12 w-12 text-primary/60 mx-auto mb-2" />
               <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
                 <Calendar className="h-3 w-3 mr-1" />
-                {newsItem.date_format || formatDate(newsItem.date, { format: 'short' })}
+                {formatDate(newsItem.date, { format: 'short' })}
               </Badge>
             </div>
           </div>

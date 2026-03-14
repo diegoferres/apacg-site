@@ -201,8 +201,9 @@ export function formatDate(
     }
 
     // Formatear según las opciones
+    // short: "15 abr 2026" | long: "15 de abril de 2026" | medium: "15/04/2026"
     const formatOptions: Intl.DateTimeFormatOptions = {
-      day: '2-digit',
+      day: 'numeric',
       month: format === 'long' ? 'long' : format === 'short' ? 'short' : '2-digit',
     };
 
@@ -213,10 +214,17 @@ export function formatDate(
     if (includeTime) {
       formatOptions.hour = '2-digit';
       formatOptions.minute = '2-digit';
-      formatOptions.hour12 = false; // 24-hour format
+      formatOptions.hour12 = false;
     }
 
-    return includeTime ? date.toLocaleString('es-ES', formatOptions) : date.toLocaleDateString('es-ES', formatOptions);
+    const formatted = includeTime ? date.toLocaleString('es-ES', formatOptions) : date.toLocaleDateString('es-ES', formatOptions);
+
+    // Para formato short, capitalizar el mes: "15 abr 2026"
+    if (format === 'short') {
+      return formatted.replace(/\./g, '');
+    }
+
+    return formatted;
   } catch (error) {
     console.warn('Error formatting date:', error);
     return 'No definido';

@@ -120,7 +120,7 @@ const NewsDetail = () => {
             <div className="flex items-center gap-4 mb-4">
               <Badge className="bg-primary/10 text-primary hover:bg-primary/20">
                 <Calendar className="h-3 w-3 mr-1" />
-                {formatDate(newsItem.date, { format: 'short' })}
+                {formatDate(newsItem.date, { format: 'long' })}
               </Badge>
             </div>
             

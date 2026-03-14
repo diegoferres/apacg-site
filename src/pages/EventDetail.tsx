@@ -306,7 +306,7 @@ const EventDetail = () => {
               <div>
                 <Badge className="mb-4 bg-primary/10 text-primary hover:bg-primary/20">
                   <Calendar className="h-3 w-3 mr-1" />
-                  {formatDate(event.date, { format: 'short' })}
+                  {formatDate(event.date, { format: 'long' })}
                 </Badge>
                 <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
                   {event.title}
