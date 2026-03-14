@@ -19,6 +19,7 @@ export interface Event {
   time: string;
   location: string;
   price_from: number;
+  member_price_from: number | null;
   is_informational: boolean;
   cover?: {
     storage_path_full: string;
@@ -122,7 +123,7 @@ const EventCard = ({ event, delay = 0, position = 0, listName = 'events_list' }:
               <div>
                 <span className="text-xs text-muted-foreground">Desde</span>
                 <p className="text-xl font-bold text-primary">
-                  {formatPrice(event.price_from)}
+                  {formatPrice(event.member_price_from ?? event.price_from)}
                 </p>
               </div>
             )}

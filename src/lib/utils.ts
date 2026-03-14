@@ -12,7 +12,7 @@ export function cn(...inputs: ClassValue[]) {
  * @returns El precio formateado con el símbolo de guaraní
  */
 export function formatGuaraniPrice(
-  amount: number,
+  amount: number | string,
   options: {
     symbol?: '₲' | 'Gs.' | 'Gs'
     showDecimals?: boolean
@@ -25,8 +25,11 @@ export function formatGuaraniPrice(
     locale = 'es-PY'
   } = options
 
+  // Convertir string a número si es necesario
+  const numericAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+
   // Validar que el amount es un número válido
-  if (typeof amount !== 'number' || isNaN(amount) || amount < 0) {
+  if (typeof numericAmount !== 'number' || isNaN(numericAmount) || numericAmount < 0) {
     return `${symbol} 0`
   }
 
@@ -35,7 +38,7 @@ export function formatGuaraniPrice(
     style: 'decimal',
     minimumFractionDigits: showDecimals ? 0 : 0,
     maximumFractionDigits: showDecimals ? 0 : 0
-  }).format(Math.round(amount))
+  }).format(Math.round(numericAmount))
 
   return `${symbol} ${formattedAmount}`
 }
@@ -133,7 +136,7 @@ export const removeHTMLTags = (text: string): string => {
   return doc.body.textContent || "";
 };
 
-export function formatPrice(amount: number): string {
+export function formatPrice(amount: number | string): string {
   return formatGuaraniPrice(amount, { symbol: '₲' })
 }
 
