@@ -10,6 +10,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { formatPrice, formatDate } from '@/lib/utils';
 import { useStore } from '@/stores/store';
+import api from '@/services/api';
 import analytics from '@/services/analytics';
 
 interface CheckoutData {
@@ -59,8 +60,41 @@ interface CheckoutEventData {
   totalAmount: number;
   totalTickets: number;
   referralCode?: string;
+  is_member?: boolean;
   enrollmentFee?: number;
   monthlyFee?: number;
+  originalEnrollmentFee?: number;
+  originalMonthlyFee?: number;
+  appliedCoupon?: {
+    coupon: {
+      code: string;
+      name: string;
+      discount_type: 'percentage' | 'fixed';
+      discount_value: number;
+    };
+    pricing: {
+      // Para compatibilidad con eventos/productos
+      original_price?: number;
+      discount_amount?: number;
+      final_price?: number;
+      discount_percentage: number;
+      
+      // Para cursos - matrícula
+      enrollment_fee_original?: number;
+      enrollment_fee_discounted?: number;
+      enrollment_discount_amount?: number;
+      
+      // Para cursos - mensualidad
+      monthly_fee_original?: number;
+      monthly_fee_discounted?: number;
+      monthly_discount_amount?: number;
+      
+      // Para cursos - totales
+      total_original?: number;
+      total_discounted?: number;
+      total_discount_amount?: number;
+    };
+  };
   courseData?: CourseData;
 }
 
@@ -78,6 +112,9 @@ const Checkout = () => {
   });
   const [errors, setErrors] = useState<Partial<CheckoutData>>({});
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const isLoggedIn = useStore((state) => state.isLoggedIn);
+  const [isMember, setIsMember] = useState(false);
+  const [checkingMembership, setCheckingMembership] = useState(false);
 
   // Precargar datos del usuario autenticado o datos guardados del formulario
   useEffect(() => {
@@ -120,6 +157,25 @@ const Checkout = () => {
       }
     }
   }, [user, isUserLoading]);
+
+  // Verificar membresía para eventos (precios diferenciales)
+  useEffect(() => {
+    if (eventData?.type === 'event' && user?.member) {
+      setCheckingMembership(true);
+      api.get('/api/client/members/check-membership-status')
+        .then(response => {
+          setIsMember(response.data.is_active_member);
+        })
+        .catch(() => {
+          setIsMember(false);
+        })
+        .finally(() => {
+          setCheckingMembership(false);
+        });
+    } else {
+      setIsMember(eventData?.is_member || false);
+    }
+  }, [eventData, user]);
 
   useEffect(() => {
     // Verificar si hay error de pago en los parámetros de URL
@@ -475,6 +531,30 @@ const Checkout = () => {
 
                   {eventData.type === 'course' ? (
                     <div className="space-y-3">
+                      {/* Sección del cupón aplicado */}
+                      {eventData.appliedCoupon && (
+                        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                          <div className="text-sm">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="font-medium text-green-800">Cupón aplicado</span>
+                              <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
+                                {eventData.appliedCoupon.coupon.code}
+                              </span>
+                            </div>
+                            <div className="text-green-700 mb-1">{eventData.appliedCoupon.coupon.name}</div>
+                            <div className="text-xs text-green-600">
+                              Descuento: {eventData.appliedCoupon.coupon.discount_type === 'fixed' 
+                                ? `Gs. ${(eventData.appliedCoupon.pricing.total_discount_amount || eventData.appliedCoupon.pricing.discount_amount || 0).toLocaleString()}`
+                                : `${eventData.appliedCoupon.coupon.discount_value}%`
+                              }
+                              <div className="mt-1">
+                                Ahorras: Gs. {(eventData.appliedCoupon.pricing.total_discount_amount || eventData.appliedCoupon.pricing.discount_amount || 0).toLocaleString()}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       <h4 className="font-medium">Detalle de inscripción:</h4>
                       {eventData.enrollmentFee && eventData.enrollmentFee > 0 && (
                         <div className="flex justify-between items-center py-2 border-b border-gray-100">
@@ -485,7 +565,18 @@ const Checkout = () => {
                             </p>
                           </div>
                           <span className="font-semibold">
-                            {formatPrice(eventData.enrollmentFee)}
+                            {eventData.appliedCoupon && eventData.originalEnrollmentFee && eventData.originalEnrollmentFee > 0 ? (
+                              <div className="flex flex-col items-end">
+                                <span className="line-through text-gray-400 text-xs">
+                                  {formatPrice(eventData.originalEnrollmentFee)}
+                                </span>
+                                <span className="text-green-600">
+                                  {formatPrice(eventData.enrollmentFee || 0)}
+                                </span>
+                              </div>
+                            ) : (
+                              formatPrice(eventData.enrollmentFee || 0)
+                            )}
                           </span>
                         </div>
                       )}
@@ -497,7 +588,18 @@ const Checkout = () => {
                           </p>
                         </div>
                         <span className="font-semibold">
-                          {formatPrice(eventData.monthlyFee || 0)}
+                          {eventData.appliedCoupon && eventData.originalMonthlyFee ? (
+                            <div className="flex flex-col items-end">
+                              <span className="line-through text-gray-400 text-xs">
+                                {formatPrice(eventData.originalMonthlyFee)}
+                              </span>
+                              <span className="text-green-600">
+                                {formatPrice(eventData.monthlyFee || 0)}
+                              </span>
+                            </div>
+                          ) : (
+                            formatPrice(eventData.monthlyFee || 0)
+                          )}
                         </span>
                       </div>
                       {eventData.enrollmentFee && eventData.enrollmentFee > 0 && (
@@ -508,6 +610,64 @@ const Checkout = () => {
                     </div>
                   ) : eventData.tickets && eventData.tickets.length > 0 && (
                     <div className="space-y-3">
+                      {/* Badge de membresía para eventos */}
+                      {eventData.type === 'event' && (
+                        <div className="mb-2">
+                          {checkingMembership ? (
+                            <div className="p-3 rounded-md text-sm bg-gray-50 border border-gray-200">
+                              <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                                <span>Verificando membresía...</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className={`p-3 rounded-md text-sm ${isMember ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-orange-50 border border-orange-200 text-orange-800'}`}>
+                              <div className="flex items-center gap-2">
+                                <div className={`w-2 h-2 rounded-full ${isMember ? 'bg-green-500' : 'bg-orange-500'}`}></div>
+                                <span className="font-medium">
+                                  {isMember ? 'Socio Activo' : 'No Socio'}
+                                </span>
+                              </div>
+                              <p className="text-xs mt-1 opacity-80">
+                                {isMember
+                                  ? 'Se aplicaron las tarifas preferenciales para socios'
+                                  : !isLoggedIn
+                                    ? (
+                                      <>
+                                        Se aplicaron las tarifas regulares.{' '}
+                                        <button
+                                          onClick={() => {
+                                            const returnTo = encodeURIComponent(`/evento/${eventData.eventSlug}`);
+                                            navigate(`/login?returnTo=${returnTo}`);
+                                          }}
+                                          className="underline hover:opacity-80 text-inherit font-medium"
+                                          type="button"
+                                        >
+                                          Iniciá sesión como socio
+                                        </button>
+                                      </>
+                                    )
+                                    : user?.member
+                                      ? (
+                                        <>
+                                          Tenés pagos pendientes.{' '}
+                                          <button
+                                            onClick={() => navigate('/perfil')}
+                                            className="underline hover:opacity-80 text-inherit font-medium"
+                                            type="button"
+                                          >
+                                            Ponete al día para acceder a tarifas de socio
+                                          </button>
+                                        </>
+                                      )
+                                      : 'Se aplicaron las tarifas regulares.'
+                                }
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       <h4 className="font-medium">Detalle de entradas:</h4>
                       {eventData.tickets.map((ticket, index) => (
                         <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100">
@@ -515,6 +675,11 @@ const Checkout = () => {
                             <p className="font-medium text-sm">{ticket.name}</p>
                             <p className="text-xs text-muted-foreground">
                               {ticket.quantity} × {formatPrice(ticket.price)}
+                              {eventData.is_member !== undefined && (
+                                <span className={isMember ? 'text-green-600 ml-1' : 'text-orange-600 ml-1'}>
+                                  ({isMember ? 'Socio' : 'No Socio'})
+                                </span>
+                              )}
                             </p>
                           </div>
                           <span className="font-semibold">

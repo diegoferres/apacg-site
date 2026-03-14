@@ -4,7 +4,8 @@ import { Calendar, Clock, MapPin, Ticket } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { formatPrice, formatDate } from '@/lib/utils';
+import { formatPrice, formatDate, removeHTMLTags } from '@/lib/utils';
+import analytics from '@/services/analytics';
 
 export interface Event {
   id: number;
@@ -27,14 +28,11 @@ export interface Event {
 interface EventCardProps {
   event: Event;
   delay?: number;
+  position?: number;
+  listName?: string;
 }
 
-const removeHTMLTags = (text: string) => {
-  const doc = new DOMParser().parseFromString(text, 'text/html');
-  return doc.body.textContent || "";
-};
-
-const EventCard = ({ event, delay = 0 }: EventCardProps) => {
+const EventCard = ({ event, delay = 0, position = 0, listName = 'events_list' }: EventCardProps) => {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -48,8 +46,19 @@ const EventCard = ({ event, delay = 0 }: EventCardProps) => {
     }
   }, [delay]);
 
+  const handleClick = () => {
+    // Track item click for analytics
+    analytics.trackItemClick(
+      event.id.toString(),
+      event.title,
+      'event',
+      position,
+      listName
+    );
+  };
+
   return (
-    <Link to={`/evento/${event.slug}`} className="block">
+    <Link to={`/evento/${event.slug}`} className="block" onClick={handleClick}>
       <Card 
         className={`overflow-hidden hover:shadow-lg transition-all duration-300 group cursor-pointer flex flex-col h-full ${
           delay > 0 ? (isVisible ? 'opacity-100' : 'opacity-0 translate-y-4') : ''
@@ -62,6 +71,7 @@ const EventCard = ({ event, delay = 0 }: EventCardProps) => {
               src={event.cover?.storage_path_full}
               alt={event.title}
               className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
+              loading="lazy"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
             <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">

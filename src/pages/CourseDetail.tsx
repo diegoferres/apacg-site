@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,15 +11,32 @@ import { Clock, Users, MapPin, Calendar, GraduationCap, ArrowLeft } from 'lucide
 import { formatPrice, toNumber, renderSafeHtml, formatDate } from '@/lib/utils';
 import api from '@/services/api';
 import analytics from '@/services/analytics';
+import useUrlCoupon from '@/hooks/useUrlCoupon';
+import CouponAppliedBanner from '@/components/coupon/CouponAppliedBanner';
 
 const CourseDetail = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [course, setCourse] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedGroup, setSelectedGroup] = useState<number | null>(null);
   const [isEnrollmentModalOpen, setIsEnrollmentModalOpen] = useState(false);
   const [enrollmentGroup, setEnrollmentGroup] = useState<any>(null);
+  const [forceRerender, setForceRerender] = useState(0);
+  
+  // Hook para manejar cupones - SOLO cuando el curso esté completamente cargado
+  const couponHookEnabled = !!(course && course.id);
+  const { appliedCoupon, removeCoupon, status, error } = useUrlCoupon({
+    itemType: 'course',
+    itemId: course?.id || 0,
+    autoApply: couponHookEnabled
+  });
+
+  // Force re-render when coupon state changes
+  useEffect(() => {
+    setForceRerender(prev => prev + 1);
+  }, [appliedCoupon, status]);
 
   useEffect(() => {
     const fetchCourse = async () => {
@@ -51,60 +68,44 @@ const CourseDetail = () => {
     fetchCourse();
   }, [slug]);
 
-  // Mock data structure for reference
-  const mockCourse = {
-    id: 1,
-    slug: 'robotica-educativa-lego',
-    title: 'Robótica Educativa con LEGO',
-    academy: 'APAC',
-    shortDescription: 'Curso de robótica educativa para niños usando tecnología LEGO',
-    description: 'Curso completo de robótica educativa que desarrolla habilidades STEM en niños y adolescentes. Los estudiantes aprenderán conceptos fundamentales de programación, mecánica y electrónica a través de proyectos prácticos con tecnología LEGO. El curso está diseñado para fomentar la creatividad, el pensamiento lógico y las habilidades de resolución de problemas.',
-    duration: '4 meses',
-    startDate: '05/09/2025',
-    endDate: '05/01/2026',
-    location: 'APAC - Sede Central',
-    schedule: 'Viernes 15:00-17:00 hs y 18:00-20:00 hs',
-    maxCapacity: 20,
-    minAge: 7,
-    maxAge: 18,
-    status: 'Activo',
-    image: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&h=600&fit=crop',
-    groups: [
-      {
-        id: 1,
-        name: 'Kids (7-9 años)',
-        schedule: 'Martes y Jueves 16:00-17:30',
-        capacity: 15,
-        enrolled: 8,
-        enrollment: 0,
-        memberPrice: 350000,
-        nonMemberPrice: 500000,
-        description: 'Grupo diseñado especialmente para los más pequeños, con actividades adaptadas a su edad y nivel de desarrollo.'
-      },
-      {
-        id: 2,
-        name: 'Teens 1 (15-17 años)',
-        schedule: 'Jueves 17:30-19:00, Viernes 17:45-19:15',
-        capacity: 12,
-        enrolled: 5,
-        enrollment: 500000,
-        memberPrice: 300000,
-        nonMemberPrice: 400000,
-        description: 'Para adolescentes avanzados que buscan profundizar en conceptos de programación y robótica.'
-      },
-      {
-        id: 3,
-        name: 'Teens 2 (10-14 años)',
-        schedule: 'Martes y Miércoles 18:15-19:45',
-        capacity: 10,
-        enrolled: 3,
-        enrollment: 500000,
-        memberPrice: 300000,
-        nonMemberPrice: 400000,
-        description: 'Grupo intermedio perfecto para preadolescentes que quieren iniciarse en la robótica.'
+  // Efecto para reabrir modal después del login
+  useEffect(() => {
+    if (!course) return; // Esperar a que el curso esté cargado
+    
+    const urlParams = new URLSearchParams(location.search);
+    const openModal = urlParams.get('openModal');
+    const courseIdParam = urlParams.get('courseId');
+    const groupIdParam = urlParams.get('groupId');
+    
+    // Debug logging
+    console.log('CourseDetail - Modal reopen check:', {
+      hasUrlParams: !!location.search,
+      openModal,
+      courseIdParam,
+      groupIdParam,
+      courseId: course.id,
+      courseGroups: course.groups?.length || 0,
+      currentPath: location.pathname
+    });
+    
+    if (openModal === 'course' && courseIdParam && courseIdParam === course.id.toString()) {
+      console.log('CourseDetail - Reopening modal for course:', course.id);
+      
+      // Encontrar y pre-seleccionar el grupo si está especificado
+      if (groupIdParam && course.groups) {
+        const group = course.groups.find((g: any) => g.id.toString() === groupIdParam);
+        if (group) {
+          setEnrollmentGroup(group);
+        }
       }
-    ]
-  };
+      
+      // Abrir el modal
+      setIsEnrollmentModalOpen(true);
+      
+      // Limpiar parámetros URL para evitar reaperturas no deseadas
+      navigate(location.pathname, { replace: true });
+    }
+  }, [course, location.search, navigate, location.pathname]);
 
   const handleEnroll = (groupId: number | null) => {
     // Track intención de inscripción en GA4
@@ -169,7 +170,7 @@ const CourseDetail = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      <div className="pt-24 pb-16">
+      <div className="pt-24 pb-24 lg:pb-16">
         <div className="container mx-auto px-4">
           {/* Back button */}
           <Button 
@@ -278,6 +279,49 @@ const CourseDetail = () => {
 
             {/* Sidebar */}
             <div className="space-y-6">
+              
+              {/* Banner de cupón aplicado */}
+              {appliedCoupon && status === 'valid' && (
+                <Card className="border-green-200 bg-green-50">
+                  <CardContent className="p-4">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-green-800">Cupón aplicado</span>
+                        <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
+                          {appliedCoupon.coupon.code}
+                        </span>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="text-sm text-green-700">
+                          <span className="font-medium">{appliedCoupon.coupon.name}</span>
+                        </div>
+                        
+                        <div className="text-sm">
+                          <span className="text-green-600">Descuento aplicado:</span>
+                          <div className="font-semibold text-green-800">
+                            {appliedCoupon.coupon.discount_type === 'fixed' 
+                              ? `Gs. ${(appliedCoupon.pricing.total_discount_amount || appliedCoupon.pricing.discount_amount || 0).toLocaleString()}`
+                              : `${appliedCoupon.coupon.discount_value}%`
+                            }
+                          </div>
+                          <div className="text-xs text-green-600 mt-1">
+                            Ahorras: Gs. {(appliedCoupon.pricing.total_discount_amount || appliedCoupon.pricing.discount_amount || 0).toLocaleString()}
+                          </div>
+                        </div>
+                        
+                        {(appliedCoupon.coupon as any).is_recurring && (
+                          <div className="text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded p-2">
+                            <div className="font-medium">Descuento recurrente</div>
+                            <div>Se aplicará automáticamente todos los meses durante el curso</div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               <Card>
                 <CardHeader>
                   <CardTitle>
@@ -303,7 +347,7 @@ const CourseDetail = () => {
                               )}
                             </div>
                             <Badge variant="outline" className="text-xs">
-                              {group.confirmed_enrollments_count}/{group.capacity} alumnos
+                              {group.active_enrollments_count}/{group.capacity} alumnos
                             </Badge>
                           </div>
 
@@ -333,13 +377,35 @@ const CourseDetail = () => {
                             <div className="flex justify-between">
                               <span className="text-sm">Socios:</span>
                               <span className="text-sm font-medium">
-                                {formatPrice(toNumber(group.monthly_fee_member) !== 0 ? toNumber(group.monthly_fee_member) : toNumber(course.monthly_fee_member))}/mes
+                                {appliedCoupon ? (
+                                  <div className="flex flex-col items-end">
+                                    <span className="line-through text-gray-400 text-xs">
+                                      {formatPrice(toNumber(group.monthly_fee_member) !== 0 ? toNumber(group.monthly_fee_member) : toNumber(course.monthly_fee_member))}
+                                    </span>
+                                    <span className="text-green-600 font-bold">
+                                      {formatPrice(Math.round((toNumber(group.monthly_fee_member) !== 0 ? toNumber(group.monthly_fee_member) : toNumber(course.monthly_fee_member)) * (1 - appliedCoupon.pricing.discount_percentage / 100)))}/mes
+                                    </span>
+                                  </div>
+                                ) : (
+                                  `${formatPrice(toNumber(group.monthly_fee_member) !== 0 ? toNumber(group.monthly_fee_member) : toNumber(course.monthly_fee_member))}/mes`
+                                )}
                               </span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-sm">No socios:</span>
                               <span className="text-sm font-medium">
-                                {formatPrice(toNumber(group.monthly_fee_non_member) !== 0 ? toNumber(group.monthly_fee_non_member) : toNumber(course.monthly_fee_non_member))}/mes
+                                {appliedCoupon ? (
+                                  <div className="flex flex-col items-end">
+                                    <span className="line-through text-gray-400 text-xs">
+                                      {formatPrice(toNumber(group.monthly_fee_non_member) !== 0 ? toNumber(group.monthly_fee_non_member) : toNumber(course.monthly_fee_non_member))}
+                                    </span>
+                                    <span className="text-green-600 font-bold">
+                                      {formatPrice(Math.round((toNumber(group.monthly_fee_non_member) !== 0 ? toNumber(group.monthly_fee_non_member) : toNumber(course.monthly_fee_non_member)) * (1 - appliedCoupon.pricing.discount_percentage / 100)))}/mes
+                                    </span>
+                                  </div>
+                                ) : (
+                                  `${formatPrice(toNumber(group.monthly_fee_non_member) !== 0 ? toNumber(group.monthly_fee_non_member) : toNumber(course.monthly_fee_non_member))}/mes`
+                                )}
                               </span>
                             </div>
                             <p className="text-xs text-muted-foreground">
@@ -372,7 +438,7 @@ const CourseDetail = () => {
                           </p>
                         </div>
                         <Badge variant="outline" className="text-xs">
-                          {course.confirmed_enrollments_count || 0}/{course.capacity} alumnos
+                          {course.active_enrollments_count || 0}/{course.capacity} alumnos
                         </Badge>
                       </div>
 
@@ -396,19 +462,50 @@ const CourseDetail = () => {
                         <div className="flex justify-between">
                           <span className="text-sm">Socios:</span>
                           <span className="text-sm font-medium">
-                            {formatPrice(toNumber(course.monthly_fee_member))}/mes
+                            {(() => {
+                              if (appliedCoupon) {
+                                return (
+                                  <div>
+                                    <span className="line-through text-gray-400 mr-2">
+                                      Gs. {toNumber(course.monthly_fee_member).toLocaleString()}
+                                    </span>
+                                    <span className="text-green-600 font-bold">
+                                      Gs. {Math.round(toNumber(course.monthly_fee_member) * (1 - appliedCoupon.pricing.discount_percentage / 100)).toLocaleString()}
+                                    </span>
+                                    /mes
+                                  </div>
+                                );
+                              } else {
+                                return `Gs. ${toNumber(course.monthly_fee_member).toLocaleString()}/mes`;
+                              }
+                            })()}
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-sm">No socios:</span>
                           <span className="text-sm font-medium">
-                            {formatPrice(toNumber(course.monthly_fee_non_member))}/mes
+                            {appliedCoupon ? (
+                              <div>
+                                <span className="line-through text-gray-400 mr-2">
+                                  Gs. {toNumber(course.monthly_fee_non_member).toLocaleString()}
+                                </span>
+                                <span className="text-green-600 font-bold">
+                                  Gs. {Math.round(toNumber(course.monthly_fee_non_member) * (1 - appliedCoupon.pricing.discount_percentage / 100)).toLocaleString()}
+                                </span>
+                                /mes
+                              </div>
+                            ) : (
+                              `Gs. ${toNumber(course.monthly_fee_non_member).toLocaleString()}/mes`
+                            )}
                           </span>
                         </div>
                         <p className="text-xs text-muted-foreground">
                           {course.available_spots} cupos disponibles
                         </p>
                       </div>
+
+
+
 
                       <Button 
                         onClick={() => handleEnroll(null)}
@@ -428,14 +525,27 @@ const CourseDetail = () => {
         </div>
       </div>
 
+      {/* Mobile sticky CTA */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-background/95 backdrop-blur-md border-t border-border/40 p-4">
+        <Button
+          onClick={() => handleEnroll(null)}
+          className="w-full"
+          size="lg"
+          disabled={!course.is_available}
+        >
+          {!course.is_available ? 'No Disponible' : 'Inscribirse al Curso'}
+        </Button>
+      </div>
+
       <Footer />
-      
+
       {/* Enrollment Modal */}
       <CourseEnrollmentModal
         isOpen={isEnrollmentModalOpen}
         onClose={() => setIsEnrollmentModalOpen(false)}
         course={course}
         group={enrollmentGroup}
+        appliedCoupon={appliedCoupon}
       />
     </div>
   );

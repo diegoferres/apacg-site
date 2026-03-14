@@ -125,6 +125,14 @@ export function renderSafeHtml(htmlContent: string): { __html: string } {
  * @param amount - El monto a formatear
  * @returns El precio formateado
  */
+/**
+ * Remueve tags HTML de un string, retornando solo el texto plano
+ */
+export const removeHTMLTags = (text: string): string => {
+  const doc = new DOMParser().parseFromString(text, 'text/html');
+  return doc.body.textContent || "";
+};
+
 export function formatPrice(amount: number): string {
   return formatGuaraniPrice(amount, { symbol: '₲' })
 }

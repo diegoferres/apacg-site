@@ -220,9 +220,16 @@ const EventPurchaseModal = ({ event, isOpen, onClose }: EventPurchaseModalProps)
                     
                     <p className="text-xs text-muted-foreground mt-3 text-center">
                       Al continuar, aceptas nuestros{" "}
-                      <a href="#" className="text-blue-600 hover:underline">
+                      <button 
+                        type="button" 
+                        className="text-blue-600 hover:underline underline cursor-pointer"
+                        onClick={() => {
+                          // TODO: Implementar modal o página de términos y condiciones
+                          console.log('Abrir términos y condiciones');
+                        }}
+                      >
                         términos y condiciones
-                      </a>
+                      </button>
                     </p>
                   </div>
                 </CardContent>

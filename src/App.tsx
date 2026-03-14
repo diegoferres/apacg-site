@@ -38,31 +38,29 @@ import { useStore } from "./stores/store";
 import { useEffect, useState } from "react";
 import api from "./services/api";
 import analytics from "./services/analytics";
+import RouteTracker from "./components/RouteTracker";
+import ScrollToTop from "./components/ScrollToTop";
 
 const queryClient = new QueryClient();
 
-// Componente para rastrear cambios de ruta
-const RouteTracker = () => {
+// Componente para manejar StudentDataSplash con acceso a location
+const StudentDataSplashController = ({ showStudentSplash, handleStudentDataComplete, membershipStatus, fetchMembershipStatus }) => {
   const location = useLocation();
-  const { user } = useStore();
-
-  useEffect(() => {
-    // Rastrear página vista cada vez que cambia la ruta
-    const pagePath = location.pathname + location.search;
-    analytics.trackPageView(pagePath);
-    
-    // Si hay usuario logueado, configurar propiedades
-    if (user) {
-      analytics.setUserId(user.id);
-      analytics.setUserProperties({
-        user_type: user.member ? 'member' : 'guest',
-        membership_status: user.member?.status,
-        students_count: user.member?.students?.length || 0,
-      });
-    }
-  }, [location, user]);
-
-  return null;
+  
+  // Rutas donde NO debe aparecer el splash automáticamente
+  const excludedPaths = ['/pago'];
+  
+  // Determinar si debemos mostrar el splash basado en la ubicación
+  const shouldShowBasedOnLocation = !excludedPaths.includes(location.pathname);
+  
+  return (
+    <StudentDataSplash 
+      isOpen={showStudentSplash && shouldShowBasedOnLocation}
+      onDataComplete={handleStudentDataComplete}
+      membershipStatus={membershipStatus}
+      onRefreshMembershipStatus={fetchMembershipStatus}
+    />
+  );
 };
 
 const App = () => {
@@ -86,63 +84,40 @@ const App = () => {
   useEffect(() => {
     // Don't show splash while still loading user data
     if (isLoading) {
-      console.log('App.tsx - Still loading user data, not showing splash');
       setShowStudentSplash(false);
       return;
     }
     
     // Only evaluate when we have complete user data (not loading and user exists)
     if (!isLoggedIn || !user) {
-      console.log('App.tsx - Not logged in or no user data, hiding splash');
       setShowStudentSplash(false);
       return;
     }
     
     // Additional check: make sure we have complete user data including setup_completed field
     // This ensures we don't show splash prematurely after login
-    if (user.setup_completed === undefined) {
-      console.log('App.tsx - User data incomplete (missing setup_completed), not showing splash yet');
+    // Note: setup_completed can be false, null, or undefined - only undefined means data is still loading
+    if (user.setup_completed === undefined && isLoading) {
       setShowStudentSplash(false);
       return;
     }
     
-    // Debug: Log full user structure to understand role data
-    console.log('App.tsx - Full user data for role check:', {
-      name: user.name,
-      role: user.role,
-      roles: user.roles,
-      member: !!user.member,
-      fullUser: user
-    });
     
     // If user is admin, don't show splash (admins bypass this validation)
     // Check Laravel Permissions structure: user.roles array with role objects
     const isAdmin = user.roles?.some((role: any) => role.name === 'admin' || role.name === 'Administrador');
-    console.log('App.tsx - Admin check:', { isAdmin, roles: user.roles });
     
     if (isAdmin) {
-      console.log('App.tsx - User is admin, hiding splash');
       setShowStudentSplash(false);
       return;
     }
     
     // If user doesn't have member data, don't show splash
     if (!user.member) {
-      console.log('App.tsx - User has no member data, hiding splash');
       setShowStudentSplash(false);
       return;
     }
     
-    console.log('App.tsx - Checking student data and setup:', { 
-      isLoggedIn, 
-      user: user?.name, 
-      role: user?.role,
-      roles: user?.roles,
-      member: !!user?.member, 
-      students: user?.member?.students,
-      setupCompleted: user?.setup_completed,
-      isLoading 
-    });
     
     const students = user.member.students || [];
     const hasStudents = students.length > 0;
@@ -152,53 +127,52 @@ const App = () => {
     const allStudentsHaveCI = students.length > 0 && studentsWithoutCI.length === 0;
     const setupCompleted = !!user.setup_completed; // Convert to boolean (handles 1, true, etc.)
     
-    console.log('App.tsx - Analysis:', {
-      totalStudents: students.length,
+    
+    // Verificar que tenemos los datos mínimos necesarios
+    if (!isLoggedIn || !user?.member) {
+      setShowStudentSplash(false);
+      return;
+    }
+    
+    if (isLoading) {
+      setShowStudentSplash(false);
+      return;
+    }
+    
+    // If user has students and all have CI, we need to wait for membershipStatus before deciding
+    if (hasStudents && allStudentsHaveCI && !membershipStatus) {
+      // Don't change splash state yet, wait for membership status to load
+      console.log('App.tsx - Waiting for membershipStatus to load before evaluation');
+      return;
+    }
+    
+    // Show splash ONLY if:
+    // 1. User has students without CI (at least 1 student missing CI)
+    // 2. OR all students have CI but membership is inactive (!is_active_member)
+    // 3. OR all students have CI, membership is active, but setup is not completed
+    const hasStudentsWithoutCI = studentsWithoutCI.length > 0;
+    const needsMembershipPayment = allStudentsHaveCI && hasStudents && membershipStatus && !membershipStatus.is_active_member;
+    const needsSetup = allStudentsHaveCI && (!membershipStatus || membershipStatus.is_active_member) && !setupCompleted;
+    
+    const shouldShowSplash = hasStudentsWithoutCI || needsMembershipPayment || needsSetup;
+    
+    console.log('App.tsx - Splash evaluation:', {
+      user_id: user.id,
+      hasStudents,
       studentsWithoutCI: studentsWithoutCI.length,
       allStudentsHaveCI,
       setupCompleted,
-      students: students.map(s => ({ name: s.full_name, ci: s.ci }))
+      membershipActive: membershipStatus?.is_active_member,
+      membershipStatusLoaded: !!membershipStatus,
+      shouldShowSplash,
+      hasStudentsWithoutCI,
+      needsMembershipPayment,
+      needsSetup
     });
     
-    // Check membership status asynchronously
-    const checkAndShowSplash = async () => {
-      let currentMembershipStatus = membershipStatus;
-      
-      // If we don't have membership status yet, fetch it
-      if (!currentMembershipStatus && hasStudents) {
-        currentMembershipStatus = await fetchMembershipStatus();
-      }
-      
-      // Show splash ONLY if:
-      // 1. User has students without CI (at least 1 student missing CI)
-      // 2. OR all students have CI but membership is inactive (!is_active_member)
-      // 3. OR all students have CI, membership is active, but setup is not completed
-      const hasStudentsWithoutCI = studentsWithoutCI.length > 0;
-      const needsMembershipPayment = allStudentsHaveCI && hasStudents && currentMembershipStatus && !currentMembershipStatus.is_active_member;
-      const needsSetup = allStudentsHaveCI && (!currentMembershipStatus || currentMembershipStatus.is_active_member) && !setupCompleted;
-      
-      const shouldShowSplash = hasStudentsWithoutCI || needsMembershipPayment || needsSetup;
-      
-      console.log('App.tsx - Decision:', {
-        hasStudentsWithoutCI,
-        needsMembershipPayment,
-        needsSetup,
-        shouldShowSplash,
-        membershipActive: currentMembershipStatus?.is_active_member,
-        membershipReason: currentMembershipStatus?.reason
-      });
-      
-      if (shouldShowSplash) {
-        console.log('App.tsx - Showing splash -', { hasStudentsWithoutCI, needsMembershipPayment, needsSetup });
-        setShowStudentSplash(true);
-      } else {
-        console.log('App.tsx - Hiding splash (everything complete)');
-        setShowStudentSplash(false);
-      }
-    };
-    
-    checkAndShowSplash();
+    setShowStudentSplash(shouldShowSplash);
   }, [isLoggedIn, user, isLoading, membershipStatus]);
+  
   
   // Inicializar Google Analytics al cargar la app
   useEffect(() => {
@@ -211,12 +185,19 @@ const App = () => {
         // Use the client user endpoint that loads member, students and setup_completed
         const response = await api.get('api/user');
         if (response.data) {
-          console.log('App.tsx - User loaded:', response.data);
-          console.log('App.tsx - User roles:', response.data.roles);
-          console.log('App.tsx - User roles type:', typeof response.data.roles);
-          console.log('App.tsx - User roles length:', response.data.roles?.length);
           setUser(response.data);
           setIsLoggedIn(true);
+          
+          // If user is a member with students, automatically load membership status
+          if (response.data.member?.students?.length > 0) {
+            try {
+              const membershipStatusResponse = await fetchMembershipStatus();
+              // membershipStatus state is already updated by fetchMembershipStatus
+            } catch (error) {
+              console.error('Error loading membership status during auth check:', error);
+              // Continue anyway, membership status will be loaded later if needed
+            }
+          }
         }
       } catch (error: any) {
         // No registrar error 401 (Unauthorized) ya que simplemente significa que no hay sesión activa
@@ -226,6 +207,7 @@ const App = () => {
         // Para cualquier error (incluyendo 401), simplemente no hay sesión activa
         setIsLoggedIn(false);
         setUser(null);
+        setMembershipStatus(null);
       } finally {
         setIsLoading(false);
       }
@@ -233,6 +215,27 @@ const App = () => {
     
     checkAuth();
   }, [setIsLoading, setUser, setIsLoggedIn]);
+
+  // Additional effect to load membershipStatus after login if not loaded yet
+  useEffect(() => {
+    const loadMembershipStatusAfterLogin = async () => {
+      if (isLoggedIn && user && !isLoading && !membershipStatus) {
+        // If user has students but membershipStatus is not loaded, load it
+        if (user.member?.students?.length > 0) {
+          console.log('App.tsx - Loading membershipStatus after login');
+          try {
+            await fetchMembershipStatus();
+          } catch (error) {
+            console.error('Error loading membership status after login:', error);
+          }
+        }
+      }
+    };
+
+    // Small delay to ensure login process is complete
+    const timer = setTimeout(loadMembershipStatusAfterLogin, 200);
+    return () => clearTimeout(timer);
+  }, [isLoggedIn, user, isLoading, membershipStatus]);
 
   const handleStudentDataComplete = () => {
     setShowStudentSplash(false);
@@ -252,15 +255,20 @@ const App = () => {
             v7_relativeSplatPath: true
           }}
         >
-          {/* Route Tracker para Google Analytics */}
-          <RouteTracker />
+          {/* Scroll to Top on Route Change */}
+          <ScrollToTop />
           
-          {/* Student Data Splash Screen */}
-          <StudentDataSplash 
-            isOpen={showStudentSplash}
-            onDataComplete={handleStudentDataComplete}
+          {/* Route Tracker para Google Analytics */}
+          <RouteTracker 
+            userType={user?.member ? 'member' : 'guest'}
+          />
+          
+          {/* Student Data Splash Controller con acceso a location */}
+          <StudentDataSplashController 
+            showStudentSplash={showStudentSplash}
+            handleStudentDataComplete={handleStudentDataComplete}
             membershipStatus={membershipStatus}
-            onRefreshMembershipStatus={fetchMembershipStatus}
+            fetchMembershipStatus={fetchMembershipStatus}
           />
           <Routes>
             <Route path="/" element={<Index />} />

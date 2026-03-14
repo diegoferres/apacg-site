@@ -28,6 +28,21 @@
     <meta name="twitter:image" content="/logo.png" />
     <meta name="twitter:title" content="Aso. de Padres de Alumnos del Colegio GOETHE" />
     <meta name="twitter:description" content="Disfruta de descuentos exclusivos y promociones especiales en diferentes comercios y servicios como miembro de A.P.A.C. GOETHE." />
+    
+    <!-- Google Analytics 4 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-89V72T7N4S"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-89V72T7N4S', {
+        send_page_view: false, // Controlaremos manualmente los page views
+        debug_mode: window.location.hostname === 'localhost' || window.location.hostname.includes('test')
+      });
+      
+      // Make gtag available globally for React
+      window.gtag = gtag;
+    </script>
   </head>
 
   <body>

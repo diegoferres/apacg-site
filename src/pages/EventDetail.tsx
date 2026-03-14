@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useToast } from '@/hooks/use-toast';
-import { formatPrice, formatDate } from '@/lib/utils';
+import { formatPrice, formatDate, renderSafeHtml } from '@/lib/utils';
 import { useStore } from '@/stores/store';
 import api from '@/services/api';
 import analytics from '@/services/analytics';
@@ -17,6 +17,9 @@ interface TicketType {
   name: string;
   description: string;
   price: number;
+  member_price: number | null;
+  member_price_format: string | null;
+  has_member_price: boolean;
   stock: number;
 }
 
@@ -112,7 +115,7 @@ const EventDetail = () => {
         <Navbar />
         <div className="pt-24 pb-12">
           <div className="container mx-auto px-4 md:px-6">
-            <div className="grid lg:grid-cols-2 gap-12">
+            <div className="grid lg:grid-cols-2 gap-6 lg:gap-12">
               <div className="h-96 bg-muted/30 animate-pulse rounded-lg"></div>
               <div className="space-y-6">
                 <div className="h-8 bg-muted/30 animate-pulse rounded w-3/4"></div>
@@ -146,6 +149,16 @@ const EventDetail = () => {
     );
   }
 
+  // Determinar si el usuario es socio activo
+  const isMember = isLoggedIn && user?.member?.status?.toLowerCase() === 'activo';
+
+  const getTicketPrice = (ticketType: TicketType) => {
+    if (isMember && ticketType.member_price !== null) {
+      return ticketType.member_price;
+    }
+    return ticketType.price;
+  };
+
   const updateTicketQuantity = (ticketId: number, change: number) => {
     const currentQuantity = selectedTickets[ticketId] || 0;
     const newQuantity = Math.max(0, currentQuantity + change);
@@ -177,7 +190,7 @@ const EventDetail = () => {
   const getTotalPrice = () => {
     return Object.entries(selectedTickets).reduce((total, [ticketId, quantity]) => {
       const ticketType = event.ticket_types.find(t => t.id === parseInt(ticketId));
-      return total + (ticketType ? ticketType.price * quantity : 0);
+      return total + (ticketType ? getTicketPrice(ticketType) * quantity : 0);
     }, 0);
   };
 
@@ -213,12 +226,13 @@ const EventDetail = () => {
       .filter(([_, quantity]) => quantity > 0)
       .map(([ticketId, quantity]) => {
         const ticketType = event.ticket_types.find(t => t.id === parseInt(ticketId));
+        const effectivePrice = ticketType ? getTicketPrice(ticketType) : 0;
         return {
           id: parseInt(ticketId),
           name: ticketType?.name || '',
           quantity: quantity,
-          price: ticketType?.price || 0,
-          total: (ticketType?.price || 0) * quantity
+          price: effectivePrice,
+          total: effectivePrice * quantity
         };
       });
 
@@ -230,7 +244,8 @@ const EventDetail = () => {
       tickets: ticketDetails,
       totalAmount: getTotalPrice(),
       totalTickets: getTotalTickets(),
-      referralCode: referralCode // Incluir código de referido
+      referralCode: referralCode,
+      is_member: isMember
     };
 
     // Guardar datos del checkout en localStorage
@@ -248,7 +263,7 @@ const EventDetail = () => {
       <section className="pt-24 pb-12">
         <div className="container mx-auto px-4 md:px-6">
           {/* Breadcrumb */}
-          <nav className="flex items-center space-x-2 text-sm text-muted-foreground mb-6">
+          <nav aria-label="Breadcrumb" className="flex items-center space-x-2 text-sm text-muted-foreground mb-6">
             <Link to="/" className="hover:text-foreground transition-colors">Inicio</Link>
             <span>/</span>
             <Link to="/eventos" className="hover:text-foreground transition-colors">Eventos</Link>
@@ -264,7 +279,7 @@ const EventDetail = () => {
             </Link>
           </Button>
           
-          <div className="grid lg:grid-cols-2 gap-12">
+          <div className="grid lg:grid-cols-2 gap-6 lg:gap-12">
             {/* Event Image */}
             <div className="space-y-4">
               {event.cover ? (
@@ -318,9 +333,20 @@ const EventDetail = () => {
                     <div key={ticketType.id} className="flex items-center justify-between p-4 border rounded-lg hover:border-primary/20 transition-colors">
                       <div className="flex-1">
                         <h4 className="font-semibold">{ticketType.name}</h4>
-                        <span className="text-xl font-bold text-primary">
-                          {formatPrice(ticketType.price)}
-                        </span>
+                        {ticketType.has_member_price ? (
+                          <div>
+                            <span className="text-xl font-bold text-primary">
+                              {formatPrice(ticketType.price)}
+                            </span>
+                            <div className="text-sm font-medium text-green-600">
+                              Socios: {formatPrice(ticketType.member_price!)}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-xl font-bold text-primary">
+                            {formatPrice(ticketType.price)}
+                          </span>
+                        )}
                       </div>
                       
                       {!event.is_informational && (
@@ -328,6 +354,7 @@ const EventDetail = () => {
                           <Button
                             variant="outline"
                             size="icon"
+                            aria-label="Disminuir cantidad"
                             onClick={() => updateTicketQuantity(ticketType.id, -1)}
                             disabled={!selectedTickets[ticketType.id]}
                             className="h-8 w-8"
@@ -342,6 +369,7 @@ const EventDetail = () => {
                           <Button
                             variant="outline"
                             size="icon"
+                            aria-label="Aumentar cantidad"
                             onClick={() => updateTicketQuantity(ticketType.id, 1)}
                             disabled={(selectedTickets[ticketType.id] || 0) >= ticketType.stock}
                             className="h-8 w-8"
@@ -387,7 +415,7 @@ const EventDetail = () => {
             <h2 className="text-2xl md:text-3xl font-bold mb-6">Acerca del Evento</h2>
             <div 
               className="prose prose-lg max-w-none text-muted-foreground leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: event.description }}
+              dangerouslySetInnerHTML={renderSafeHtml(event.description)}
             />
           </div>
         </div>

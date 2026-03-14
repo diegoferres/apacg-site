@@ -11,7 +11,7 @@ import Footer from "@/components/Footer";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import api from '@/services/api';
 import { useStore } from '@/stores/store';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 interface Child {
   id: string;
@@ -201,7 +201,9 @@ const ChildrenEnrollment = () => {
         <Breadcrumb className="mb-6">
           <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbLink href="/">Inicio</BreadcrumbLink>
+              <BreadcrumbLink asChild>
+                <Link to="/">Inicio</Link>
+              </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>

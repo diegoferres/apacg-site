@@ -214,6 +214,7 @@ export const StudentDataSplash = ({ isOpen, onDataComplete, membershipStatus, on
     setIsSaving(true);
     try {
       const response = await api.post('api/client/profile/update-credentials', {
+        name: user?.name || '',
         email: email,
         password: password,
         password_confirmation: confirmPassword,

@@ -23,6 +23,16 @@ interface PaymentDetails {
   order: {
     id: number;
     total_amount: number;
+    applied_coupon?: {
+      coupon_id: number;
+      coupon_code: string;
+      coupon_name: string;
+      discount_type: 'percentage' | 'fixed';
+      discount_value: number;
+      original_amount: number;
+      discount_amount: number;
+      final_amount: number;
+    };
     items: Array<{
       id: number;
       orderable_type: string;
@@ -448,8 +458,41 @@ const PaymentSuccess = () => {
                           </div>
                         );
                       })}
+                      
+                      {/* Mostrar información del cupón si se aplicó */}
+                      {paymentDetails.order.applied_coupon && (
+                        <div className="border-t pt-3 pb-2 space-y-2">
+                          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm font-medium text-green-800">Cupón aplicado</span>
+                              <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
+                                {paymentDetails.order.applied_coupon.coupon_code}
+                              </span>
+                            </div>
+                            <div className="text-sm text-green-700 mb-1">
+                              {paymentDetails.order.applied_coupon.coupon_name}
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-green-600">Subtotal original:</span>
+                              <span className="line-through text-gray-400">
+                                {formatPrice(paymentDetails.order.applied_coupon.original_amount)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-green-600">Descuento ({paymentDetails.order.applied_coupon.discount_type === 'fixed' 
+                                ? `Gs. ${paymentDetails.order.applied_coupon.discount_value.toLocaleString()}`
+                                : `${paymentDetails.order.applied_coupon.discount_value}%`
+                              }):</span>
+                              <span className="text-green-700 font-medium">
+                                -Gs. {paymentDetails.order.applied_coupon.discount_amount.toLocaleString()}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       <div className="border-t pt-2 flex justify-between items-center font-semibold">
-                        <span>Total</span>
+                        <span>Total Pagado</span>
                         <span>{formatPrice(toNumber(paymentDetails.order.total_amount))}</span>
                       </div>
                     </div>

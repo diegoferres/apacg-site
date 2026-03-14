@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { formatPrice, toNumber, formatDate, renderSafeHtml } from '@/lib/utils';
+import analytics from '@/services/analytics';
 
 export interface Course {
   id: number;
@@ -32,9 +33,11 @@ interface CourseCardProps {
   course: Course;
   delay?: number;
   showPricing?: boolean;
+  position?: number;
+  listName?: string;
 }
 
-const CourseCard = ({ course, delay = 0, showPricing = true }: CourseCardProps) => {
+const CourseCard = ({ course, delay = 0, showPricing = true, position = 0, listName = 'courses_list' }: CourseCardProps) => {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -48,8 +51,19 @@ const CourseCard = ({ course, delay = 0, showPricing = true }: CourseCardProps) 
     }
   }, [delay]);
 
+  const handleClick = () => {
+    // Track item click for analytics
+    analytics.trackItemClick(
+      course.id.toString(),
+      course.title,
+      'course',
+      position,
+      listName
+    );
+  };
+
   return (
-    <Link to={`/curso/${course.slug}`} className="block">
+    <Link to={`/curso/${course.slug}`} className="block" onClick={handleClick}>
       <Card 
         className={`overflow-hidden hover:shadow-lg transition-all duration-300 group cursor-pointer flex flex-col h-full ${
           delay > 0 ? (isVisible ? 'opacity-100' : 'opacity-0 translate-y-4') : ''
@@ -62,6 +76,7 @@ const CourseCard = ({ course, delay = 0, showPricing = true }: CourseCardProps) 
               src={course.cover_image_url}
               alt={course.title}
               className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
+              loading="lazy"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
             <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">

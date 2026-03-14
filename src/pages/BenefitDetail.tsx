@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { formatPrice, formatDate } from '@/lib/utils';
+import { formatPrice, formatDate, renderSafeHtml } from '@/lib/utils';
 import { 
   Pagination, 
   PaginationContent, 
@@ -85,7 +85,7 @@ const BenefitDetail = () => {
         console.error('Error fetching benefit:', error);
         toast({
           title: "Error",
-          description: "Failed to load benefit details. Please try again later.",
+          description: "No se pudieron cargar los detalles del beneficio. Intenta de nuevo más tarde.",
           variant: "destructive",
         });
       } finally {
@@ -95,78 +95,46 @@ const BenefitDetail = () => {
 
     const fetchRelatedBenefits = async (currentBenefit: BenefitDetail) => {
       try {
-        console.log('Fetching related benefits for:', currentBenefit);
-        
         const response = await api.get('api/client/benefits', {
           params: { per_page: 30 }
         });
-        
+
         const allBenefits = response.data.data.data;
-        console.log('All benefits fetched:', allBenefits.length);
-        
         const currentId = currentBenefit.id;
         const currentCommerceId = currentBenefit.commerce?.id;
         const currentCategoryIds = currentBenefit.categories?.map(c => c.id) || [];
-        
-        console.log('Filtering criteria:', {
-          currentId,
-          currentCommerceId,
-          currentCategoryIds
-        });
-        
+
         // 1. Benefits from same commerce (max 3)
-        const sameCommerce = allBenefits.filter((b: Benefit) => 
-          b.id !== currentId && 
+        const sameCommerce = allBenefits.filter((b: Benefit) =>
+          b.id !== currentId &&
           b.commerce?.id === currentCommerceId
         ).slice(0, 3);
-        
-        console.log('Same commerce benefits:', sameCommerce.length);
-        console.log('Same commerce benefits data:', sameCommerce);
-        
+
         // 2. Benefits from same categories (max 3, excluding same commerce ones)
         const sameCategory = allBenefits.filter((b: Benefit) => {
           if (b.id === currentId || b.commerce?.id === currentCommerceId) {
             return false;
           }
-          
-          // Handle both single category and categories array
+
           const benefitCategoryIds = [];
           if (b.category?.id) benefitCategoryIds.push(b.category.id);
           if (b.categories) benefitCategoryIds.push(...b.categories.map(c => c.id));
-          
-          const hasMatchingCategory = benefitCategoryIds.some(catId => currentCategoryIds.includes(catId));
-          
-          if (hasMatchingCategory) {
-            console.log('Matching category benefit:', b.title, 'categories:', benefitCategoryIds);
-          }
-          
-          return hasMatchingCategory;
+
+          return benefitCategoryIds.some(catId => currentCategoryIds.includes(catId));
         }).slice(0, 3);
-        
-        console.log('Same category benefits:', sameCategory.length);
-        console.log('Same category benefits data:', sameCategory);
-        
+
         // 3. Combine and limit to 6 total
         const related = [...sameCommerce, ...sameCategory].slice(0, 6);
-        console.log('Total related benefits:', related.length);
-        console.log('Setting related benefits:', related);
-        
-        // If no related benefits found, show some random ones for testing
+
         if (related.length === 0) {
-          console.log('No related benefits found, showing random ones for testing');
           const randomBenefits = allBenefits
             .filter((b: Benefit) => b.id !== currentId)
             .slice(0, 3);
-          console.log('Random benefits for fallback:', randomBenefits.length);
           setRelatedBenefits(randomBenefits);
         } else {
           setRelatedBenefits(related);
         }
-        
-        // Additional debugging
-        console.log('Related benefits state should be set to:', related.length || 'fallback', 'items');
       } catch (error) {
-        console.error('Error fetching related benefits:', error);
         // Silent fail - don't show section if it fails
       }
     };
@@ -192,7 +160,7 @@ const BenefitDetail = () => {
         <Navbar />
         <div className="container mx-auto px-4 py-8 flex-grow">
           <div className="text-center text-muted-foreground">
-            Benefit not found.
+            Beneficio no encontrado.
           </div>
         </div>
         <Footer />
@@ -232,7 +200,7 @@ const BenefitDetail = () => {
       <section className="pt-24 pb-12">
         <div className="container mx-auto px-4 md:px-6">
           {/* Breadcrumb */}
-          <nav className="flex items-center space-x-2 text-sm text-muted-foreground mb-6">
+          <nav aria-label="Breadcrumb" className="flex items-center space-x-2 text-sm text-muted-foreground mb-6">
             <Link to="/" className="hover:text-foreground transition-colors">Inicio</Link>
             <span>/</span>
             <Link to="/beneficios" className="hover:text-foreground transition-colors">Beneficios</Link>
@@ -246,7 +214,7 @@ const BenefitDetail = () => {
             Volver
           </Button>
           
-          <div className="grid lg:grid-cols-2 gap-12">
+          <div className="grid lg:grid-cols-2 gap-6 lg:gap-12">
             {/* Benefit Image */}
             <div className="space-y-4">
               {benefit.cover && !imageError ? (
@@ -254,13 +222,13 @@ const BenefitDetail = () => {
                   <img
                     src={benefit.cover?.storage_path_full}
                     alt={benefit.name}
-                    className="w-full h-96 object-cover"
+                    className="w-full aspect-video object-cover"
                     onError={handleImageError}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                 </div>
               ) : (
-                <div className="relative h-96 bg-gradient-to-br from-primary/10 to-primary/20 rounded-lg flex items-center justify-center">
+                <div className="relative aspect-video bg-gradient-to-br from-primary/10 to-primary/20 rounded-lg flex items-center justify-center">
                   <div className="text-center">
                     <Image className="h-16 w-16 text-primary/60 mx-auto mb-4" />
                     <p className="text-primary/80 font-medium">Sin imagen disponible</p>
@@ -281,7 +249,7 @@ const BenefitDetail = () => {
                 </h1>
                 <div 
                   className="text-muted-foreground leading-relaxed prose prose-sm max-w-none"
-                  dangerouslySetInnerHTML={{ __html: benefit.description }}
+                  dangerouslySetInnerHTML={renderSafeHtml(benefit.description)}
                 />
               </div>
               
@@ -340,11 +308,7 @@ const BenefitDetail = () => {
       </section>
       
       {/* Related Benefits Section */}
-      {(() => {
-        console.log('Rendering related benefits section. Length:', relatedBenefits.length);
-        console.log('Related benefits data at render:', relatedBenefits);
-        return relatedBenefits.length > 0;
-      })() && (
+      {relatedBenefits.length > 0 && (
         <section className="py-16">
           <div className="container mx-auto px-4 md:px-6">
             <div className="max-w-6xl mx-auto">

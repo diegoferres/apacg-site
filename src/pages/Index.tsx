@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import SearchBar from '@/components/SearchBar';
+import QuickNav from '@/components/QuickNav';
 import BenefitCard, { Benefit } from '@/components/BenefitCard';
 import EventCard from '@/components/EventCard';
 import CourseCard from '@/components/CourseCard';
@@ -17,56 +17,6 @@ import CommerceCard, { Commerce } from '@/components/CommerceCard';
 import { useStore } from '@/stores/store';
 import { formatPrice, toNumber, formatDate, renderSafeHtml } from '@/lib/utils';
 import analytics from '@/services/analytics';
-
-// Mock data para eventos destacados en el home
-const featuredEvents = [
-  {
-    id: 3,
-    title: "Corrida Goethe Lauf 5K/10K",
-    shortDescription: "Participa en nuestra tradicional corrida deportiva",
-    date: "2024-10-12",
-    time: "07:00",
-    location: "Predio Colegio Goethe",
-    priceFrom: 25000,
-    image: "/corrida_lauf.jpeg"
-  },
-  {
-    id: 2,
-    title: "Intercolegial de Padres",
-    shortDescription: "Competencia deportiva entre padres de diferentes colegios",
-    date: "2024-10-10",
-    time: "08:00",
-    location: "Predio Colegio Goethe",
-    priceFrom: 0,
-    image: "/intercolegial_padres.png"
-  }
-];
-
-// Mock data para rifas destacadas en el home
-const featuredRaffles = [
-  {
-    id: 1,
-    title: "Rifa Benéfica Colegio Goethe",
-    shortDescription: "Rifa anual para mejoras en la infraestructura escolar",
-    drawDate: "2024-08-30",
-    drawTime: "20:00",
-    drawLocation: "Auditorio Principal",
-    isOnline: false,
-    price: 5000,
-    image: "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?auto=format&fit=crop&w=800&q=80"
-  },
-  {
-    id: 2,
-    title: "Rifa Virtual Día del Maestro",
-    shortDescription: "Rifa virtual en celebración del Día del Maestro",
-    drawDate: "2024-09-11",
-    drawTime: "19:00",
-    drawLocation: null,
-    isOnline: true,
-    price: 3000,
-    image: null
-  }
-];
 
 export interface News {
   id: number;
@@ -238,7 +188,7 @@ const Index = () => {
       <Navbar />
       
       {/* Hero Section */}
-      <section className="pt-28 pb-16 px-4 relative hero-gradient overflow-hidden">
+      <section className="pt-20 pb-8 md:pt-28 md:pb-16 px-4 relative hero-gradient overflow-hidden">
         <div className="container mx-auto max-w-6xl relative z-10">
           <div className="text-center mb-12 animate-fade-up">
             <Badge variant="outline" className="mb-4 py-1 px-3 bg-primary/5">
@@ -254,8 +204,11 @@ const Index = () => {
         </div>
       </section>
       
+      {/* Quick Navigation - Mobile Only */}
+      <QuickNav />
+      
       {/* Benefits Section */}
-      <section className="py-16 px-4">
+      <section id="beneficios-section" className="py-16 px-4">
         <div className="container mx-auto max-w-6xl">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-2xl md:text-3xl font-bold animate-fade-up">
@@ -281,7 +234,7 @@ const Index = () => {
       </section>
 
       {/* Events Section */}
-      <section className="py-16 px-4 bg-muted/30">
+      <section id="eventos-section" className="py-16 px-4 bg-muted/30">
         <div className="container mx-auto max-w-6xl">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-2xl md:text-3xl font-bold animate-fade-up">
@@ -305,19 +258,23 @@ const Index = () => {
               )) || []}
             </div>
           ) : (
-            <div className="text-center py-2">
-              <Calendar className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">No hay eventos disponibles</h3>
-              <p className="text-muted-foreground">
-                Actualmente no hay eventos programados. Mantente atento para próximas actividades.
-              </p>
-            </div>
+            <Card className="border-dashed">
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <div className="rounded-full bg-primary/10 p-4 mb-4">
+                  <Calendar className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">No hay eventos próximos</h3>
+                <p className="text-muted-foreground text-center max-w-md">
+                  Estamos preparando nuevas actividades. Seguí visitando para enterarte de los próximos eventos.
+                </p>
+              </CardContent>
+            </Card>
           )}
         </div>
       </section>
 
       {/* Courses Section */}
-      <section className="py-16 px-4">
+      <section id="cursos-section" className="py-16 px-4">
         <div className="container mx-auto max-w-6xl">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-2xl md:text-3xl font-bold animate-fade-up">
@@ -341,19 +298,23 @@ const Index = () => {
               )) || []}
             </div>
           ) : (
-            <div className="text-center py-2">
-              <GraduationCap className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">No hay cursos disponibles</h3>
-              <p className="text-muted-foreground">
-                Actualmente no hay cursos programados. Mantente atento para próximas convocatorias.
-              </p>
-            </div>
+            <Card className="border-dashed">
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <div className="rounded-full bg-primary/10 p-4 mb-4">
+                  <GraduationCap className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">No hay cursos disponibles</h3>
+                <p className="text-muted-foreground text-center max-w-md">
+                  Pronto abriremos nuevas convocatorias. Revisá esta sección regularmente.
+                </p>
+              </CardContent>
+            </Card>
           )}
         </div>
       </section>
 
       {/* Raffles Section */}
-      <section className="py-16 px-4 bg-muted/30">
+      <section id="rifas-section" className="py-16 px-4 bg-muted/30">
         <div className="container mx-auto max-w-6xl">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-2xl md:text-3xl font-bold animate-fade-up">
@@ -377,19 +338,23 @@ const Index = () => {
               )) || []}
             </div>
           ) : (
-            <div className="text-center py-2">
-              <Ticket className="mx-auto h-12 w-12 text-muted-foreground" />
-              <h3 className="text-lg font-medium mb-2">No hay rifas disponibles</h3>
-              <p className="text-muted-foreground">
-                Actualmente no hay rifas activas. Mantente atento para futuras rifas benéficas.
-              </p>
-            </div>
+            <Card className="border-dashed">
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <div className="rounded-full bg-primary/10 p-4 mb-4">
+                  <Ticket className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">No hay rifas activas</h3>
+                <p className="text-muted-foreground text-center max-w-md">
+                  Actualmente no hay rifas disponibles. Volvé pronto para participar en futuras rifas benéficas.
+                </p>
+              </CardContent>
+            </Card>
           )}
         </div>
       </section>
       
       {/* Featured Stores Section */}
-      <section className="py-12 px-4 bg-secondary/50">
+      <section id="comercios-section" className="py-16 px-4">
         <div className="container mx-auto max-w-6xl">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-2xl md:text-3xl font-bold animate-fade-up">
@@ -415,7 +380,7 @@ const Index = () => {
       </section>
 
       {/* News Section */}
-      <section className="py-16 px-4 bg-muted/30">
+      <section id="novedades-section" className="py-16 px-4 bg-muted/30">
         <div className="container mx-auto max-w-6xl">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-2xl md:text-3xl font-bold animate-fade-up">
@@ -439,13 +404,17 @@ const Index = () => {
               )) || []}
             </div>
           ) : (
-            <div className="text-center py-2">
-              <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
-              <h3 className="text-lg font-medium mb-2">No hay novedades disponibles</h3>
-              <p className="text-muted-foreground">
-                Actualmente no hay novedades publicadas. Mantente informado de las últimas noticias.
-              </p>
-            </div>
+            <Card className="border-dashed">
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <div className="rounded-full bg-primary/10 p-4 mb-4">
+                  <FileText className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">No hay novedades recientes</h3>
+                <p className="text-muted-foreground text-center max-w-md">
+                  Todavía no hay novedades publicadas. Volvé pronto para estar al día.
+                </p>
+              </CardContent>
+            </Card>
           )}
         </div>
       </section>

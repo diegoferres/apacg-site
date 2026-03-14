@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import api from '@/services/api';
+import { renderSafeHtml } from '@/lib/utils';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import BenefitCard, { Benefit } from '@/components/BenefitCard';
@@ -130,7 +131,7 @@ const CommerceDetail = () => {
         console.error('Error fetching commerce:', error);
         toast({
           title: "Error",
-          description: "Failed to load commerce details. Please try again later.",
+          description: "No se pudieron cargar los detalles del comercio. Intenta de nuevo más tarde.",
           variant: "destructive",
         });
       } finally {
@@ -159,7 +160,7 @@ const CommerceDetail = () => {
         <Navbar />
         <div className="container mx-auto px-4 py-8 flex-grow">
           <div className="text-center text-muted-foreground">
-            Commerce not found.
+            Comercio no encontrado.
           </div>
         </div>
         <Footer />
@@ -179,7 +180,7 @@ const CommerceDetail = () => {
       <section className="pt-24 pb-12">
         <div className="container mx-auto px-4 md:px-6">
           {/* Breadcrumb */}
-          <nav className="flex items-center space-x-2 text-sm text-muted-foreground mb-6">
+          <nav aria-label="Breadcrumb" className="flex items-center space-x-2 text-sm text-muted-foreground mb-6">
             <Link to="/" className="hover:text-foreground transition-colors">Inicio</Link>
             <span>/</span>
             <Link to="/comercios" className="hover:text-foreground transition-colors">Comercios</Link>
@@ -193,7 +194,7 @@ const CommerceDetail = () => {
             Volver
           </Button>
           
-          <div className="grid lg:grid-cols-2 gap-12">
+          <div className="grid lg:grid-cols-2 gap-6 lg:gap-12">
             {/* Commerce Logo */}
             <div className="space-y-4">
               {commerce.logo && !imageError ? (
@@ -201,13 +202,13 @@ const CommerceDetail = () => {
                   <img
                     src={commerce.logo?.storage_path_full}
                     alt={commerce.name}
-                    className="w-full h-96 object-cover"
+                    className="w-full aspect-video object-cover"
                     onError={handleImageError}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                 </div>
               ) : (
-                <div className="relative h-96 bg-gradient-to-br from-primary/10 to-primary/20 rounded-lg flex items-center justify-center">
+                <div className="relative aspect-video bg-gradient-to-br from-primary/10 to-primary/20 rounded-lg flex items-center justify-center">
                   <div className="text-center">
                     <Image className="h-16 w-16 text-primary/60 mx-auto mb-4" />
                     <p className="text-primary/80 font-medium">Sin logo disponible</p>
@@ -224,7 +225,7 @@ const CommerceDetail = () => {
                 </h1>
                 <div 
                   className="text-muted-foreground leading-relaxed prose prose-sm max-w-none"
-                  dangerouslySetInnerHTML={{ __html: commerce.description }}
+                  dangerouslySetInnerHTML={renderSafeHtml(commerce.description)}
                 />
               </div>
               

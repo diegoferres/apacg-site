@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, Store, Tag, ChevronRight, Image } from 'lucide-react';
+import { Calendar, Store, Image } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
+import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { AspectRatio } from '@/components/ui/aspect-ratio';
-import { formatPrice, formatDate } from '@/lib/utils';
+import { formatPrice, formatDate, removeHTMLTags } from '@/lib/utils';
+import analytics from '@/services/analytics';
 
 export interface Benefit {
   id: string;
@@ -35,14 +35,11 @@ export interface Benefit {
 interface BenefitCardProps {
   benefit: Benefit;
   delay?: number;
+  position?: number;
+  listName?: string;
 }
 
-const removeHTMLTags = (text: string) => {
-  const doc = new DOMParser().parseFromString(text, 'text/html');
-  return doc.body.textContent || "";
-};
-
-const BenefitCard = ({ benefit, delay = 0 }: BenefitCardProps) => {
+const BenefitCard = ({ benefit, delay = 0, position = 0, listName = 'benefits_list' }: BenefitCardProps) => {
   const [isVisible, setIsVisible] = useState(false);
   const [imageError, setImageError] = useState(false);
 
@@ -59,57 +56,75 @@ const BenefitCard = ({ benefit, delay = 0 }: BenefitCardProps) => {
     setImageError(true);
   };
 
+  const handleClick = () => {
+    // Track item click for analytics
+    analytics.trackItemClick(
+      benefit.id,
+      benefit.title,
+      'benefit',
+      position,
+      listName
+    );
+  };
+
   return (
-    <Link to={`/beneficio/${benefit.slug}`} className="block">
-    <Card 
-        className={`overflow-hidden transition-all duration-500 transform hover:shadow-md hover:-translate-y-1 cursor-pointer ${
-        isVisible ? 'opacity-100' : 'opacity-0 translate-y-4'
-      }`}
-    >
-      {benefit.cover && !imageError ? (
-        <div className="relative w-full aspect-[16/9] overflow-hidden">
-          <img
-            src={benefit.cover?.storage_path_full}
-            alt={benefit.title}
-            className="w-full h-full object-cover object-center"
-            onError={handleImageError}
-          />
-        </div>
-      ) : (
-        <div className="bg-muted/30 w-full aspect-[16/9] flex items-center justify-center">
-          <Image className="h-12 w-12 text-muted-foreground/60" />
-        </div>
-      )}
-      <CardHeader className="p-4 pb-2">
-        <div className="flex justify-between items-start">
-          <Badge variant="outline" className="mb-2 bg-primary/5 text-xs font-medium">
-            {benefit.category?.name || benefit.categories?.[0]?.name || 'Sin categoría'}
-          </Badge>
-        </div>
-        <h3 className="text-lg font-semibold line-clamp-2">{benefit.title}</h3>
-      </CardHeader>
-      <CardContent className="p-4 pt-2">
-        <div className="flex items-center text-sm text-muted-foreground mb-3">
-          <Store className="h-4 w-4 mr-2 flex-shrink-0" />
-          <span>{benefit.commerce?.name}</span>
-        </div>
-        <div className="flex items-center text-sm text-muted-foreground mb-3">
-          <Calendar className="h-4 w-4 mr-2 flex-shrink-0" />
-          <span>Válido: {formatDate(benefit.start_date, { format: 'medium' })} - {formatDate(benefit.end_date, { format: 'medium' })}</span>
-        </div>
-        <p className="text-sm line-clamp-2 mt-2">{removeHTMLTags(benefit.description)}</p>
-      </CardContent>
-      <CardFooter className="p-4 pt-2 flex justify-end items-center border-t border-border/40">
-        <Button 
-          variant="ghost" 
-          size="sm"
-          onClick={(e) => e.stopPropagation()}
-          className="flex items-center"
-        >
-            Ver más <ChevronRight className="h-4 w-4 ml-1" />
-        </Button>
-      </CardFooter>
-    </Card>
+    <Link to={`/beneficio/${benefit.slug}`} className="block" onClick={handleClick}>
+      <Card
+        className={`overflow-hidden hover:shadow-lg transition-all duration-300 group cursor-pointer flex flex-col h-full ${
+          isVisible ? 'opacity-100' : 'opacity-0 translate-y-4'
+        }`}
+      >
+        {benefit.cover && !imageError ? (
+          <div className="relative aspect-[16/9] overflow-hidden">
+            <img
+              src={benefit.cover?.storage_path_full}
+              alt={benefit.title}
+              className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
+              loading="lazy"
+              onError={handleImageError}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+            <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white text-xs">
+              {benefit.category?.name || benefit.categories?.[0]?.name || 'Sin categoría'}
+            </Badge>
+          </div>
+        ) : (
+          <div className="relative aspect-[16/9] bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center">
+            <Image className="h-12 w-12 text-primary/60" />
+            <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white text-xs">
+              {benefit.category?.name || benefit.categories?.[0]?.name || 'Sin categoría'}
+            </Badge>
+          </div>
+        )}
+
+        <CardHeader className="pb-3">
+          <CardTitle className="text-xl font-bold group-hover:text-primary transition-colors line-clamp-2">
+            {benefit.title}
+          </CardTitle>
+          <p className="text-muted-foreground text-sm line-clamp-2">
+            {removeHTMLTags(benefit.description)}
+          </p>
+        </CardHeader>
+
+        <CardContent className="flex flex-col flex-1">
+          <div className="space-y-3">
+            <div className="flex items-center text-sm text-muted-foreground">
+              <Store className="h-4 w-4 mr-2 text-primary" />
+              {benefit.commerce?.name}
+            </div>
+            <div className="flex items-center text-sm text-muted-foreground">
+              <Calendar className="h-4 w-4 mr-2 text-primary" />
+              <span>{formatDate(benefit.start_date, { format: 'short' })} - {formatDate(benefit.end_date, { format: 'short' })}</span>
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-4 mt-auto">
+            <Button asChild className="bg-primary hover:bg-primary/90">
+              <span>Ver Detalles</span>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </Link>
   );
 };

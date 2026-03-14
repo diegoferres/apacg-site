@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams, Link } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -17,6 +17,7 @@ import { useStore } from "@/stores/store";
 import { FaUserAlt } from 'react-icons/fa';
 import api from "@/services/api";
 import { ChildrenManager, calculatePaymentStats } from "@/components/ChildrenManager";
+import StudentDataSplash from "@/components/StudentDataSplash";
 import analytics from '@/services/analytics';
 
 const Profile = () => {
@@ -39,15 +40,27 @@ const Profile = () => {
   const [showStudentsModal, setShowStudentsModal] = useState(false);
   const [selectedRaffle, setSelectedRaffle] = useState(null);
   const navigate = useNavigate();
-  const [first_name, setFirstName] = useState("");
-  const [last_name, setLastName] = useState("");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [passwordConfirmation, setPasswordConfirmation] = useState("");
+  const [passwordsMatch, setPasswordsMatch] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [studentsWithEnrollments, setStudentsWithEnrollments] = useState([]);
+  const [showStudentSplash, setShowStudentSplash] = useState(false);
 
   const isPending = user?.member?.status === "En Mora";
+
+  // Validate password match in real time
+  useEffect(() => {
+    if (password || passwordConfirmation) {
+      setPasswordsMatch(password === passwordConfirmation);
+    } else {
+      setPasswordsMatch(true); // Both empty is OK
+    }
+  }, [password, passwordConfirmation]);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -200,8 +213,11 @@ const Profile = () => {
         // Set form values from response
         setEmail(response.data.email);
         setPhone(response.data.member?.phone || "");
-        setFirstName(response.data.member?.first_name || "");
-        setLastName(response.data.member?.last_name || "");
+        // Combinar first_name y last_name del member o usar el name del usuario
+        const fullName = response.data.member?.first_name && response.data.member?.last_name 
+          ? `${response.data.member.first_name} ${response.data.member.last_name}`.trim()
+          : response.data.name || "";
+        setName(fullName);
         
         setIsLoading(false);
       } catch (error) {
@@ -389,27 +405,103 @@ const Profile = () => {
       return;
     }
 
-    try {
-      const response = await api.put(`/api/client/members/${user.member.id}`, {
-        first_name,
-        last_name,
-        phone,
-        avatar: null
+    // Validate password fields if provided
+    if (password && password !== passwordConfirmation) {
+      toast({
+        title: "Error de validación",
+        description: "Las contraseñas no coinciden.",
+        variant: "destructive",
       });
+      return;
+    }
+
+    if (password && password.length < 6) {
+      toast({
+        title: "Error de validación",
+        description: "La contraseña debe tener al menos 6 caracteres.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      if (password) {
+        // If password is provided, update everything through credentials endpoint
+        const credentialsResponse = await api.post('/api/client/profile/update-credentials', {
+          name,
+          email,
+          password,
+          password_confirmation: passwordConfirmation
+        });
+        
+        // Also update member data 
+        const nameParts = name.trim().split(' ');
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+        
+        const memberResponse = await api.put(`/api/client/members/${user.member.id}`, {
+          name,
+          email,
+          first_name: firstName,
+          last_name: lastName,
+          phone,
+          avatar: null
+        });
+        
+        toast({
+          title: "Perfil y credenciales actualizados",
+          description: "Tu perfil y contraseña se han actualizado correctamente.",
+          variant: "default",
+        });
+      } else {
+        // If no password, just update member data
+        const nameParts = name.trim().split(' ');
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+        
+        const memberResponse = await api.put(`/api/client/members/${user.member.id}`, {
+          name,
+          email,
+          first_name: firstName,
+          last_name: lastName,
+          phone,
+          avatar: null
+        });
+        
+        toast({
+          title: "Perfil actualizado",
+          description: "Tu perfil se ha actualizado correctamente.",
+          variant: "default",
+        });
+      }
+      
+      const nameParts = name.trim().split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
       
       setUser({
         ...user,
-        name: `${first_name} ${last_name}`,
+        name,
         email,
         member: {
           ...user.member,
-          first_name,
-          last_name,
+          first_name: firstName,
+          last_name: lastName,
           phone
         }
       });
+      
+      // Clear password fields after successful update
+      setPassword("");
+      setPasswordConfirmation("");
+      
     } catch (error) {
       console.error('Error updating profile:', error);
+      toast({
+        title: "Error al actualizar",
+        description: error.response?.data?.message || "Ocurrió un error al actualizar el perfil.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -496,7 +588,9 @@ const Profile = () => {
         <Breadcrumb className="mb-6">
           <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbLink href="/">Inicio</BreadcrumbLink>
+              <BreadcrumbLink asChild>
+                <Link to="/">Inicio</Link>
+              </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
@@ -519,7 +613,7 @@ const Profile = () => {
                   </Avatar>
                 </div>
                 <CardTitle className="flex items-center justify-center gap-2">
-                  {user?.name || `${first_name} ${last_name}`}
+                  {user?.name || name}
                   {user?.member?.status === "Activo" ? (
                     <CheckCircle className="h-5 w-5 text-green-500" />
                   ) : (
@@ -541,7 +635,7 @@ const Profile = () => {
               <CardContent className="flex flex-col items-center">
                 <div className="mb-4 p-2 bg-white rounded-lg">
                   <img 
-                    src={user?.member?.image?.storage_path_full} 
+                    src={user?.member?.qr_code_base64 || user?.member?.image?.storage_path_full} 
                     alt="QR Code" 
                     className="h-32 w-32" 
                   />
@@ -732,33 +826,62 @@ const Profile = () => {
                               </p>
                             </div>
                           </div>
+                          
+                          {/* Botón para completar datos solo si hay estudiantes sin CI */}
+                          {(() => {
+                            const studentsWithoutCI = user?.member?.students?.filter(student => 
+                              !student.ci || student.ci.trim() === ''
+                            ) || [];
+                            
+                            return studentsWithoutCI.length > 0 && (
+                              <div className="mt-4 pt-4 border-t border-gray-200">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => setShowStudentSplash(true)}
+                                  className="text-blue-700 border-blue-200 hover:bg-blue-50"
+                                >
+                                  <Users className="h-4 w-4 mr-2" />
+                                  Completar cédulas de estudiantes ({studentsWithoutCI.length})
+                                </Button>
+                              </div>
+                            );
+                          })()}
                         </div>
 
-                        {/* Estado por estudiante - Solo mostrar los que han pagado */}
+                        {/* Estado por estudiante - Mostrar todos los estudiantes */}
                         {membershipStatus.student_payment_status && 
-                         membershipStatus.student_payment_status.filter(student => student.current_year_paid).length > 0 && (
+                         membershipStatus.student_payment_status.length > 0 && (
                           <div className="space-y-3">
                             <h4 className="font-medium text-sm text-gray-600 uppercase tracking-wide">
-                              Pagos Anuales {membershipStatus.current_year}
+                              Estado de Pagos Anuales {membershipStatus.current_year}
                             </h4>
                             {membershipStatus.student_payment_status
-                              .filter(student => student.current_year_paid)
                               .map((student) => (
                               <div key={student.student_id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                                 <div className="flex items-center gap-3">
-                                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                                  <div className={`w-3 h-3 rounded-full ${
+                                    student.current_year_paid ? 'bg-green-500' : 'bg-orange-500'
+                                  }`}></div>
                                   <span className="font-medium">{student.student_name}</span>
                                 </div>
                                 <div className="text-sm">
-                                  <span className="text-green-700 flex items-center gap-1">
-                                    <CheckCircle className="h-4 w-4" />
-                                    Pagado {membershipStatus.current_year}
-                                    {student.payment_date && (
-                                      <span className="text-gray-500 ml-2">
-                                        - {formatDate(student.payment_date)}
-                                      </span>
-                                    )}
-                                  </span>
+                                  {student.current_year_paid ? (
+                                    <span className="text-green-700 flex items-center gap-1">
+                                      <CheckCircle className="h-4 w-4" />
+                                      Pagado {membershipStatus.current_year}
+                                      {student.payment_date && (
+                                        <span className="text-gray-500 ml-2">
+                                          - {formatDate(student.payment_date)}
+                                        </span>
+                                      )}
+                                    </span>
+                                  ) : (
+                                    <span className="text-orange-700 flex items-center gap-1">
+                                      <XCircle className="h-4 w-4" />
+                                      Pendiente {membershipStatus.current_year}
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                             ))}
@@ -1051,7 +1174,7 @@ const Profile = () => {
                         Aún no has reclamado ningún beneficio. Explora los beneficios disponibles para comenzar.
                       </p>
                       <Button className="mt-4" asChild>
-                        <a href="/beneficios">Ver Beneficios Disponibles</a>
+                        <Link to="/beneficios">Ver Beneficios Disponibles</Link>
                       </Button>
                     </div>
                   )}
@@ -1075,28 +1198,16 @@ const Profile = () => {
                     e.preventDefault();
                     handleUpdateProfile(e);
                   }}>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium" htmlFor="first_name">Nombre</label>
-                        <input 
-                          id="first_name"
-                          type="text" 
-                          value={first_name}
-                          onChange={(e) => setFirstName(e.target.value)}
-                          className="w-full p-2 border rounded-md"
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium" htmlFor="last_name">Apellido</label>
-                        <input 
-                          id="last_name"
-                          type="text" 
-                          value={last_name}
-                          onChange={(e) => setLastName(e.target.value)}
-                          className="w-full p-2 border rounded-md"
-                        />
-                      </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium" htmlFor="name">Nombre Completo</label>
+                      <input 
+                        id="name"
+                        type="text" 
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="w-full p-2 border rounded-md"
+                        placeholder="Ej: Adriana Aranda"
+                      />
                     </div>
                     
                     <div className="space-y-2">
@@ -1107,7 +1218,6 @@ const Profile = () => {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         className="w-full p-2 border rounded-md"
-                        disabled // Email usually requires special handling for updates
                       />
                     </div>
                     
@@ -1122,7 +1232,58 @@ const Profile = () => {
                       />
                     </div>
                     
-                    <Button type="submit" className="w-full">Guardar Cambios</Button>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium" htmlFor="password">Nueva Contraseña</label>
+                        <input 
+                          id="password"
+                          type="password" 
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className={`w-full p-2 border rounded-md ${
+                            password && password.length < 6 
+                              ? 'border-red-500 focus:border-red-500' 
+                              : 'border-gray-300 focus:border-blue-500'
+                          }`}
+                          placeholder="Deja en blanco para mantener la actual"
+                        />
+                        {password && password.length < 6 && (
+                          <p className="text-sm text-red-600">Mínimo 6 caracteres</p>
+                        )}
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium" htmlFor="password_confirmation">Confirmar Contraseña</label>
+                        <input 
+                          id="password_confirmation"
+                          type="password" 
+                          value={passwordConfirmation}
+                          onChange={(e) => setPasswordConfirmation(e.target.value)}
+                          className={`w-full p-2 border rounded-md ${
+                            passwordConfirmation && !passwordsMatch 
+                              ? 'border-red-500 focus:border-red-500' 
+                              : passwordConfirmation && passwordsMatch && password
+                              ? 'border-green-500 focus:border-green-500'
+                              : 'border-gray-300 focus:border-blue-500'
+                          }`}
+                          placeholder="Confirma la nueva contraseña"
+                        />
+                        {passwordConfirmation && !passwordsMatch && (
+                          <p className="text-sm text-red-600">Las contraseñas no coinciden</p>
+                        )}
+                        {passwordConfirmation && passwordsMatch && password && (
+                          <p className="text-sm text-green-600">Las contraseñas coinciden ✓</p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <Button 
+                      type="submit" 
+                      className="w-full" 
+                      disabled={password && (!passwordsMatch || password.length < 6)}
+                    >
+                      Guardar Cambios
+                    </Button>
                   </form>
                 </CardContent>
               </Card>
@@ -1349,13 +1510,13 @@ const Profile = () => {
                       </p>
                       <div className="flex gap-2 mt-4 justify-center">
                         <Button asChild variant="outline">
-                          <a href="/eventos">Ver Eventos</a>
+                          <Link to="/eventos">Ver Eventos</Link>
                         </Button>
                         <Button asChild variant="outline">
-                          <a href="/cursos">Ver Cursos</a>
+                          <Link to="/cursos">Ver Cursos</Link>
                         </Button>
                         <Button asChild>
-                          <a href="/rifas">Ver Rifas</a>
+                          <Link to="/rifas">Ver Rifas</Link>
                         </Button>
                       </div>
                     </div>
@@ -1481,6 +1642,18 @@ const Profile = () => {
           </div>
         </DialogContent>
       </Dialog>
+      
+      {/* Student Data Splash - Solo desde perfil manualmente */}
+      <StudentDataSplash 
+        isOpen={showStudentSplash}
+        onClose={() => setShowStudentSplash(false)}
+        onSaved={() => {
+          setShowStudentSplash(false);
+          // Refrescar datos del usuario después de guardar
+          window.location.reload();
+        }}
+        skipAutoShow={true}
+      />
       
       <Footer />
     </div>
