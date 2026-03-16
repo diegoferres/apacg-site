@@ -309,44 +309,43 @@ const Profile = () => {
     }
   };
 
-  const handlePayMembership = async () => {
+  const handlePayMembership = async (paymentYear?: number) => {
     setIsProcessingPayment(true);
-    
-    try {
-      let unpaidStudents = [];
 
-      // Si tenemos información de pagos, usar esa
-      if (membershipStatus?.student_payment_status) {
+    try {
+      let unpaidStudents: number[] = [];
+
+      // Si tenemos información de pagos y un año específico, filtrar por año
+      if (membershipStatus?.student_payment_status && paymentYear) {
         unpaidStudents = membershipStatus.student_payment_status
-          .filter(student => !student.current_year_paid)
-          .map(student => student.student_id);
-        
-        if (unpaidStudents.length === 0) {
-          toast({
-            title: "No hay pagos pendientes",
-            description: "Todos los estudiantes tienen sus anualidades al día.",
-            variant: "default",
-          });
-          return;
-        }
+          .filter((student: any) => student.unpaid_years?.includes(paymentYear))
+          .map((student: any) => student.student_id);
+      } else if (membershipStatus?.student_payment_status) {
+        // Fallback: usar los que no tienen pagado el año requerido
+        unpaidStudents = membershipStatus.student_payment_status
+          .filter((student: any) => !student.current_year_paid)
+          .map((student: any) => student.student_id);
       } else {
         // Si no tenemos información detallada, usar todos los estudiantes del user
         if (user?.member?.students && user.member.students.length > 0) {
-          unpaidStudents = user.member.students.map(student => student.id);
-        } else {
-          toast({
-            title: "No hay estudiantes",
-            description: "No se encontraron estudiantes asociados a su cuenta.",
-            variant: "destructive",
-          });
-          return;
+          unpaidStudents = user.member.students.map((student: any) => student.id);
         }
+      }
+
+      if (unpaidStudents.length === 0) {
+        toast({
+          title: "No hay pagos pendientes",
+          description: "Todos los estudiantes tienen sus anualidades al día.",
+          variant: "default",
+        });
+        return;
       }
 
       // Crear orden de pago de membresía
       const orderResponse = await api.post('/api/client/sales/create-membership-order', {
         student_ids: unpaidStudents,
-        annual_payment_amount: 60000
+        annual_payment_amount: 60000,
+        ...(paymentYear ? { payment_year: paymentYear } : {})
       });
 
       if (orderResponse.data.success) {
@@ -745,10 +744,15 @@ const Profile = () => {
                           <div className="text-right">
                             <span className="font-semibold">
                               {(() => {
-                                const unpaidCount = membershipStatus.student_payment_status
-                                  ? membershipStatus.student_payment_status.filter(s => !s.current_year_paid).length
-                                  : membershipStatus.students_count;
-                                return formatPrice(unpaidCount * 60000);
+                                let totalUnpaid = 0;
+                                if (membershipStatus.student_payment_status) {
+                                  membershipStatus.student_payment_status.forEach((s: any) => {
+                                    totalUnpaid += (s.unpaid_years?.length || (!s.current_year_paid ? 1 : 0));
+                                  });
+                                } else {
+                                  totalUnpaid = membershipStatus.students_count;
+                                }
+                                return formatPrice(totalUnpaid * 60000);
                               })()}
                             </span>
                             <div className="text-xs text-muted-foreground">
@@ -849,38 +853,40 @@ const Profile = () => {
                           })()}
                         </div>
 
-                        {/* Estado por estudiante - Mostrar todos los estudiantes */}
-                        {membershipStatus.student_payment_status && 
+                        {/* Estado por estudiante - Mostrar todos los estudiantes con años pendientes */}
+                        {membershipStatus.student_payment_status &&
                          membershipStatus.student_payment_status.length > 0 && (
                           <div className="space-y-3">
                             <h4 className="font-medium text-sm text-gray-600 uppercase tracking-wide">
-                              Estado de Pagos Anuales {membershipStatus.required_year || membershipStatus.current_year}
+                              Estado de Pagos Anuales
                             </h4>
                             {membershipStatus.student_payment_status
-                              .map((student) => (
-                              <div key={student.student_id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                <div className="flex items-center gap-3">
+                              .map((student: any) => (
+                              <div key={student.student_id} className="p-3 bg-gray-50 rounded-lg">
+                                <div className="flex items-center gap-3 mb-2">
                                   <div className={`w-3 h-3 rounded-full ${
-                                    student.current_year_paid ? 'bg-green-500' : 'bg-orange-500'
+                                    !student.unpaid_years || student.unpaid_years.length === 0 ? 'bg-green-500' : 'bg-orange-500'
                                   }`}></div>
                                   <span className="font-medium">{student.student_name}</span>
                                 </div>
-                                <div className="text-sm">
-                                  {student.current_year_paid ? (
-                                    <span className="text-green-700 flex items-center gap-1">
-                                      <CheckCircle className="h-4 w-4" />
-                                      Pagado {membershipStatus.required_year || membershipStatus.current_year}
+                                <div className="ml-6 space-y-1">
+                                  {student.unpaid_years && student.unpaid_years.length > 0 ? (
+                                    student.unpaid_years.map((year: number) => (
+                                      <div key={year} className="text-sm text-orange-700 flex items-center gap-1">
+                                        <XCircle className="h-3.5 w-3.5" />
+                                        Pendiente {year}
+                                      </div>
+                                    ))
+                                  ) : (
+                                    <div className="text-sm text-green-700 flex items-center gap-1">
+                                      <CheckCircle className="h-3.5 w-3.5" />
+                                      Al día
                                       {student.payment_date && (
-                                        <span className="text-gray-500 ml-2">
+                                        <span className="text-gray-500 ml-1">
                                           - {formatDate(student.payment_date)}
                                         </span>
                                       )}
-                                    </span>
-                                  ) : (
-                                    <span className="text-orange-700 flex items-center gap-1">
-                                      <XCircle className="h-4 w-4" />
-                                      Pendiente {membershipStatus.required_year || membershipStatus.current_year}
-                                    </span>
+                                    </div>
                                   )}
                                 </div>
                               </div>
@@ -894,47 +900,54 @@ const Profile = () => {
                           </div>
                         )}
 
-                        {/* Botón de pago si hay estudiantes pendientes */}
+                        {/* Botones de pago por año pendiente */}
                         {(() => {
-                          const hasUnpaidStudents = membershipStatus.student_payment_status && 
-                            membershipStatus.student_payment_status.some(student => !student.current_year_paid);
-                          console.log('Payment button debug:', {
-                            membershipStatus: !!membershipStatus,
-                            hasStudentStatus: !!membershipStatus.student_payment_status,
-                            studentCount: membershipStatus.student_payment_status?.length,
-                            hasUnpaidStudents,
-                            students: membershipStatus.student_payment_status
+                          // Recopilar todos los años pendientes únicos
+                          const allUnpaidYears = new Set<number>();
+                          membershipStatus.student_payment_status?.forEach((student: any) => {
+                            student.unpaid_years?.forEach((year: number) => allUnpaidYears.add(year));
                           });
-                          return hasUnpaidStudents;
-                        })() && (
-                          <div className="pt-4 border-t">
-                            <Button 
-                              onClick={handlePayMembership}
-                              className="w-full bg-primary hover:bg-primary/90"
-                              disabled={isProcessingPayment}
-                            >
-                              {isProcessingPayment ? (
-                                <>
-                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                  Procesando...
-                                </>
-                              ) : (
-                                <>
-                                  <CreditCard className="h-4 w-4 mr-2" />
-                                  Pagar Anualidad {membershipStatus.required_year || membershipStatus.current_year || ''}
-                                </>
-                              )}
-                            </Button>
-                          </div>
-                        )}
+                          const sortedYears = Array.from(allUnpaidYears).sort();
+
+                          if (sortedYears.length === 0) return null;
+
+                          return (
+                            <div className="pt-4 border-t space-y-2">
+                              {sortedYears.map((year) => {
+                                const studentsForYear = membershipStatus.student_payment_status
+                                  ?.filter((s: any) => s.unpaid_years?.includes(year))?.length || 0;
+                                return (
+                                  <Button
+                                    key={year}
+                                    onClick={() => handlePayMembership(year)}
+                                    className="w-full bg-primary hover:bg-primary/90"
+                                    disabled={isProcessingPayment}
+                                  >
+                                    {isProcessingPayment ? (
+                                      <>
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                        Procesando...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <CreditCard className="h-4 w-4 mr-2" />
+                                        Pagar Anualidad {year} ({studentsForYear} estudiante{studentsForYear > 1 ? 's' : ''} - {formatPrice(studentsForYear * 60000)})
+                                      </>
+                                    )}
+                                  </Button>
+                                );
+                              })}
+                            </div>
+                          );
+                        })()}
 
                         {/* Botón de fallback si no se puede determinar el estado pero hay estudiantes */}
-                        {!membershipStatus.is_active_member && 
+                        {!membershipStatus.is_active_member &&
                          (!membershipStatus.student_payment_status || membershipStatus.student_payment_status.length === 0) &&
                          user?.member?.students && user.member.students.length > 0 && (
                           <div className="pt-4 border-t">
-                            <Button 
-                              onClick={handlePayMembership}
+                            <Button
+                              onClick={() => handlePayMembership()}
                               className="w-full bg-primary hover:bg-primary/90"
                               disabled={isProcessingPayment}
                             >
