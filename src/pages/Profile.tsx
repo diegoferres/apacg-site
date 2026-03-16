@@ -732,9 +732,9 @@ const Profile = () => {
                         <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
                           <div className="flex items-center gap-2">
                             <Calendar className="h-5 w-5 text-muted-foreground" />
-                            <span className="font-medium">Año actual:</span>
+                            <span className="font-medium">Año de pago requerido:</span>
                           </div>
-                          <span>{membershipStatus.current_year}</span>
+                          <span>{membershipStatus.required_year || membershipStatus.current_year}</span>
                         </div>
                         
                         <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
@@ -854,7 +854,7 @@ const Profile = () => {
                          membershipStatus.student_payment_status.length > 0 && (
                           <div className="space-y-3">
                             <h4 className="font-medium text-sm text-gray-600 uppercase tracking-wide">
-                              Estado de Pagos Anuales {membershipStatus.current_year}
+                              Estado de Pagos Anuales {membershipStatus.required_year || membershipStatus.current_year}
                             </h4>
                             {membershipStatus.student_payment_status
                               .map((student) => (
@@ -869,7 +869,7 @@ const Profile = () => {
                                   {student.current_year_paid ? (
                                     <span className="text-green-700 flex items-center gap-1">
                                       <CheckCircle className="h-4 w-4" />
-                                      Pagado {membershipStatus.current_year}
+                                      Pagado {membershipStatus.required_year || membershipStatus.current_year}
                                       {student.payment_date && (
                                         <span className="text-gray-500 ml-2">
                                           - {formatDate(student.payment_date)}
@@ -879,7 +879,7 @@ const Profile = () => {
                                   ) : (
                                     <span className="text-orange-700 flex items-center gap-1">
                                       <XCircle className="h-4 w-4" />
-                                      Pendiente {membershipStatus.current_year}
+                                      Pendiente {membershipStatus.required_year || membershipStatus.current_year}
                                     </span>
                                   )}
                                 </div>
@@ -921,7 +921,7 @@ const Profile = () => {
                               ) : (
                                 <>
                                   <CreditCard className="h-4 w-4 mr-2" />
-                                  Pagar Anualidades Pendientes
+                                  Pagar Anualidad {membershipStatus.required_year || membershipStatus.current_year || ''}
                                 </>
                               )}
                             </Button>
