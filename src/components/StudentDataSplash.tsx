@@ -431,58 +431,67 @@ export const StudentDataSplash = ({ isOpen, onDataComplete, membershipStatus, on
                     {/* Información de pago */}
                     <div className="bg-muted/30 rounded-lg p-4 space-y-3">
                       <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium text-muted-foreground">Año actual:</span>
-                        <span className="font-medium">{localMembershipStatus.current_year}</span>
-                      </div>
-                      
-                      <div className="flex justify-between items-center">
                         <span className="text-sm font-medium text-muted-foreground">Estudiantes:</span>
                         <span className="font-medium">{localMembershipStatus.students_count}</span>
                       </div>
-                      
+
                       <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium text-muted-foreground">Monto a pagar:</span>
+                        <span className="text-sm font-medium text-muted-foreground">Monto total pendiente:</span>
                         <span className="font-semibold text-lg">
                           {(() => {
-                            const unpaidCount = localMembershipStatus.student_payment_status
-                              ? localMembershipStatus.student_payment_status.filter(s => !s.current_year_paid).length
-                              : localMembershipStatus.students_count;
+                            let totalUnpaid = 0;
+                            if (localMembershipStatus.student_payment_status) {
+                              localMembershipStatus.student_payment_status.forEach((s: any) => {
+                                totalUnpaid += (s.unpaid_years?.length || (!s.current_year_paid ? 1 : 0));
+                              });
+                            } else {
+                              totalUnpaid = localMembershipStatus.students_count;
+                            }
                             return new Intl.NumberFormat('es-PY', {
                               style: 'currency',
                               currency: 'PYG'
-                            }).format(unpaidCount * 60000);
+                            }).format(totalUnpaid * 60000);
                           })()}
                         </span>
                       </div>
                     </div>
 
-                    {/* Estudiantes pendientes */}
-                    {localMembershipStatus.student_payment_status && 
-                     localMembershipStatus.student_payment_status.filter(s => !s.current_year_paid).length > 0 && (
+                    {/* Estudiantes pendientes por año */}
+                    {localMembershipStatus.student_payment_status &&
+                     localMembershipStatus.student_payment_status.some((s: any) => s.unpaid_years?.length > 0 || !s.current_year_paid) && (
                       <div className="space-y-3">
                         <h4 className="font-medium text-sm text-gray-600 uppercase tracking-wide">
-                          Estudiantes Pendientes de Pago {localMembershipStatus.current_year}
+                          Pagos Pendientes
                         </h4>
-                        {localMembershipStatus.student_payment_status
-                          .filter(student => !student.current_year_paid)
-                          .map((student) => (
-                          <div key={student.student_id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                            <div className="flex items-center gap-3">
+                        {localMembershipStatus.student_payment_status.map((student: any) => (
+                          <div key={student.student_id} className="p-3 bg-gray-50 rounded-lg">
+                            <div className="flex items-center gap-3 mb-1">
                               <div className="w-3 h-3 rounded-full bg-orange-500"></div>
                               <span className="font-medium">{student.student_name}</span>
                             </div>
-                            <div className="text-sm text-orange-700 flex items-center gap-1">
-                              <AlertCircle className="h-4 w-4" />
-                              Pago Pendiente
-                            </div>
+                            {student.unpaid_years && student.unpaid_years.length > 0 ? (
+                              <div className="ml-6 space-y-1">
+                                {student.unpaid_years.map((year: number) => (
+                                  <div key={year} className="text-sm text-orange-700 flex items-center gap-1">
+                                    <AlertCircle className="h-3.5 w-3.5" />
+                                    Pendiente {year}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : !student.current_year_paid && (
+                              <div className="ml-6 text-sm text-orange-700 flex items-center gap-1">
+                                <AlertCircle className="h-3.5 w-3.5" />
+                                Pago Pendiente
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
                     )}
 
                     <div className="pt-4 space-y-3">
-                      <Button 
-                        className="w-full bg-primary hover:bg-primary/90" 
+                      <Button
+                        className="w-full bg-primary hover:bg-primary/90"
                         onClick={handleGoToPayment}
                         size="lg"
                       >

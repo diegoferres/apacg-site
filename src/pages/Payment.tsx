@@ -512,17 +512,12 @@ const PaymentPage = () => {
                         </div>
                       </div>
                     )}
-                    {paymentData.type === 'membership' && paymentData.unpaidStudents && (
+                    {paymentData.type === 'membership' && (paymentData.paymentItems || paymentData.unpaidStudents) && (
                       <div className="mt-2 text-sm space-y-2">
-                        <p><strong>Estudiantes a pagar ({paymentData.studentCount}):</strong></p>
-                        <div className="bg-muted/30 p-2 rounded-md space-y-1">
-                          {paymentData.unpaidStudents.map((student, index) => (
-                            <div key={index} className="flex items-center gap-2">
-                              <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
-                              <span>{student.student_name}</span>
-                            </div>
-                          ))}
-                        </div>
+                        <p><strong>Cuotas a pagar ({(paymentData.paymentItems || paymentData.unpaidStudents)?.length}):</strong></p>
+                        {paymentData.paymentYears && (
+                          <p className="text-muted-foreground">Años: {paymentData.paymentYears.join(', ')}</p>
+                        )}
                       </div>
                     )}
                   </div>
@@ -531,22 +526,19 @@ const PaymentPage = () => {
                   {paymentData.type === 'membership' ? (
                     <div className="space-y-3">
                       <h4 className="font-medium">Detalle de pago:</h4>
-                      {paymentData.unpaidStudents?.map((student, index) => (
+                      {(paymentData.paymentItems || paymentData.unpaidStudents)?.map((item: any, index: number) => (
                         <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100">
                           <div className="flex-1">
-                            <p className="font-medium text-sm">{student.student_name}</p>
+                            <p className="font-medium text-sm">{item.student_name}</p>
                             <p className="text-xs text-muted-foreground">
-                              Anualidad {paymentData.membershipStatus?.current_year || new Date().getFullYear()}
+                              Anualidad {item.payment_year || paymentData.membershipStatus?.required_year || new Date().getFullYear()}
                             </p>
                           </div>
                           <span className="font-semibold">
-                            {formatPrice(paymentData.totalAmount / paymentData.studentCount)}
+                            {formatPrice(60000)}
                           </span>
                         </div>
                       ))}
-                      <div className="text-xs text-muted-foreground italic">
-                        * Pago de anualidad por estudiante para el año {paymentData.membershipStatus?.current_year || new Date().getFullYear()}
-                      </div>
                     </div>
                   ) : paymentData.type === 'course_monthly_payment' ? (
                     <div className="space-y-3">
@@ -678,12 +670,12 @@ const PaymentPage = () => {
                     {(paymentData.type === 'membership' || paymentData.type === 'course' || paymentData.type === 'event' || paymentData.type === 'raffle') && (
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-sm">
-                          {paymentData.type === 'membership' ? 'Total de estudiantes:' : 
-                           paymentData.type === 'course' ? 'Total de inscripciones:' : 
+                          {paymentData.type === 'membership' ? 'Total de cuotas:' :
+                           paymentData.type === 'course' ? 'Total de inscripciones:' :
                            'Total de entradas:'}
                         </span>
                         <span className="text-sm font-medium">
-                          {paymentData.type === 'membership' ? paymentData.studentCount : paymentData.totalTickets}
+                          {paymentData.type === 'membership' ? (paymentData.paymentItems?.length || paymentData.studentCount) : paymentData.totalTickets}
                         </span>
                       </div>
                     )}
