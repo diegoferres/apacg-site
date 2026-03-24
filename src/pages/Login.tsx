@@ -27,6 +27,9 @@ import { ArrowLeft, Lock, User, Eye, EyeOff } from 'lucide-react';
 import api from '@/services/api';
 import { useStore } from '@/stores/store';
 import analytics from '@/services/analytics';
+import { useTour } from '@/hooks/useTour';
+import { loginTourSteps } from '@/config/tours';
+import TourHelpButton from '@/components/TourHelpButton';
 
 const formSchema = z.object({
   identifier: z.string().min(1, "Por favor ingresa tu correo electrónico o cédula"),
@@ -42,6 +45,12 @@ const Login = () => {
   const [searchParams] = useSearchParams();
   const { setUser, setIsLoggedIn, setIsLoading: setGlobalLoading } = useStore();
   const { user } = useStore();
+
+  const { startTour } = useTour({
+    tourId: 'login',
+    steps: loginTourSteps.filter(s => !s.element?.toString().includes('login-cedula')),
+    autoStart: false,
+  });
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -163,8 +172,13 @@ const Login = () => {
             }
           } else if (redirect_to) {
             console.log('Login.tsx - Using backend redirect_to:', redirect_to);
-            // El backend ahora siempre devuelve paths relativos, así que usar navigate directamente
-            navigate(redirect_to);
+            if (redirect_to.startsWith('/admin')) {
+              // Admin/commerce/delegate: full page reload al panel Laravel
+              window.location.replace(redirect_to);
+              return;
+            } else {
+              navigate(redirect_to);
+            }
           } else {
             console.log('Login.tsx - No redirect specified, going to home');
             navigate('/');
@@ -211,16 +225,22 @@ const Login = () => {
         <div className="text-center mb-6">
           <Link to="/">
             <div className="flex items-center justify-center gap-2 text-primary">
-              <img src="/favicon-96x96.png" alt="Logo" className="h-20 w-18" />
+              <img src="/logo.png" alt="Logo" className="h-20 w-18" />
             </div>
           </Link>
         </div>
 
         <Card className="glass shadow-sm border-border/40">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">
-              {mode === 'login' ? 'Iniciar Sesión' : 'Recuperar Contraseña'}
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <div className="flex-1" />
+              <CardTitle className="text-2xl font-bold text-center flex-1">
+                {mode === 'login' ? 'Iniciar Sesión' : 'Recuperar Contraseña'}
+              </CardTitle>
+              <div className="flex-1 flex justify-end">
+                <TourHelpButton onClick={startTour} label="Ver tutorial de login" />
+              </div>
+            </div>
             <CardDescription className="text-center">
               {mode === 'login' 
                 ? 'Ingresa tu correo electrónico o cédula y tu contraseña'
@@ -238,7 +258,7 @@ const Login = () => {
                     <FormItem>
                       <FormLabel>Correo Electrónico o Cédula</FormLabel>
                       <FormControl>
-                        <div className="relative">
+                        <div className="relative" data-tour="login-email">
                           <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                           <Input
                             placeholder="tu@email.com o número de cédula"
@@ -260,7 +280,7 @@ const Login = () => {
                         <FormItem>
                           <FormLabel>Contraseña</FormLabel>
                           <FormControl>
-                            <div className="relative">
+                            <div className="relative" data-tour="login-password">
                               <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                               <Input
                                 type={showPassword ? "text" : "password"}
@@ -292,6 +312,7 @@ const Login = () => {
                     type="submit"
                     className="w-full"
                     disabled={isLoading}
+                    data-tour="login-submit"
                   >
                     {isLoading 
                       ? (mode === 'login' ? "Iniciando sesión..." : "Enviando enlace...")
