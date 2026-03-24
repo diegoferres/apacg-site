@@ -47,14 +47,10 @@ const MembershipBadge = ({ isMember, compact = false }: MembershipBadgeProps) =>
     );
   }
 
+  // Logueado pero sin membresía (admin u otro rol)
   return (
-    <div className={`flex items-center gap-2 rounded-md border border-gray-200 bg-gray-50 text-gray-600 ${compact ? 'px-2.5 py-1.5 text-xs' : 'px-3 py-2 text-sm'}`}>
-      <LogIn className={compact ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
-      <span>
-        <Link to={`/login?returnTo=${returnTo}`} className="underline font-medium hover:opacity-80">
-          Iniciá sesión
-        </Link>{' '}para acceder a precios de socio
-      </span>
+    <div className={`flex items-center gap-2 rounded-md border border-gray-200 bg-gray-50 text-gray-500 ${compact ? 'px-2.5 py-1.5 text-xs' : 'px-3 py-2 text-sm'}`}>
+      <span>Precio regular aplicado</span>
     </div>
   );
 };
