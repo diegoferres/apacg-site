@@ -11,6 +11,7 @@ import { formatPrice, formatDate, renderSafeHtml } from '@/lib/utils';
 import { useStore } from '@/stores/store';
 import api from '@/services/api';
 import analytics from '@/services/analytics';
+import MembershipBadge from '@/components/MembershipBadge';
 
 interface TicketType {
   id: number;
@@ -406,28 +407,8 @@ const EventDetail = () => {
 
                     {/* Indicador de membresía si hay precios diferenciales */}
                     {event.ticket_types.some(t => t.has_member_price) && (
-                      <div className={`text-xs mb-3 p-2 rounded-md ${
-                        isMember
-                          ? 'bg-green-50 text-green-700 border border-green-200'
-                          : 'bg-orange-50 text-orange-700 border border-orange-200'
-                      }`}>
-                        {isMember ? (
-                          <span>Precio de socio aplicado</span>
-                        ) : !isLoggedIn ? (
-                          <span>
-                            <Link to={`/login?returnTo=${encodeURIComponent(`/evento/${event.slug}`)}`} className="underline font-medium">
-                              Iniciá sesión
-                            </Link>{' '}como socio para obtener precios preferenciales
-                          </span>
-                        ) : user?.member ? (
-                          <span>
-                            <Link to="/perfil" className="underline font-medium">
-                              Ponete al día
-                            </Link>{' '}para acceder a precios de socio
-                          </span>
-                        ) : (
-                          <span>Precio regular aplicado</span>
-                        )}
+                      <div className="mb-3">
+                        <MembershipBadge isMember={isMember} compact />
                       </div>
                     )}
 

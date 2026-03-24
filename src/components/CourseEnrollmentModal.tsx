@@ -23,6 +23,7 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { formatPrice, formatDate, toNumber } from '@/lib/utils';
 import { Clock, Users, Calendar, MapPin } from 'lucide-react';
+import MembershipBadge from '@/components/MembershipBadge';
 
 interface Course {
   id: number;
@@ -480,61 +481,7 @@ const CourseEnrollmentModal = ({ isOpen, onClose, course, group, appliedCoupon }
                 </div>
               </div>
             ) : (
-              <div className={`p-3 rounded-md text-sm ${isMember ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-orange-50 border border-orange-200 text-orange-800'}`}>
-                <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${isMember ? 'bg-green-500' : 'bg-orange-500'}`}></div>
-                  <span className="font-medium">
-                    {isMember ? 'Socio Activo' : 'No Socio'}
-                  </span>
-                </div>
-                <p className="text-xs mt-1 opacity-80">
-                  {isMember 
-                    ? 'Se aplicarán las tarifas preferenciales para socios' 
-                    : user?.member 
-                      ? (
-                        <>
-                          Se aplicarán tarifas regulares.{' '}
-                          <button 
-                            onClick={() => navigate('/perfil')} 
-                            className="underline hover:opacity-80 text-inherit"
-                            type="button"
-                          >
-                            Ver estado de membresía
-                          </button>
-                        </>
-                      )
-                      : (
-                        <>
-                          Se aplicarán las tarifas regulares.{' '}
-                          <button 
-                            onClick={() => {
-                              const currentPath = window.location.pathname + window.location.search;
-                              const returnTo = `${currentPath}?openModal=course&courseId=${course.id}&groupId=${group?.id || ''}`;
-                              const encodedReturnTo = encodeURIComponent(returnTo);
-                              const loginUrl = `/login?returnTo=${encodedReturnTo}`;
-                              
-                              // Debug logging
-                              console.log('CourseEnrollmentModal - Login redirect debug:', {
-                                currentPath,
-                                courseId: course.id,
-                                groupId: group?.id,
-                                returnTo,
-                                encodedReturnTo,
-                                loginUrl
-                              });
-                              
-                              navigate(loginUrl);
-                            }}
-                            className="underline hover:opacity-80 text-inherit font-medium"
-                            type="button"
-                          >
-                            Iniciar como socio
-                          </button>
-                        </>
-                      )
-                  }
-                </p>
-              </div>
+              <MembershipBadge isMember={isMember} />
             )}
           </div>
 

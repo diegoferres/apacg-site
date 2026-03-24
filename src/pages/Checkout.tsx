@@ -12,6 +12,7 @@ import { formatPrice, formatDate } from '@/lib/utils';
 import { useStore } from '@/stores/store';
 import api from '@/services/api';
 import analytics from '@/services/analytics';
+import MembershipBadge from '@/components/MembershipBadge';
 
 interface CheckoutData {
   name: string;
@@ -621,49 +622,7 @@ const Checkout = () => {
                               </div>
                             </div>
                           ) : (
-                            <div className={`p-3 rounded-md text-sm ${isMember ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-orange-50 border border-orange-200 text-orange-800'}`}>
-                              <div className="flex items-center gap-2">
-                                <div className={`w-2 h-2 rounded-full ${isMember ? 'bg-green-500' : 'bg-orange-500'}`}></div>
-                                <span className="font-medium">
-                                  {isMember ? 'Socio Activo' : 'No Socio'}
-                                </span>
-                              </div>
-                              <p className="text-xs mt-1 opacity-80">
-                                {isMember
-                                  ? 'Se aplicaron las tarifas preferenciales para socios'
-                                  : !isLoggedIn
-                                    ? (
-                                      <>
-                                        Se aplicaron las tarifas regulares.{' '}
-                                        <button
-                                          onClick={() => {
-                                            const returnTo = encodeURIComponent(`/evento/${eventData.eventSlug}`);
-                                            navigate(`/login?returnTo=${returnTo}`);
-                                          }}
-                                          className="underline hover:opacity-80 text-inherit font-medium"
-                                          type="button"
-                                        >
-                                          Iniciá sesión como socio
-                                        </button>
-                                      </>
-                                    )
-                                    : user?.member
-                                      ? (
-                                        <>
-                                          Tenés pagos pendientes.{' '}
-                                          <button
-                                            onClick={() => navigate('/perfil')}
-                                            className="underline hover:opacity-80 text-inherit font-medium"
-                                            type="button"
-                                          >
-                                            Ponete al día para acceder a tarifas de socio
-                                          </button>
-                                        </>
-                                      )
-                                      : 'Se aplicaron las tarifas regulares.'
-                                }
-                              </p>
-                            </div>
+                            <MembershipBadge isMember={isMember} />
                           )}
                         </div>
                       )}
