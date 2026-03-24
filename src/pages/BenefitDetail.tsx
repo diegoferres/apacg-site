@@ -13,13 +13,15 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import { 
-  ArrowLeft, 
-  Calendar, 
-  Clock, 
-  Tag, 
+import {
+  ArrowLeft,
+  Calendar,
+  Clock,
+  Tag,
   Image,
-  QrCode
+  QrCode,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -60,6 +62,7 @@ const BenefitDetail = () => {
   const { toast } = useToast();
   const [imageError, setImageError] = useState(false);
   const { isLoggedIn } = useStore();
+  const [showFullDescription, setShowFullDescription] = useState(false);
 
   useEffect(() => {
     const fetchBenefit = async () => {
@@ -214,79 +217,102 @@ const BenefitDetail = () => {
             Volver
           </Button>
           
-          <div className="grid lg:grid-cols-2 gap-6 lg:gap-12">
-            {/* Benefit Image */}
-            <div className="space-y-4">
-              {benefit.cover && !imageError ? (
-                <div className="relative overflow-hidden rounded-lg">
-                  <img
-                    src={benefit.cover?.storage_path_full}
-                    alt={benefit.name}
-                    className="w-full aspect-video object-cover"
-                    onError={handleImageError}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-                </div>
-              ) : (
-                <div className="relative aspect-video bg-gradient-to-br from-primary/10 to-primary/20 rounded-lg flex items-center justify-center">
-                  <div className="text-center">
-                    <Image className="h-16 w-16 text-primary/60 mx-auto mb-4" />
-                    <p className="text-primary/80 font-medium">Sin imagen disponible</p>
-                  </div>
-                </div>
-              )}
+          {/* Imagen del beneficio */}
+          {benefit.cover && !imageError ? (
+            <div className="relative overflow-hidden rounded-lg mb-8">
+              <img
+                src={benefit.cover?.storage_path_full}
+                alt={benefit.name}
+                className="w-full aspect-video object-cover"
+                onError={handleImageError}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
             </div>
-            
-            {/* Benefit Details */}
-            <div className="space-y-6">
-              <div>
-                <Badge className="mb-4 bg-primary/10 text-primary hover:bg-primary/20">
-                  <Calendar className="h-3 w-3 mr-1" />
-                  {formatDate(benefit.start_date, { format: 'medium' })} - {formatDate(benefit.end_date, { format: 'medium' })}
-                </Badge>
-                <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-                  {benefit.name}
-                </h1>
-                <div 
-                  className="text-muted-foreground leading-relaxed prose prose-sm max-w-none"
+          ) : (
+            <div className="relative aspect-video bg-gradient-to-br from-primary/10 to-primary/20 rounded-lg flex items-center justify-center mb-8">
+              <div className="text-center">
+                <Image className="h-16 w-16 text-primary/60 mx-auto mb-4" />
+                <p className="text-primary/80 font-medium">Sin imagen disponible</p>
+              </div>
+            </div>
+          )}
+
+          {/* Título y badges */}
+          <div className="mb-6">
+            <Badge className="mb-4 bg-primary/10 text-primary hover:bg-primary/20">
+              <Calendar className="h-3 w-3 mr-1" />
+              {formatDate(benefit.start_date, { format: 'medium' })} - {formatDate(benefit.end_date, { format: 'medium' })}
+            </Badge>
+            <h1 className="text-3xl md:text-4xl font-bold text-foreground">
+              {benefit.name}
+            </h1>
+          </div>
+
+          {/* Descripción + CTA lado a lado en desktop */}
+          <div className="grid lg:grid-cols-3 gap-8">
+            {/* Descripción (2/3 del ancho) */}
+            <div className="lg:col-span-2 space-y-4">
+              {/* Mobile: ver más/ver menos */}
+              <div className="lg:hidden">
+                <div
+                  className={`text-muted-foreground leading-relaxed prose prose-sm max-w-none overflow-hidden transition-all ${showFullDescription ? '' : 'max-h-32'}`}
                   dangerouslySetInnerHTML={renderSafeHtml(benefit.description)}
                 />
+                <button
+                  onClick={() => setShowFullDescription(!showFullDescription)}
+                  className="flex items-center gap-1 text-primary text-sm font-medium mt-2 hover:opacity-80"
+                >
+                  {showFullDescription ? (
+                    <><ChevronUp className="h-4 w-4" /> Ver menos</>
+                  ) : (
+                    <><ChevronDown className="h-4 w-4" /> Ver más</>
+                  )}
+                </button>
               </div>
-              
-              <div className="space-y-4">
+
+              {/* Desktop: descripción completa */}
+              <div
+                className="hidden lg:block text-muted-foreground leading-relaxed prose prose-sm max-w-none"
+                dangerouslySetInnerHTML={renderSafeHtml(benefit.description)}
+              />
+
+              <div className="space-y-3 pt-2">
                 {benefit.commerce && (
                   <div className="flex items-center text-muted-foreground">
                     <Tag className="h-5 w-5 mr-3 text-primary" />
                     <span>Ofrecido por: {benefit.commerce.name}</span>
                   </div>
                 )}
-                
                 {benefit.categories && benefit.categories.length > 0 && (
                   <div className="flex items-center text-muted-foreground">
                     <Tag className="h-5 w-5 mr-3 text-primary" />
-                    <span>
-                      Categorías: {benefit.categories.map((category) => category.name).join(', ')}
-                    </span>
+                    <span>Categorías: {benefit.categories.map((category) => category.name).join(', ')}</span>
                   </div>
                 )}
               </div>
-              
-              {/* Call to Action Button */}
-              <div className="pt-6">
-                <Button 
-                  onClick={handleClaimBenefit}
-                  size="lg"
-                  className="w-full md:w-auto bg-primary hover:bg-primary/90 text-white font-semibold"
-                >
-                  <QrCode className="h-5 w-5 mr-2" />
-                  Reclamar mi beneficio
-                </Button>
-                <p className="text-sm text-muted-foreground mt-2">
-                  {isLoggedIn 
-                    ? "Ve a tu perfil para mostrar tu código QR de socio" 
-                    : "Inicia sesión para acceder a tu código QR de socio"
-                  }
-                </p>
+            </div>
+
+            {/* CTA (1/3 del ancho, sticky en desktop) */}
+            <div className="lg:col-span-1">
+              <div className="lg:sticky lg:top-24">
+                <Card>
+                  <CardContent className="pt-6">
+                    <Button
+                      onClick={handleClaimBenefit}
+                      size="lg"
+                      className="w-full bg-primary hover:bg-primary/90 text-white font-semibold"
+                    >
+                      <QrCode className="h-5 w-5 mr-2" />
+                      Reclamar mi beneficio
+                    </Button>
+                    <p className="text-sm text-muted-foreground mt-3 text-center">
+                      {isLoggedIn
+                        ? "Ve a tu perfil para mostrar tu código QR de socio"
+                        : "Inicia sesión para acceder a tu código QR de socio"
+                      }
+                    </p>
+                  </CardContent>
+                </Card>
               </div>
             </div>
           </div>
