@@ -17,6 +17,9 @@ import CommerceCard, { Commerce } from '@/components/CommerceCard';
 import { useStore } from '@/stores/store';
 import { formatPrice, toNumber, formatDate, renderSafeHtml } from '@/lib/utils';
 import analytics from '@/services/analytics';
+import { useTour } from '@/hooks/useTour';
+import { homeTourSteps } from '@/config/tours';
+import TourHelpButton from '@/components/TourHelpButton';
 
 export interface News {
   id: number;
@@ -61,10 +64,19 @@ export interface Raffle {
 }
 
 const Index = () => {
+  const user = useStore((state) => state.user);
+  const isLoggedIn = !!user?.id;
+
+  const { startTour } = useTour({
+    tourId: 'home',
+    steps: homeTourSteps,
+    autoStart: isLoggedIn,
+    delay: 2000,
+  });
+
   const [filteredBenefits, setFilteredBenefits] = useState<Benefit[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [featuredCommerces, setFeaturedCommerces] = useState<Commerce[]>([]);
-  const user = useStore((state) => state.user);
   const setUser = useStore((state) => state.setUser);
   const [searchParams, setSearchParams] = useSearchParams();
   const [currentPage, setCurrentPage] = useState(1);
@@ -186,7 +198,12 @@ const Index = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      
+
+      {/* Tour Help Button - Fixed */}
+      <div className="fixed bottom-6 right-6 z-50">
+        <TourHelpButton onClick={startTour} label="Ver tour de la web" />
+      </div>
+
       {/* Hero Section */}
       <section className="pt-20 pb-8 md:pt-28 md:pb-16 px-4 relative hero-gradient overflow-hidden">
         <div className="container mx-auto max-w-6xl relative z-10">

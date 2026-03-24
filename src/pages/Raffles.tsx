@@ -119,7 +119,7 @@ const Raffles = () => {
         </div>
       </section>
 
-      <section className="py-12 px-4">
+      <section className="py-12 px-4" data-tour="raffles-list">
         <div className="container mx-auto max-w-6xl">
           {isLoading ? (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">

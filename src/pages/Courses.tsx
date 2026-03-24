@@ -177,7 +177,7 @@ const Courses = () => {
         </div>
       </section>
       
-      <section className="py-12 px-4">
+      <section className="py-12 px-4" data-tour="courses-list">
         <div className="container mx-auto max-w-6xl">
 
           {isLoading ? (

@@ -125,15 +125,17 @@ const Benefits = () => {
             Explora todos los beneficios disponibles para los miembros de A.P.A.C. GOETHE.
           </p>
           
-          <IndependentSearchBar 
-            placeholder="Buscar beneficios..."
-            showCategoryFilter={true}
-            module="benefits"
-          />
+          <div data-tour="benefits-search">
+            <IndependentSearchBar
+              placeholder="Buscar beneficios..."
+              showCategoryFilter={true}
+              module="benefits"
+            />
+          </div>
         </div>
       </section>
-      
-      <section className="py-12 px-4">
+
+      <section className="py-12 px-4" data-tour="benefits-list">
         <div className="container mx-auto max-w-6xl">
           {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

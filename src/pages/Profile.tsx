@@ -18,9 +18,19 @@ import { FaUserAlt } from 'react-icons/fa';
 import api from "@/services/api";
 import { ChildrenManager, calculatePaymentStats } from "@/components/ChildrenManager";
 import StudentDataSplash from "@/components/StudentDataSplash";
+import { useTour } from '@/hooks/useTour';
+import { profileTourSteps } from '@/config/tours';
+import TourHelpButton from '@/components/TourHelpButton';
 import analytics from '@/services/analytics';
 
 const Profile = () => {
+  const { startTour } = useTour({
+    tourId: 'profile',
+    steps: profileTourSteps,
+    autoStart: true,
+    delay: 1500,
+  });
+
   const [activeTab, setActiveTab] = useState("membership");
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
@@ -612,7 +622,8 @@ const Profile = () => {
       <Navbar />
       
       <main className="flex-grow container mx-auto px-4 pt-24 pb-12">
-        <Breadcrumb className="mb-6">
+        <div className="flex items-center justify-between mb-6">
+          <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
@@ -625,10 +636,12 @@ const Profile = () => {
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
-        
+          <TourHelpButton onClick={startTour} label="Ver tutorial del perfil" />
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="md:col-span-1">
-            <Card className="mb-6">
+            <Card className="mb-6" data-tour="profile-card">
               <CardHeader className="text-center">
                 <div className="flex justify-center mb-4">
                   <Avatar className="h-24 w-24">
@@ -742,7 +755,7 @@ const Profile = () => {
           
           <div className="md:col-span-2">
             {activeTab === "membership" && (
-              <div className="space-y-6">
+              <div className="space-y-6" data-tour="profile-membership">
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center">
@@ -1603,7 +1616,7 @@ const Profile = () => {
             )}
 
             {activeTab === "children" && (
-              <Card>
+              <Card data-tour="profile-children">
                 <CardHeader>
                   <CardTitle className="flex items-center">
                     Hijos Matriculados

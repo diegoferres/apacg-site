@@ -148,3 +148,50 @@
     display: none;
   }
 }
+
+/* Driver.js Tour Styles */
+.driver-popover.apacg-tour-popover {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  max-width: 360px;
+}
+
+.driver-popover.apacg-tour-popover .driver-popover-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: hsl(222.2, 47.4%, 11.2%);
+}
+
+.driver-popover.apacg-tour-popover .driver-popover-description {
+  font-size: 0.9rem;
+  color: hsl(215.4, 16.3%, 46.9%);
+  line-height: 1.5;
+}
+
+.driver-popover.apacg-tour-popover .driver-popover-progress-text {
+  font-size: 0.75rem;
+  color: hsl(215.4, 16.3%, 46.9%);
+}
+
+.driver-popover.apacg-tour-popover button.driver-popover-next-btn {
+  background: hsl(222.2, 47.4%, 11.2%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 16px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-shadow: none;
+}
+
+.driver-popover.apacg-tour-popover button.driver-popover-prev-btn {
+  background: transparent;
+  color: hsl(215.4, 16.3%, 46.9%);
+  border: 1px solid hsl(214.3, 31.8%, 91.4%);
+  border-radius: 6px;
+  padding: 6px 16px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-shadow: none;
+}
