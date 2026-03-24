@@ -149,8 +149,21 @@ const EventDetail = () => {
     );
   }
 
-  // Determinar si el usuario es socio activo
-  const isMember = isLoggedIn && user?.member?.status?.toLowerCase() === 'activo';
+  // Verificar membresía real (status + pagos al día)
+  const [isMember, setIsMember] = useState(false);
+  const [membershipChecked, setMembershipChecked] = useState(false);
+
+  useEffect(() => {
+    if (isLoggedIn && user?.member) {
+      api.get('/api/client/members/check-membership-status')
+        .then(res => setIsMember(res.data.is_active_member))
+        .catch(() => setIsMember(false))
+        .finally(() => setMembershipChecked(true));
+    } else {
+      setIsMember(false);
+      setMembershipChecked(true);
+    }
+  }, [isLoggedIn, user]);
 
   const getTicketPrice = (ticketType: TicketType) => {
     if (isMember && ticketType.member_price !== null) {
