@@ -1,6 +1,7 @@
 
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import logoImg from '/logo.png';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -225,7 +226,7 @@ const Login = () => {
         <div className="text-center mb-6">
           <Link to="/">
             <div className="flex items-center justify-center gap-2 text-primary">
-              <img src="/logo.png" alt="Logo" className="h-20 w-18" />
+              <img src={logoImg} alt="Logo" className="h-20 w-18" />
             </div>
           </Link>
         </div>

@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import logoImg from '/logo.png';
 import { Button } from '@/components/ui/button';
 import { UserCircle, Menu, X, LogOut } from 'lucide-react';
 import { useStore } from '@/stores/store';
@@ -71,7 +72,7 @@ const Navbar = () => {
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-2 animate-fade-in">
             <div className="flex items-center gap-2 text-primary">
-              <img src="/logo.png" alt="Logo" className="h-14 w-12" />
+              <img src={logoImg} alt="Logo" className="h-14 w-12" />
             </div>
           </Link>
 
