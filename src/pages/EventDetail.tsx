@@ -49,7 +49,22 @@ const EventDetail = () => {
   const [selectedTickets, setSelectedTickets] = useState<Record<number, number>>({});
   const [isLoading, setIsLoading] = useState(false);
   const { user, isLoggedIn } = useStore();
-  
+  const [isMember, setIsMember] = useState(false);
+  const [membershipChecked, setMembershipChecked] = useState(false);
+
+  // Verificar membresía real (status + pagos al día)
+  useEffect(() => {
+    if (isLoggedIn && user?.member) {
+      api.get('/api/client/members/check-membership-status')
+        .then(res => setIsMember(res.data.is_active_member))
+        .catch(() => setIsMember(false))
+        .finally(() => setMembershipChecked(true));
+    } else {
+      setIsMember(false);
+      setMembershipChecked(true);
+    }
+  }, [isLoggedIn, user]);
+
   // Detectar y almacenar código de referido
   useEffect(() => {
     const referralCode = searchParams.get('ref');
@@ -148,22 +163,6 @@ const EventDetail = () => {
       </div>
     );
   }
-
-  // Verificar membresía real (status + pagos al día)
-  const [isMember, setIsMember] = useState(false);
-  const [membershipChecked, setMembershipChecked] = useState(false);
-
-  useEffect(() => {
-    if (isLoggedIn && user?.member) {
-      api.get('/api/client/members/check-membership-status')
-        .then(res => setIsMember(res.data.is_active_member))
-        .catch(() => setIsMember(false))
-        .finally(() => setMembershipChecked(true));
-    } else {
-      setIsMember(false);
-      setMembershipChecked(true);
-    }
-  }, [isLoggedIn, user]);
 
   const getTicketPrice = (ticketType: TicketType) => {
     if (isMember && ticketType.member_price !== null) {
