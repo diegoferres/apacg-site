@@ -397,13 +397,40 @@ const EventDetail = () => {
                 {/* Purchase Button */}
                 {getTotalTickets() > 0 && !event.is_informational && (
                   <div className="mt-6 p-4 bg-primary/5 border border-primary/20 rounded-lg">
-                    <div className="flex justify-between items-center mb-4">
+                    <div className="flex justify-between items-center mb-3">
                       <span className="font-semibold">Total:</span>
                       <span className="text-2xl font-bold text-primary">
                         {formatPrice(getTotalPrice())}
                       </span>
                     </div>
-                    
+
+                    {/* Indicador de membresía si hay precios diferenciales */}
+                    {event.ticket_types.some(t => t.has_member_price) && (
+                      <div className={`text-xs mb-3 p-2 rounded-md ${
+                        isMember
+                          ? 'bg-green-50 text-green-700 border border-green-200'
+                          : 'bg-orange-50 text-orange-700 border border-orange-200'
+                      }`}>
+                        {isMember ? (
+                          <span>Precio de socio aplicado</span>
+                        ) : !isLoggedIn ? (
+                          <span>
+                            <Link to={`/login?returnTo=${encodeURIComponent(`/evento/${event.slug}`)}`} className="underline font-medium">
+                              Iniciá sesión
+                            </Link>{' '}como socio para obtener precios preferenciales
+                          </span>
+                        ) : user?.member ? (
+                          <span>
+                            <Link to="/perfil" className="underline font-medium">
+                              Ponete al día
+                            </Link>{' '}para acceder a precios de socio
+                          </span>
+                        ) : (
+                          <span>Precio regular aplicado</span>
+                        )}
+                      </div>
+                    )}
+
                     <Button
                       onClick={handlePurchase}
                       disabled={isLoading}
