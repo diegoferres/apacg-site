@@ -7,7 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CourseEnrollmentModal from '@/components/CourseEnrollmentModal';
-import { Clock, Users, MapPin, Calendar, GraduationCap, ArrowLeft } from 'lucide-react';
+import { Clock, Users, MapPin, Calendar, GraduationCap, ArrowLeft, Phone } from 'lucide-react';
 import { formatPrice, toNumber, renderSafeHtml, formatDate } from '@/lib/utils';
 import api from '@/services/api';
 import analytics from '@/services/analytics';
@@ -357,69 +357,85 @@ const CourseDetail = () => {
                             </p>
                           )}
 
-                          <div className="space-y-2">
-                            {(group.enrollment_fee_member > 0 || group.enrollment_fee_non_member > 0) && (
-                              <div>
+                          {course.enrollment_enabled === false ? (
+                            <div className="p-3 bg-muted/50 rounded-lg text-center space-y-1">
+                              <p className="text-sm font-medium">Consultar disponibilidad</p>
+                              {course.commerce?.phone ? (
+                                <a href={`tel:${course.commerce.phone}`} className="inline-flex items-center gap-1 text-sm text-primary hover:underline">
+                                  <Phone className="h-3 w-3" />
+                                  {course.commerce.phone}
+                                </a>
+                              ) : (
+                                <p className="text-xs text-muted-foreground">Contactar para más información</p>
+                              )}
+                            </div>
+                          ) : (
+                            <>
+                              <div className="space-y-2">
+                                {(group.enrollment_fee_member > 0 || group.enrollment_fee_non_member > 0) && (
+                                  <div>
+                                    <div className="flex justify-between">
+                                      <span className="text-sm">Matrícula socios:</span>
+                                      <span className="text-sm font-medium">
+                                        {formatPrice(toNumber(group.enrollment_fee_member))}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span className="text-sm">Matrícula no socios:</span>
+                                      <span className="text-sm font-medium">
+                                        {formatPrice(toNumber(group.enrollment_fee_non_member))}
+                                      </span>
+                                    </div>
+                                  </div>
+                                )}
                                 <div className="flex justify-between">
-                                  <span className="text-sm">Matrícula socios:</span>
+                                  <span className="text-sm">Socios:</span>
                                   <span className="text-sm font-medium">
-                                    {formatPrice(toNumber(group.enrollment_fee_member))}
+                                    {appliedCoupon ? (
+                                      <div className="flex flex-col items-end">
+                                        <span className="line-through text-gray-400 text-xs">
+                                          {formatPrice(toNumber(group.monthly_fee_member) !== 0 ? toNumber(group.monthly_fee_member) : toNumber(course.monthly_fee_member))}
+                                        </span>
+                                        <span className="text-green-600 font-bold">
+                                          {formatPrice(Math.round((toNumber(group.monthly_fee_member) !== 0 ? toNumber(group.monthly_fee_member) : toNumber(course.monthly_fee_member)) * (1 - appliedCoupon.pricing.discount_percentage / 100)))}/mes
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      `${formatPrice(toNumber(group.monthly_fee_member) !== 0 ? toNumber(group.monthly_fee_member) : toNumber(course.monthly_fee_member))}/mes`
+                                    )}
                                   </span>
                                 </div>
                                 <div className="flex justify-between">
-                                  <span className="text-sm">Matrícula no socios:</span>
+                                  <span className="text-sm">No socios:</span>
                                   <span className="text-sm font-medium">
-                                    {formatPrice(toNumber(group.enrollment_fee_non_member))}
+                                    {appliedCoupon ? (
+                                      <div className="flex flex-col items-end">
+                                        <span className="line-through text-gray-400 text-xs">
+                                          {formatPrice(toNumber(group.monthly_fee_non_member) !== 0 ? toNumber(group.monthly_fee_non_member) : toNumber(course.monthly_fee_non_member))}
+                                        </span>
+                                        <span className="text-green-600 font-bold">
+                                          {formatPrice(Math.round((toNumber(group.monthly_fee_non_member) !== 0 ? toNumber(group.monthly_fee_non_member) : toNumber(course.monthly_fee_non_member)) * (1 - appliedCoupon.pricing.discount_percentage / 100)))}/mes
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      `${formatPrice(toNumber(group.monthly_fee_non_member) !== 0 ? toNumber(group.monthly_fee_non_member) : toNumber(course.monthly_fee_non_member))}/mes`
+                                    )}
                                   </span>
                                 </div>
+                                <p className="text-xs text-muted-foreground">
+                                  {group.available_spots} cupos disponibles
+                                </p>
                               </div>
-                            )}
-                            <div className="flex justify-between">
-                              <span className="text-sm">Socios:</span>
-                              <span className="text-sm font-medium">
-                                {appliedCoupon ? (
-                                  <div className="flex flex-col items-end">
-                                    <span className="line-through text-gray-400 text-xs">
-                                      {formatPrice(toNumber(group.monthly_fee_member) !== 0 ? toNumber(group.monthly_fee_member) : toNumber(course.monthly_fee_member))}
-                                    </span>
-                                    <span className="text-green-600 font-bold">
-                                      {formatPrice(Math.round((toNumber(group.monthly_fee_member) !== 0 ? toNumber(group.monthly_fee_member) : toNumber(course.monthly_fee_member)) * (1 - appliedCoupon.pricing.discount_percentage / 100)))}/mes
-                                    </span>
-                                  </div>
-                                ) : (
-                                  `${formatPrice(toNumber(group.monthly_fee_member) !== 0 ? toNumber(group.monthly_fee_member) : toNumber(course.monthly_fee_member))}/mes`
-                                )}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-sm">No socios:</span>
-                              <span className="text-sm font-medium">
-                                {appliedCoupon ? (
-                                  <div className="flex flex-col items-end">
-                                    <span className="line-through text-gray-400 text-xs">
-                                      {formatPrice(toNumber(group.monthly_fee_non_member) !== 0 ? toNumber(group.monthly_fee_non_member) : toNumber(course.monthly_fee_non_member))}
-                                    </span>
-                                    <span className="text-green-600 font-bold">
-                                      {formatPrice(Math.round((toNumber(group.monthly_fee_non_member) !== 0 ? toNumber(group.monthly_fee_non_member) : toNumber(course.monthly_fee_non_member)) * (1 - appliedCoupon.pricing.discount_percentage / 100)))}/mes
-                                    </span>
-                                  </div>
-                                ) : (
-                                  `${formatPrice(toNumber(group.monthly_fee_non_member) !== 0 ? toNumber(group.monthly_fee_non_member) : toNumber(course.monthly_fee_non_member))}/mes`
-                                )}
-                              </span>
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                              {group.available_spots} cupos disponibles
-                            </p>
-                          </div>
 
-                          <Button 
-                            onClick={() => handleEnroll(group.id)}
-                            className="w-full"
-                            disabled={group.is_full}
-                          >
-                            {group.is_full ? 'Grupo Completo' : 'Inscribirse'}
-                          </Button>
+                              <Button
+                                onClick={() => handleEnroll(group.id)}
+                                className="w-full"
+                                disabled={group.is_full}
+                              >
+                                {group.is_full ? 'Grupo Completo' : 'Inscribirse'}
+                              </Button>
+                            </>
+                          )}
                         </div>
                         
                         {index < course.groups.length - 1 && (
@@ -442,78 +458,91 @@ const CourseDetail = () => {
                         </Badge>
                       </div>
 
-                      <div className="space-y-2">
-                        {course.requires_enrollment_fee && (
-                          <div>
+                      {course.enrollment_enabled === false ? (
+                        <div className="p-3 bg-muted/50 rounded-lg text-center space-y-1">
+                          <p className="text-sm font-medium">Consultar disponibilidad</p>
+                          {course.commerce?.phone ? (
+                            <a href={`tel:${course.commerce.phone}`} className="inline-flex items-center gap-1 text-sm text-primary hover:underline">
+                              <Phone className="h-3 w-3" />
+                              {course.commerce.phone}
+                            </a>
+                          ) : (
+                            <p className="text-xs text-muted-foreground">Contactar para más información</p>
+                          )}
+                        </div>
+                      ) : (
+                        <>
+                          <div className="space-y-2">
+                            {course.requires_enrollment_fee && (
+                              <div>
+                                <div className="flex justify-between">
+                                  <span className="text-sm">Matrícula socios:</span>
+                                  <span className="text-sm font-medium">
+                                    {formatPrice(toNumber(course.enrollment_fee_member))}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-sm">Matrícula no socios:</span>
+                                  <span className="text-sm font-medium">
+                                    {formatPrice(toNumber(course.enrollment_fee_non_member))}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
                             <div className="flex justify-between">
-                              <span className="text-sm">Matrícula socios:</span>
+                              <span className="text-sm">Socios:</span>
                               <span className="text-sm font-medium">
-                                {formatPrice(toNumber(course.enrollment_fee_member))}
+                                {(() => {
+                                  if (appliedCoupon) {
+                                    return (
+                                      <div>
+                                        <span className="line-through text-gray-400 mr-2">
+                                          Gs. {toNumber(course.monthly_fee_member).toLocaleString()}
+                                        </span>
+                                        <span className="text-green-600 font-bold">
+                                          Gs. {Math.round(toNumber(course.monthly_fee_member) * (1 - appliedCoupon.pricing.discount_percentage / 100)).toLocaleString()}
+                                        </span>
+                                        /mes
+                                      </div>
+                                    );
+                                  } else {
+                                    return `Gs. ${toNumber(course.monthly_fee_member).toLocaleString()}/mes`;
+                                  }
+                                })()}
                               </span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-sm">Matrícula no socios:</span>
+                              <span className="text-sm">No socios:</span>
                               <span className="text-sm font-medium">
-                                {formatPrice(toNumber(course.enrollment_fee_non_member))}
-                              </span>
-                            </div>
-                          </div>
-                        )}
-                        <div className="flex justify-between">
-                          <span className="text-sm">Socios:</span>
-                          <span className="text-sm font-medium">
-                            {(() => {
-                              if (appliedCoupon) {
-                                return (
+                                {appliedCoupon ? (
                                   <div>
                                     <span className="line-through text-gray-400 mr-2">
-                                      Gs. {toNumber(course.monthly_fee_member).toLocaleString()}
+                                      Gs. {toNumber(course.monthly_fee_non_member).toLocaleString()}
                                     </span>
                                     <span className="text-green-600 font-bold">
-                                      Gs. {Math.round(toNumber(course.monthly_fee_member) * (1 - appliedCoupon.pricing.discount_percentage / 100)).toLocaleString()}
+                                      Gs. {Math.round(toNumber(course.monthly_fee_non_member) * (1 - appliedCoupon.pricing.discount_percentage / 100)).toLocaleString()}
                                     </span>
                                     /mes
                                   </div>
-                                );
-                              } else {
-                                return `Gs. ${toNumber(course.monthly_fee_member).toLocaleString()}/mes`;
-                              }
-                            })()}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm">No socios:</span>
-                          <span className="text-sm font-medium">
-                            {appliedCoupon ? (
-                              <div>
-                                <span className="line-through text-gray-400 mr-2">
-                                  Gs. {toNumber(course.monthly_fee_non_member).toLocaleString()}
-                                </span>
-                                <span className="text-green-600 font-bold">
-                                  Gs. {Math.round(toNumber(course.monthly_fee_non_member) * (1 - appliedCoupon.pricing.discount_percentage / 100)).toLocaleString()}
-                                </span>
-                                /mes
-                              </div>
-                            ) : (
-                              `Gs. ${toNumber(course.monthly_fee_non_member).toLocaleString()}/mes`
-                            )}
-                          </span>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          {course.available_spots} cupos disponibles
-                        </p>
-                      </div>
+                                ) : (
+                                  `Gs. ${toNumber(course.monthly_fee_non_member).toLocaleString()}/mes`
+                                )}
+                              </span>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              {course.available_spots} cupos disponibles
+                            </p>
+                          </div>
 
-
-
-
-                      <Button 
-                        onClick={() => handleEnroll(null)}
-                        className="w-full"
-                        disabled={!course.is_available}
-                      >
-                        {!course.is_available ? 'No Disponible' : 'Inscribirse'}
-                      </Button>
+                          <Button
+                            onClick={() => handleEnroll(null)}
+                            className="w-full"
+                            disabled={!course.is_available}
+                          >
+                            {!course.is_available ? 'No Disponible' : 'Inscribirse'}
+                          </Button>
+                        </>
+                      )}
                     </div>
                   )}
                 </CardContent>
@@ -526,16 +555,18 @@ const CourseDetail = () => {
       </div>
 
       {/* Mobile sticky CTA */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-background/95 backdrop-blur-md border-t border-border/40 p-4">
-        <Button
-          onClick={() => handleEnroll(null)}
-          className="w-full"
-          size="lg"
-          disabled={!course.is_available}
-        >
-          {!course.is_available ? 'No Disponible' : 'Inscribirse al Curso'}
-        </Button>
-      </div>
+      {course.enrollment_enabled !== false && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-background/95 backdrop-blur-md border-t border-border/40 p-4">
+          <Button
+            onClick={() => handleEnroll(null)}
+            className="w-full"
+            size="lg"
+            disabled={!course.is_available}
+          >
+            {!course.is_available ? 'No Disponible' : 'Inscribirse al Curso'}
+          </Button>
+        </div>
+      )}
 
       <Footer />
 

@@ -27,6 +27,7 @@ export interface Course {
   cover_image_url?: string;
   available_spots?: number;
   status?: string;
+  enrollment_enabled?: boolean;
 }
 
 interface CourseCardProps {
@@ -127,7 +128,7 @@ const CourseCard = ({ course, delay = 0, showPricing = true, position = 0, listN
             </div>
           </div>
           
-          {showPricing ? (
+          {showPricing && course.enrollment_enabled !== false ? (
             <div className="flex items-center justify-between pt-4 mt-auto">
               <div>
                 <span className="text-xs text-muted-foreground">Desde</span>
@@ -135,14 +136,19 @@ const CourseCard = ({ course, delay = 0, showPricing = true, position = 0, listN
                   {formatPrice(toNumber(course.monthly_fee_member))}
                 </p>
               </div>
-              
+
               <Button asChild className="bg-primary hover:bg-primary/90">
                 <span>Ver Detalles</span>
               </Button>
             </div>
           ) : (
-            <div className="flex justify-end pt-4 mt-auto">
-              <Button asChild className="bg-primary hover:bg-primary/90">
+            <div className="flex items-center justify-between pt-4 mt-auto">
+              {course.enrollment_enabled === false && (
+                <Badge variant="secondary" className="text-xs">
+                  Solo información
+                </Badge>
+              )}
+              <Button asChild className="bg-primary hover:bg-primary/90 ml-auto">
                 <span>Ver Detalles</span>
               </Button>
             </div>

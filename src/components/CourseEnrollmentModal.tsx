@@ -29,7 +29,8 @@ interface Course {
   id: number;
   title: string;
   slug?: string;
-  commerce?: { name: string };
+  commerce?: { name: string; phone?: string };
+  enrollment_enabled?: boolean;
   formatted_duration: string;
   start_date_format: string;
   end_date_format: string;
@@ -331,6 +332,25 @@ const CourseEnrollmentModal = ({ isOpen, onClose, course, group, appliedCoupon }
     
     onClose();
   };
+
+  // Safety check: don't allow enrollment if disabled
+  if (course.enrollment_enabled === false) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Inscripción no disponible</DialogTitle>
+            <DialogDescription>
+              La inscripción a este curso no está habilitada actualmente. Consultar disponibilidad.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={onClose} className="w-full">Cerrar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
