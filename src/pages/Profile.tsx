@@ -1653,8 +1653,8 @@ const Profile = () => {
                 <div key={student.id} className="p-3 border rounded-lg">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="font-medium">{student.first_name} {student.last_name}</h4>
-                      <p className="text-sm text-muted-foreground">{student.school_year}</p>
+                      <h4 className="font-medium">{student.first_name || student.fist_name} {student.last_name}</h4>
+                      <p className="text-sm text-muted-foreground">{student.grade || student.school_year || ''}{student.section ? ` - ${student.section}` : ''}</p>
                     </div>
                     <Button
                       size="sm"
