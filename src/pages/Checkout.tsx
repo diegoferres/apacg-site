@@ -116,6 +116,11 @@ const Checkout = () => {
   const isLoggedIn = useStore((state) => state.isLoggedIn);
   const [isMember, setIsMember] = useState(false);
   const [checkingMembership, setCheckingMembership] = useState(false);
+  const [partnerPricing, setPartnerPricing] = useState<{
+    applies_member_price: boolean;
+    ticket_types: Array<{ id: number; effective_price: number }>;
+  } | null>(null);
+  const [isCheckingPricing, setIsCheckingPricing] = useState(false);
 
   // Precargar datos del usuario autenticado o datos guardados del formulario
   useEffect(() => {
@@ -228,6 +233,62 @@ const Checkout = () => {
     }
   }, [searchParams]);
 
+  // Recálculo de precio cuando el comprador completa CI/email:
+  // si matchea un partner_member (convenio con otro colegio) o es socio APACG,
+  // aplicamos precio socio en vivo. El backend siempre revalida al crear la orden.
+  useEffect(() => {
+    if (eventData?.type !== 'event' || !eventData.eventId) return;
+
+    const ci = formData.cedula?.trim();
+    const email = formData.email?.trim();
+    if ((!ci || ci.length < 5) && (!email || !/\S+@\S+\.\S+/.test(email))) {
+      setPartnerPricing(null);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(async () => {
+      setIsCheckingPricing(true);
+      try {
+        const { data } = await api.post(
+          `/api/client/events/${eventData.eventId}/check-pricing`,
+          { ci, email },
+          { signal: controller.signal }
+        );
+        if (data?.success) {
+          setPartnerPricing(data.data);
+        }
+      } catch (err: unknown) {
+        if ((err as { name?: string })?.name !== 'CanceledError') {
+          setPartnerPricing(null);
+        }
+      } finally {
+        setIsCheckingPricing(false);
+      }
+    }, 500);
+
+    return () => {
+      clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [formData.cedula, formData.email, eventData?.type, eventData?.eventId]);
+
+  const appliesPartnerMemberPrice = !!partnerPricing?.applies_member_price;
+
+  const getEffectivePriceFor = (ticketId: number, fallback: number): number => {
+    const match = partnerPricing?.ticket_types.find((t) => t.id === ticketId);
+    return match ? match.effective_price : fallback;
+  };
+
+  const recomputedTickets = eventData?.tickets?.map((t) => {
+    const price = getEffectivePriceFor(t.id, t.price);
+    return { ...t, price, total: price * t.quantity };
+  });
+
+  const recomputedTotal = recomputedTickets
+    ? recomputedTickets.reduce((sum, t) => sum + t.total, 0)
+    : eventData?.totalAmount ?? 0;
+
   const handleInputChange = (field: keyof CheckoutData) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const newFormData = {
       ...formData,
@@ -278,9 +339,12 @@ const Checkout = () => {
     e.preventDefault();
     
     if (validateForm() && eventData) {
-      // Preparar datos para la página de pago
+      // Preparar datos para la página de pago (usa precios recalculados si hubo match partner)
       const paymentData = {
         ...eventData,
+        tickets: recomputedTickets ?? eventData.tickets,
+        totalAmount: recomputedTotal,
+        is_member: appliesPartnerMemberPrice || eventData.is_member,
         customerData: formData
       };
       
@@ -622,23 +686,34 @@ const Checkout = () => {
                               </div>
                             </div>
                           ) : (
-                            <MembershipBadge isMember={isMember} />
+                            <MembershipBadge isMember={isMember || appliesPartnerMemberPrice} />
+                          )}
+                          {appliesPartnerMemberPrice && !isMember && (
+                            <div className="mt-2 p-3 rounded-md text-sm bg-green-50 border border-green-200 text-green-800">
+                              ¡Convenio detectado! Se aplica precio socio a tus entradas.
+                            </div>
+                          )}
+                          {isCheckingPricing && (
+                            <div className="mt-2 text-xs text-muted-foreground flex items-center gap-2">
+                              <div className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                              Verificando precios...
+                            </div>
                           )}
                         </div>
                       )}
 
                       <h4 className="font-medium">Detalle de entradas:</h4>
-                      {eventData.tickets.map((ticket, index) => (
+                      {(recomputedTickets ?? eventData.tickets).map((ticket, index) => (
                         <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100">
                           <div className="flex-1">
                             <p className="font-medium text-sm">{ticket.name}</p>
                             <p className="text-xs text-muted-foreground">
                               {ticket.quantity} × {formatPrice(ticket.price)}
-                              {eventData.is_member !== undefined && (
-                                <span className={isMember ? 'text-green-600 ml-1' : 'text-orange-600 ml-1'}>
-                                  ({isMember ? 'Socio' : 'No Socio'})
-                                </span>
-                              )}
+                              {(isMember || appliesPartnerMemberPrice) ? (
+                                <span className="text-green-600 ml-1">(Socio)</span>
+                              ) : eventData.is_member !== undefined ? (
+                                <span className="text-orange-600 ml-1">(No Socio)</span>
+                              ) : null}
                             </p>
                           </div>
                           <span className="font-semibold">
@@ -659,7 +734,7 @@ const Checkout = () => {
                     <div className="flex justify-between items-center">
                       <span className="font-semibold">Total:</span>
                       <span className="text-xl font-bold text-primary">
-                        {formatPrice(eventData.totalAmount)}
+                        {formatPrice(eventData.type === 'event' ? recomputedTotal : eventData.totalAmount)}
                       </span>
                     </div>
                   </div>
