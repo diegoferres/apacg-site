@@ -40,7 +40,7 @@
     "@radix-ui/react-toggle-group": "^1.1.0",
     "@radix-ui/react-tooltip": "^1.1.4",
     "@tanstack/react-query": "^5.56.2",
-    "axios": "^1.13.6",
+    "axios": "^1.15.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
@@ -68,7 +68,18 @@
   },
   "pnpm": {
     "overrides": {
-      "flatted": ">=3.4.0"
+      "flatted": ">=3.4.2",
+      "minimatch": ">=9.0.7",
+      "glob": ">=10.5.0",
+      "lodash": ">=4.17.24",
+      "picomatch": ">=2.3.2",
+      "brace-expansion": ">=2.0.3",
+      "js-yaml": ">=4.1.1",
+      "yaml": ">=2.8.3",
+      "follow-redirects": ">=1.16.0",
+      "ajv": ">=6.14.0",
+      "@eslint/plugin-kit": ">=0.3.4",
+      "axios": ">=1.15.0"
     }
   },
   "devDependencies": {
