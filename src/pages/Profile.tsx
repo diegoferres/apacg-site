@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { QrCode, LogOut, User, CreditCard, Gift, Edit, Mail, Phone, Calendar, CheckCircle, XCircle, Receipt, ExternalLink, Ticket, Users, Copy, MapPin, Store, Tag, GraduationCap, Clock } from "lucide-react";
+import { QrCode, LogOut, User, CreditCard, Gift, Edit, Mail, Phone, Calendar, CheckCircle, XCircle, Receipt, ExternalLink, Ticket, Users, Copy, MapPin, Store, Tag, GraduationCap, Clock, Download } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { useToast } from "@/hooks/use-toast";
@@ -186,6 +186,24 @@ const Profile = () => {
       }
     } catch (error) {
       console.error('Error loading orders:', error);
+    }
+  };
+
+  const downloadTicketsPdf = async (orderId: number, orderNumber: string) => {
+    try {
+      const response = await api.get(`api/client/profile/orders/${orderId}/tickets-pdf`, {
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `entradas-apacg-${orderNumber}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error descargando entradas:', error);
     }
   };
 
@@ -1532,8 +1550,20 @@ const Profile = () => {
                               </span>
                             </div>
                           </div>
-                          <div className="text-xs text-muted-foreground">
-                            Fecha de compra: {order.created_at_formatted} • Orden #{order.order_number}
+                          <div className="flex items-center justify-between flex-wrap gap-2">
+                            <div className="text-xs text-muted-foreground">
+                              Fecha de compra: {order.created_at_formatted} • Orden #{order.order_number}
+                            </div>
+                            {order.items.some((item) => item.type === 'Event') && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => downloadTicketsPdf(order.id, order.order_number)}
+                              >
+                                <Download className="h-3 w-3 mr-1" />
+                                Descargar entradas
+                              </Button>
+                            )}
                           </div>
                         </div>
                       ))}
