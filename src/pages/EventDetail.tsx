@@ -296,16 +296,23 @@ const EventDetail = () => {
             {/* Event Image */}
             <div className="space-y-4">
               {event.cover ? (
-                <div className="relative aspect-video overflow-hidden rounded-lg">
+                <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-muted">
+                  {/* Fondo blureado: llena el espacio para cualquier proporción sin recortar la imagen principal */}
+                  <img
+                    src={event.cover?.storage_path_full}
+                    alt=""
+                    aria-hidden="true"
+                    className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-70"
+                  />
+                  {/* Imagen principal sin recortes */}
                   <img
                     src={event.cover?.storage_path_full}
                     alt={event.title}
-                    className="w-full h-full object-cover object-center"
+                    className="relative w-full h-full object-contain"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                 </div>
               ) : (
-                <div className="relative aspect-video bg-gradient-to-br from-primary/10 to-primary/20 rounded-lg flex items-center justify-center">
+                <div className="relative aspect-[4/3] bg-gradient-to-br from-primary/10 to-primary/20 rounded-lg flex items-center justify-center">
                   <div className="text-center">
                     <Ticket className="h-16 w-16 text-primary/60 mx-auto mb-4" />
                     <p className="text-primary/80 font-medium">Evento Especial</p>
