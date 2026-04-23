@@ -67,22 +67,14 @@ const EventCard = ({ event, delay = 0, position = 0, listName = 'events_list' }:
         style={delay > 0 ? { animationDelay: `${delay}ms` } : undefined}
       >
         {event.cover ? (
-          <div className="relative aspect-[16/9] overflow-hidden bg-muted">
-            {/* Fondo blureado: evita recorte agresivo con imágenes de proporción distinta a 16/9 */}
-            <img
-              src={event.cover?.storage_path_full}
-              alt=""
-              aria-hidden="true"
-              className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-60"
-              loading="lazy"
-            />
+          <div className="relative aspect-[16/9] overflow-hidden">
             <img
               src={event.cover?.storage_path_full}
               alt={event.title}
-              className="relative w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+              className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
               loading="lazy"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
             <Badge className="absolute top-4 right-4 bg-white/90 text-primary hover:bg-white">
               <Calendar className="h-3 w-3 mr-1" />
               {formatDate(event.date, { format: 'short' })}

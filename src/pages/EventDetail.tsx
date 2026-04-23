@@ -296,21 +296,11 @@ const EventDetail = () => {
             {/* Event Image */}
             <div className="space-y-4">
               {event.cover ? (
-                <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-muted">
-                  {/* Fondo blureado: llena el espacio para cualquier proporción sin recortar la imagen principal */}
-                  <img
-                    src={event.cover?.storage_path_full}
-                    alt=""
-                    aria-hidden="true"
-                    className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-70"
-                  />
-                  {/* Imagen principal sin recortes */}
-                  <img
-                    src={event.cover?.storage_path_full}
-                    alt={event.title}
-                    className="relative w-full h-full object-contain"
-                  />
-                </div>
+                <img
+                  src={event.cover?.storage_path_full}
+                  alt={event.title}
+                  className="w-full rounded-lg"
+                />
               ) : (
                 <div className="relative aspect-[4/3] bg-gradient-to-br from-primary/10 to-primary/20 rounded-lg flex items-center justify-center">
                   <div className="text-center">
