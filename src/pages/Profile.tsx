@@ -1512,6 +1512,23 @@ const Profile = () => {
                                       </div>
                                     )}
                                     
+                                    {item.type === 'Product' && (
+                                      <div className="space-y-1 text-sm text-muted-foreground">
+                                        {item.product_details?.variant_name && (
+                                          <div className="flex items-center gap-1">
+                                            <Tag className="h-3 w-3" />
+                                            <span>{item.product_details.variant_name}</span>
+                                          </div>
+                                        )}
+                                        <div className="flex items-center gap-1">
+                                          <span>{item.quantity} unidad(es)</span>
+                                          {item.product_details?.is_pre_order && (
+                                            <span className="ml-2 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-800">Pre-venta</span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    )}
+
                                     {item.type === 'Raffle' && (
                                       <div className="space-y-1 text-sm text-muted-foreground">
                                         {item.raffle_details?.end_date && (
@@ -1548,6 +1565,24 @@ const Profile = () => {
                               <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                 Completado
                               </span>
+                              {order.fulfillment_status && (
+                                <div className="mt-1">
+                                  <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                                    order.fulfillment_status === 'preparing' ? 'bg-amber-100 text-amber-800' :
+                                    order.fulfillment_status === 'ready_for_pickup' ? 'bg-blue-100 text-blue-800' :
+                                    'bg-purple-100 text-purple-800'
+                                  }`}>
+                                    {order.fulfillment_status === 'preparing' ? 'Preparando' :
+                                     order.fulfillment_status === 'ready_for_pickup' ? '¡Listo para retirar!' :
+                                     'Entregado'}
+                                  </span>
+                                  {order.fulfillment_status === 'ready_for_pickup' && order.ready_for_pickup_at && (
+                                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                                      Listo desde {order.ready_for_pickup_at}
+                                    </p>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </div>
                           <div className="flex items-center justify-between flex-wrap gap-2">

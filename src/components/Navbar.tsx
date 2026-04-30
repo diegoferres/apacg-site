@@ -7,6 +7,7 @@ import { UserCircle, Menu, X, LogOut } from 'lucide-react';
 import { useStore } from '@/stores/store';
 import api from '@/services/api';
 import { toast } from '@/hooks/use-toast';
+import CartDrawer from '@/components/CartDrawer';
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -99,6 +100,10 @@ const Navbar = () => {
             <Link to="/novedades" className={navLinkClass('/novedades')}>
               Novedades
             </Link>
+            <Link to="/productos" className={navLinkClass('/productos')}>
+              Tienda
+            </Link>
+            <CartDrawer />
             {user &&user.id ? (
               <>
                 <Button

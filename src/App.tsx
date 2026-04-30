@@ -23,6 +23,10 @@ import News from "./pages/News";
 import NewsDetail from "./pages/NewsDetail";
 import Courses from "./pages/Courses";
 import CourseDetail from "./pages/CourseDetail";
+import Products from "./pages/Products";
+import ProductDetail from "./pages/ProductDetail";
+import Cart from "./pages/Cart";
+import ProductCheckout from "./pages/ProductCheckout";
 
 import { ChildrenManager } from "./components/ChildrenManager";
 import ProtectedWithStudents from "./components/ProtectedWithStudents";
@@ -304,6 +308,10 @@ const App = () => {
                 <RaffleDetail />
               </ProtectedWithStudentsRequired>
             } />
+            <Route path="/productos" element={<Products />} />
+            <Route path="/producto/:slug" element={<ProductDetail />} />
+            <Route path="/carrito" element={<Cart />} />
+            <Route path="/productos/checkout" element={<ProductCheckout />} />
             <Route path="/cursos" element={
               <ProtectedWithStudentsRequired>
                 <Courses />

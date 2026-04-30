@@ -46,11 +46,13 @@ interface CourseData {
 }
 
 interface PaymentData {
-  type: 'event' | 'raffle' | 'course' | 'course_monthly_payment';
+  type: 'event' | 'raffle' | 'course' | 'course_monthly_payment' | 'product';
   eventId?: number;
   eventSlug?: string;
   eventTitle?: string;
   tickets?: TicketDetail[];
+  // Productos: cart con N items
+  cart?: Array<{ product_id: number; variant_id?: number; quantity: number }>;
   courseGroupId?: number | null;
   courseGroupData?: CourseGroupData | null;
   studentData?: StudentData;
@@ -205,7 +207,8 @@ const PaymentPage = () => {
   };
 
   const createPaymentOrder = async (data: PaymentData) => {
-    if (!data.eventId) {
+    // Productos: no requieren eventId (el backend recibe el array `cart`)
+    if (data.type !== 'product' && !data.eventId) {
       setError('ID del item no encontrado. No se puede procesar el pago.');
       return;
     }
@@ -217,23 +220,28 @@ const PaymentPage = () => {
       // Preparar datos según el tipo (return_url se maneja automáticamente en el backend)
       const requestData: any = {
         type: data.type,
-        item_id: data.eventId,
         customer_data: data.customerData,
         referral_code: data.referralCode // Incluir código de referido si existe
       };
 
-      if (data.type === 'event') {
+      if (data.type === 'product') {
+        // Productos: enviar el array cart
+        requestData.cart = data.cart;
+      } else if (data.type === 'event') {
         // Para eventos, enviar array de tickets específicos
+        requestData.item_id = data.eventId;
         requestData.tickets = data.tickets?.map(ticket => ({
           id: ticket.id,
           quantity: ticket.quantity
         }));
       } else if (data.type === 'course') {
         // Para cursos, enviar datos del estudiante y grupo
+        requestData.item_id = data.eventId;
         requestData.student_data = data.studentData;
         requestData.course_group_id = data.courseGroupId;
       } else {
         // Para rifas, usar quantity simple
+        requestData.item_id = data.eventId;
         requestData.quantity = data.totalTickets;
       }
 
