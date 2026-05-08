@@ -46,6 +46,7 @@ interface Event {
   price_from: number;
   is_informational: boolean;
   allow_extras_only: boolean;
+  extras_description?: string | null;
   ticket_types: TicketType[];
   extras?: EventExtra[];
   cover: {
@@ -522,9 +523,9 @@ const EventDetail = () => {
               {/* Ticket Selection - Simplified */}
               <div className="mt-8">
                 <h3 className="text-xl font-bold mb-4">Entradas</h3>
-                {event.allow_extras_only && !event.is_informational && (
+                {event.allow_extras_only && !event.is_informational && (event.extras?.length ?? 0) > 0 && (
                   <p className="text-sm text-muted-foreground mb-3">
-                    Las entradas son opcionales: podés llevar solo extras (comida, bebida, etc) si lo preferís.
+                    Las entradas son opcionales: podés llevar solo extras si lo preferís.
                   </p>
                 )}
                 <div className="space-y-3">
@@ -533,8 +534,13 @@ const EventDetail = () => {
                     const showsMemberPrice = appliesPriceFromCi || (isMember && ticketType.member_price !== null);
                     return (
                     <div key={ticketType.id} className="flex items-center justify-between p-4 border rounded-lg hover:border-primary/20 transition-colors">
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0 pr-3">
                         <h4 className="font-semibold">{ticketType.name}</h4>
+                        {ticketType.description && (
+                          <p className="text-xs text-muted-foreground leading-snug mt-0.5 mb-1.5 whitespace-pre-line">
+                            {ticketType.description}
+                          </p>
+                        )}
                         {ticketType.has_member_price ? (
                           showsMemberPrice ? (
                             <div>
@@ -601,9 +607,11 @@ const EventDetail = () => {
                 {event.extras && event.extras.length > 0 && !event.is_informational && (
                   <div className="mt-8">
                     <h3 className="text-xl font-bold mb-1">Extras del evento</h3>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Sumá comida, bebida y más. Recibís un voucher para canjear el día del evento.
-                    </p>
+                    {event.extras_description && (
+                      <p className="text-sm text-muted-foreground mb-3 whitespace-pre-line">
+                        {event.extras_description}
+                      </p>
+                    )}
                     <div className="rounded-lg border border-amber-200 bg-amber-50/30 divide-y divide-amber-200/60">
                       {event.extras.map((extra) => (
                         <div key={extra.id} className="flex items-center gap-3 px-3 py-2.5 hover:bg-amber-50/60 transition-colors">
