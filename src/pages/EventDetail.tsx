@@ -45,6 +45,7 @@ interface Event {
   slug: string;
   price_from: number;
   is_informational: boolean;
+  allow_extras_only: boolean;
   ticket_types: TicketType[];
   extras?: EventExtra[];
   cover: {
@@ -299,6 +300,17 @@ const EventDetail = () => {
     return Object.values(selectedTickets).reduce((total, quantity) => total + quantity, 0);
   };
 
+  const getTotalExtras = () => {
+    return Object.values(selectedExtras).reduce((total, quantity) => total + quantity, 0);
+  };
+
+  // Hay items en el carrito si hay entradas, o si el evento permite solo-extras y hay extras.
+  const hasCartItems = () => {
+    if (getTotalTickets() > 0) return true;
+    if (event?.allow_extras_only && getTotalExtras() > 0) return true;
+    return false;
+  };
+
   const updateExtraQty = (extraId: number, delta: number) => {
     setSelectedExtras(prev => {
       const current = prev[extraId] || 0;
@@ -311,10 +323,13 @@ const EventDetail = () => {
   };
 
   const handlePurchase = async () => {
-    if (getTotalTickets() === 0) {
+    if (!hasCartItems()) {
+      const allowExtrasOnly = event?.allow_extras_only;
       toast({
-        title: "Selecciona al menos una entrada",
-        description: "Debes seleccionar al menos una entrada para continuar.",
+        title: allowExtrasOnly ? "Selecciona al menos una entrada o un extra" : "Selecciona al menos una entrada",
+        description: allowExtrasOnly
+          ? "Agregá una entrada o un extra del evento para continuar."
+          : "Debes seleccionar al menos una entrada para continuar.",
         variant: "destructive"
       });
       return;
@@ -507,6 +522,11 @@ const EventDetail = () => {
               {/* Ticket Selection - Simplified */}
               <div className="mt-8">
                 <h3 className="text-xl font-bold mb-4">Entradas</h3>
+                {event.allow_extras_only && !event.is_informational && (
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Las entradas son opcionales: podés llevar solo extras (comida, bebida, etc) si lo preferís.
+                  </p>
+                )}
                 <div className="space-y-3">
                   {event.ticket_types.map((ticketType) => {
                     const effectivePrice = getTicketPrice(ticketType);
@@ -631,7 +651,7 @@ const EventDetail = () => {
                 )}
 
                 {/* Purchase Button — solo desktop. En mobile se usa el sticky bottom bar. */}
-                {getTotalTickets() > 0 && !event.is_informational && (
+                {hasCartItems() && !event.is_informational && (
                   <div className="hidden md:block mt-6 p-4 bg-primary/5 border border-primary/20 rounded-lg">
                     <div className="flex justify-between items-center mb-3">
                       <span className="font-semibold">Total:</span>
@@ -677,7 +697,7 @@ const EventDetail = () => {
       </section>
 
       {/* Sticky bottom bar — visible solo en mobile cuando hay items en el carrito */}
-      {getTotalTickets() > 0 && !event.is_informational && (
+      {hasCartItems() && !event.is_informational && (
         <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-t border-border shadow-lg p-3 flex items-center gap-3">
           <div className="flex-1 min-w-0">
             <div className="text-[11px] text-muted-foreground uppercase tracking-wide">Total</div>

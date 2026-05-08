@@ -654,14 +654,16 @@ const Checkout = () => {
                       {/* Desglose solo si hay >1 categoría (entradas + algo más) */}
                       {(extrasTotal > 0 || membershipActivationTotal > 0) && (
                         <div className="space-y-1 mb-3 text-sm">
-                          <div className="flex justify-between text-muted-foreground">
-                            <span>Entradas{appliesPartnerMemberPrice ? ' (precio socio)' : ''}:</span>
-                            <span>{formatPrice(ticketsTotal)}</span>
-                          </div>
+                          {ticketsTotal > 0 && (
+                            <div className="flex justify-between text-muted-foreground">
+                              <span>Entradas{appliesPartnerMemberPrice ? ' (precio socio)' : ''}:</span>
+                              <span>{formatPrice(ticketsTotal)}</span>
+                            </div>
+                          )}
                           {extrasTotal > 0 && (
                             <div className="flex justify-between text-muted-foreground">
                               <span>Extras del evento:</span>
-                              <span>+{formatPrice(extrasTotal)}</span>
+                              <span>{ticketsTotal > 0 ? '+' : ''}{formatPrice(extrasTotal)}</span>
                             </div>
                           )}
                           {membershipActivationTotal > 0 && (
@@ -803,7 +805,7 @@ const Checkout = () => {
                         </div>
                       )}
                     </div>
-                  ) : eventData.tickets && eventData.tickets.length > 0 && (
+                  ) : ((eventData.tickets && eventData.tickets.length > 0) || (eventData.type === 'event' && eventData.extras && eventData.extras.length > 0)) && (
                     <div className="space-y-3">
                       {/* Badge de membresía para eventos */}
                       {eventData.type === 'event' && (
@@ -832,27 +834,31 @@ const Checkout = () => {
                         </div>
                       )}
 
-                      <h4 className="font-medium">
-                        {eventData.type === 'raffle' ? 'Detalle de números:' : 'Detalle de entradas:'}
-                      </h4>
-                      {(recomputedTickets ?? eventData.tickets).map((ticket, index) => (
-                        <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100">
-                          <div className="flex-1">
-                            <p className="font-medium text-sm">{ticket.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {ticket.quantity} × {formatPrice(ticket.price)}
-                              {(isMember || appliesPartnerMemberPrice) ? (
-                                <span className="text-green-600 ml-1">(Socio)</span>
-                              ) : eventData.is_member !== undefined ? (
-                                <span className="text-orange-600 ml-1">(No Socio)</span>
-                              ) : null}
-                            </p>
-                          </div>
-                          <span className="font-semibold">
-                            {formatPrice(ticket.total)}
-                          </span>
-                        </div>
-                      ))}
+                      {eventData.tickets && eventData.tickets.length > 0 && (
+                        <>
+                          <h4 className="font-medium">
+                            {eventData.type === 'raffle' ? 'Detalle de números:' : 'Detalle de entradas:'}
+                          </h4>
+                          {(recomputedTickets ?? eventData.tickets).map((ticket, index) => (
+                            <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100">
+                              <div className="flex-1">
+                                <p className="font-medium text-sm">{ticket.name}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {ticket.quantity} × {formatPrice(ticket.price)}
+                                  {(isMember || appliesPartnerMemberPrice) ? (
+                                    <span className="text-green-600 ml-1">(Socio)</span>
+                                  ) : eventData.is_member !== undefined ? (
+                                    <span className="text-orange-600 ml-1">(No Socio)</span>
+                                  ) : null}
+                                </p>
+                              </div>
+                              <span className="font-semibold">
+                                {formatPrice(ticket.total)}
+                              </span>
+                            </div>
+                          ))}
+                        </>
+                      )}
 
                       {/* Extras del evento (comida, bebida, etc) */}
                       {eventData.extras && eventData.extras.length > 0 && (
@@ -895,7 +901,7 @@ const Checkout = () => {
                   )}
                   
                   <div className="pt-4 border-t">
-                    {eventData.type !== 'course' && (
+                    {eventData.type !== 'course' && (eventData.totalTickets ?? 0) > 0 && (
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-sm">
                           {eventData.type === 'raffle' ? 'Cantidad de números:' : 'Cantidad de entradas:'}

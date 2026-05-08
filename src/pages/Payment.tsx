@@ -233,12 +233,15 @@ const PaymentPage = () => {
         // Productos: enviar el array cart
         requestData.cart = data.cart;
       } else if (data.type === 'event') {
-        // Para eventos, enviar array de tickets específicos
+        // Para eventos. Las entradas pueden estar vacías si el evento permite
+        // comprar solo extras (allow_extras_only) — el backend valida ambos casos.
         requestData.item_id = data.eventId;
-        requestData.tickets = data.tickets?.map(ticket => ({
-          id: ticket.id,
-          quantity: ticket.quantity
-        }));
+        if (data.tickets && data.tickets.length > 0) {
+          requestData.tickets = data.tickets.map(ticket => ({
+            id: ticket.id,
+            quantity: ticket.quantity
+          }));
+        }
         // Si el comprador eligió activar membresía en checkout, mandamos el array
         // de anualidades pendientes — el backend valida y crea OrderItems mixtos.
         if (data.pendingAnnualPayments && data.pendingAnnualPayments.length > 0) {
@@ -669,7 +672,7 @@ const PaymentPage = () => {
                         </div>
                       )}
                     </div>
-                  ) : paymentData.tickets && paymentData.tickets.length > 0 && (
+                  ) : paymentData.tickets && paymentData.tickets.length > 0 ? (
                     <div className="space-y-3">
                       <h4 className="font-medium">Detalle de entradas:</h4>
                       {paymentData.tickets.map((ticket, index) => (
@@ -686,10 +689,27 @@ const PaymentPage = () => {
                         </div>
                       ))}
                     </div>
-                  )}
+                  ) : paymentData.type === 'event' && (paymentData.extras?.length ?? 0) > 0 ? (
+                    <div className="space-y-3">
+                      <h4 className="font-medium">Detalle de extras:</h4>
+                      {paymentData.extras!.map((extra, index) => (
+                        <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100">
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">{extra.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {extra.quantity} × {formatPrice(extra.price)}
+                            </p>
+                          </div>
+                          <span className="font-semibold text-amber-700">
+                            {formatPrice(extra.total)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
                   
                   <div className="pt-4 border-t">
-                    {(paymentData.type === 'membership' || paymentData.type === 'course' || paymentData.type === 'event' || paymentData.type === 'raffle') && (
+                    {(paymentData.type === 'membership' || paymentData.type === 'course' || paymentData.type === 'event' || paymentData.type === 'raffle') && (paymentData.totalTickets ?? 0) > 0 && (
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-sm">
                           {paymentData.type === 'membership' ? 'Total de cuotas:' :
