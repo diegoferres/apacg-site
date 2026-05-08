@@ -49,12 +49,27 @@ interface CourseData {
   requires_enrollment_fee: boolean;
 }
 
+interface MemberStatusFromEvent {
+  is_apacg_member: boolean;
+  is_active: boolean;
+  can_activate: boolean;
+  unpaid_students: Array<{ id: number; full_name: string; payment_year: number }>;
+  amount_per_student: number;
+  suggested_total: number;
+  member_id: number | null;
+}
+
 interface CheckoutEventData {
   type: 'event' | 'raffle' | 'course';
   eventId?: number;
   eventSlug?: string;
   eventTitle?: string;
   tickets?: TicketDetail[];
+  extras?: Array<{ id: number; name: string; quantity: number; price: number; total: number }>;
+  // Datos pre-cargados desde EventDetail
+  prefilledCi?: string;
+  memberStatusFromEvent?: MemberStatusFromEvent;
+  pendingAnnualPayments?: Array<{ student_id: number; payment_year: number }>;
   courseGroupId?: number | null;
   courseGroupData?: CourseGroupData | null;
   studentData?: StudentData;
@@ -119,8 +134,41 @@ const Checkout = () => {
   const [partnerPricing, setPartnerPricing] = useState<{
     applies_member_price: boolean;
     ticket_types: Array<{ id: number; effective_price: number }>;
+    member_status?: {
+      is_apacg_member: boolean;
+      is_active: boolean;
+      can_activate: boolean;
+      unpaid_students: Array<{ id: number; full_name: string; payment_year: number }>;
+      amount_per_student: number;
+      suggested_total: number;
+      member_id: number | null;
+    };
   } | null>(null);
   const [isCheckingPricing, setIsCheckingPricing] = useState(false);
+  // Si el comprador es socio inactivo, puede optar por activar pagando las
+  // cuotas pendientes de sus alumnos junto con las entradas (transacción única).
+  // Pre-marcado si el comprador ya eligió activar desde EventDetail (memberStatusFromEvent.can_activate)
+  const [activateMembership, setActivateMembership] = useState(false);
+
+  // Pre-marcar el checkbox al recibir la oferta de activación desde el evento.
+  useEffect(() => {
+    if (eventData?.memberStatusFromEvent?.can_activate
+        && eventData.pendingAnnualPayments && eventData.pendingAnnualPayments.length > 0) {
+      setActivateMembership(true);
+    }
+  }, [eventData?.memberStatusFromEvent?.can_activate, eventData?.pendingAnnualPayments]);
+
+  // Sincronizar CI desde EventDetail incluso si formData ya se inicializó.
+  // El useEffect grande de abajo se ejecuta solo en mount/cuando cambia user, así
+  // que si eventData llega después necesitamos este efecto dedicado.
+  useEffect(() => {
+    if (eventData?.prefilledCi) {
+      setFormData(prev => ({
+        ...prev,
+        cedula: eventData.prefilledCi!,
+      }));
+    }
+  }, [eventData?.prefilledCi]);
 
   // Precargar datos del usuario autenticado o datos guardados del formulario
   useEffect(() => {
@@ -134,12 +182,21 @@ const Checkout = () => {
     if (savedFormData && !user) {
       try {
         const parsedFormData = JSON.parse(savedFormData);
+        // Si vino CI desde EventDetail, sobreescribirlo (más reciente y autoritativo)
+        if (eventData?.prefilledCi) {
+          parsedFormData.cedula = eventData.prefilledCi;
+        }
         setFormData(parsedFormData);
-        return; // Si se cargaron datos guardados, no sobrescribir
+        return;
       } catch (error) {
         console.error('Error parsing saved form data:', error);
         localStorage.removeItem('checkout_form_data');
       }
+    }
+
+    // Si vino CI pre-cargado del evento (sin form guardado), inicializar con eso
+    if (eventData?.prefilledCi && !user) {
+      setFormData(prev => ({ ...prev, cedula: eventData.prefilledCi! }));
     }
     
     // Luego precargar datos del usuario autenticado (miembro o admin)
@@ -273,7 +330,19 @@ const Checkout = () => {
     };
   }, [formData.cedula, formData.email, eventData?.type, eventData?.eventId]);
 
-  const appliesPartnerMemberPrice = !!partnerPricing?.applies_member_price;
+  // Preferimos el member_status que llegó desde EventDetail (más rápido) y lo
+  // sobrescribimos cuando llega la respuesta de /check-pricing aquí (autoridad).
+  const memberStatus = partnerPricing?.member_status || eventData?.memberStatusFromEvent;
+  const canActivateMembership = !!memberStatus?.can_activate;
+  const appliesPartnerMemberPrice = !!partnerPricing?.applies_member_price
+    || (canActivateMembership && activateMembership);
+
+  // Si el CI cambia y deja de tener can_activate, resetear el checkbox.
+  useEffect(() => {
+    if (! canActivateMembership && activateMembership) {
+      setActivateMembership(false);
+    }
+  }, [canActivateMembership, activateMembership]);
 
   const getEffectivePriceFor = (ticketId: number, fallback: number): number => {
     const match = partnerPricing?.ticket_types.find((t) => t.id === ticketId);
@@ -285,9 +354,19 @@ const Checkout = () => {
     return { ...t, price, total: price * t.quantity };
   });
 
-  const recomputedTotal = recomputedTickets
+  const ticketsTotal = recomputedTickets
     ? recomputedTickets.reduce((sum, t) => sum + t.total, 0)
     : eventData?.totalAmount ?? 0;
+
+  // Total de extras del evento (comida, bebida) — vienen ya con price + total desde EventDetail.
+  const extrasTotal = (eventData?.extras ?? []).reduce((sum, e) => sum + Number(e.total || 0), 0);
+
+  // Si el comprador opta por activar membresía, sumamos las anualidades pendientes.
+  const membershipActivationTotal = (canActivateMembership && activateMembership)
+    ? (memberStatus?.suggested_total ?? 0)
+    : 0;
+
+  const recomputedTotal = ticketsTotal + extrasTotal + membershipActivationTotal;
 
   const handleInputChange = (field: keyof CheckoutData) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const newFormData = {
@@ -339,13 +418,23 @@ const Checkout = () => {
     e.preventDefault();
     
     if (validateForm() && eventData) {
+      // Si el comprador optó por activar membresía, mandamos los items de anualidades.
+      const pendingAnnualPayments = (canActivateMembership && activateMembership && memberStatus?.unpaid_students)
+        ? memberStatus.unpaid_students.map((s) => ({
+            student_id: s.id,
+            payment_year: s.payment_year,
+          }))
+        : undefined;
+
       // Preparar datos para la página de pago (usa precios recalculados si hubo match partner)
       const paymentData = {
         ...eventData,
         tickets: recomputedTickets ?? eventData.tickets,
         totalAmount: recomputedTotal,
         is_member: appliesPartnerMemberPrice || eventData.is_member,
-        customerData: formData
+        customerData: formData,
+        pendingAnnualPayments,
+        membershipActivationTotal,
       };
       
       // Track inicio de checkout en GA4
@@ -541,14 +630,55 @@ const Checkout = () => {
                       )}
                     </div>
 
+                    {/* Activación de membresía APACG en el mismo checkout */}
+                    {eventData.type === 'event' && canActivateMembership && memberStatus && (
+                      <label className="flex items-start gap-3 cursor-pointer rounded-lg border border-amber-300 bg-amber-50 p-3 hover:bg-amber-100/60 transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={activateMembership}
+                          onChange={(e) => setActivateMembership(e.target.checked)}
+                          className="mt-0.5 h-5 w-5 cursor-pointer accent-amber-600 shrink-0"
+                        />
+                        <span className="flex-1 text-sm leading-snug">
+                          <span className="font-semibold text-amber-900 block">
+                            Activar mi membresía APACG
+                          </span>
+                          <span className="text-amber-800 text-xs">
+                            Sumá Gs. {memberStatus.suggested_total.toLocaleString('es-PY')} y quedás al día — precio socio aplicado a esta compra.
+                          </span>
+                        </span>
+                      </label>
+                    )}
+
                     <div className="pt-4 border-t">
+                      {/* Desglose solo si hay >1 categoría (entradas + algo más) */}
+                      {(extrasTotal > 0 || membershipActivationTotal > 0) && (
+                        <div className="space-y-1 mb-3 text-sm">
+                          <div className="flex justify-between text-muted-foreground">
+                            <span>Entradas{appliesPartnerMemberPrice ? ' (precio socio)' : ''}:</span>
+                            <span>{formatPrice(ticketsTotal)}</span>
+                          </div>
+                          {extrasTotal > 0 && (
+                            <div className="flex justify-between text-muted-foreground">
+                              <span>Extras del evento:</span>
+                              <span>+{formatPrice(extrasTotal)}</span>
+                            </div>
+                          )}
+                          {membershipActivationTotal > 0 && (
+                            <div className="flex justify-between text-muted-foreground">
+                              <span>Activación membresía:</span>
+                              <span>+{formatPrice(membershipActivationTotal)}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
                       <div className="flex justify-between items-center mb-4">
                         <span className="text-lg font-semibold">Total:</span>
                         <span className="text-2xl font-bold text-primary">
-                          {formatPrice(eventData.totalAmount)}
+                          {formatPrice(recomputedTotal)}
                         </span>
                       </div>
-                      
+
                       <Button type="submit" className="w-full" size="lg">
                         Continuar al Pago
                       </Button>
@@ -702,7 +832,9 @@ const Checkout = () => {
                         </div>
                       )}
 
-                      <h4 className="font-medium">Detalle de entradas:</h4>
+                      <h4 className="font-medium">
+                        {eventData.type === 'raffle' ? 'Detalle de números:' : 'Detalle de entradas:'}
+                      </h4>
                       {(recomputedTickets ?? eventData.tickets).map((ticket, index) => (
                         <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100">
                           <div className="flex-1">
@@ -721,16 +853,72 @@ const Checkout = () => {
                           </span>
                         </div>
                       ))}
+
+                      {/* Extras del evento (comida, bebida, etc) */}
+                      {eventData.extras && eventData.extras.length > 0 && (
+                        <>
+                          <h4 className="font-medium pt-2">Extras del evento:</h4>
+                          {eventData.extras.map((ex) => (
+                            <div key={`ex-${ex.id}`} className="flex justify-between items-center py-2 border-b border-gray-100">
+                              <div className="flex-1">
+                                <p className="font-medium text-sm">{ex.name}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {ex.quantity} × {formatPrice(ex.price)}
+                                </p>
+                              </div>
+                              <span className="font-semibold text-amber-700">
+                                {formatPrice(ex.total)}
+                              </span>
+                            </div>
+                          ))}
+                        </>
+                      )}
+
+                      {/* Activación de membresía: mostrar anualidades incluidas */}
+                      {membershipActivationTotal > 0 && memberStatus && (
+                        <>
+                          <h4 className="font-medium pt-2">Activación de membresía APACG:</h4>
+                          {memberStatus.unpaid_students.map((s) => (
+                            <div key={`mem-${s.id}`} className="flex justify-between items-center py-2 border-b border-gray-100">
+                              <div className="flex-1">
+                                <p className="font-medium text-sm">Anualidad {s.payment_year}</p>
+                                <p className="text-xs text-muted-foreground">{s.full_name}</p>
+                              </div>
+                              <span className="font-semibold text-amber-700">
+                                {formatPrice(memberStatus.amount_per_student)}
+                              </span>
+                            </div>
+                          ))}
+                        </>
+                      )}
                     </div>
                   )}
                   
                   <div className="pt-4 border-t">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm">
-                        {eventData.type === 'course' ? 'Total de inscripciones:' : 'Total de entradas:'}
-                      </span>
-                      <span className="text-sm font-medium">{eventData.totalTickets}</span>
-                    </div>
+                    {eventData.type !== 'course' && (
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm">
+                          {eventData.type === 'raffle' ? 'Cantidad de números:' : 'Cantidad de entradas:'}
+                        </span>
+                        <span className="text-sm font-medium">{eventData.totalTickets}</span>
+                      </div>
+                    )}
+                    {eventData.type === 'course' && (
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm">Total de inscripciones:</span>
+                        <span className="text-sm font-medium">{eventData.totalTickets}</span>
+                      </div>
+                    )}
+                    {eventData.extras && eventData.extras.length > 0 && (
+                      <div className="flex justify-between items-center mb-2 text-sm text-amber-700">
+                        <span>Extras agregados:</span>
+                        <span className="font-medium">
+                          {eventData.extras.reduce((s, e) => s + e.quantity, 0)}
+                          {' '}
+                          ({eventData.extras.length} {eventData.extras.length === 1 ? 'tipo' : 'tipos'})
+                        </span>
+                      </div>
+                    )}
                     <div className="flex justify-between items-center">
                       <span className="font-semibold">Total:</span>
                       <span className="text-xl font-bold text-primary">

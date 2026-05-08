@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { ShareButton } from '@/components/ShareButton';
 import BenefitCard, { Benefit } from '@/components/BenefitCard';
 import api from '@/services/api';
 import { useStore } from '@/stores/store';
@@ -243,9 +244,12 @@ const BenefitDetail = () => {
               <Calendar className="h-3 w-3 mr-1" />
               {formatDate(benefit.start_date, { format: 'medium' })} - {formatDate(benefit.end_date, { format: 'medium' })}
             </Badge>
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground">
-              {benefit.name}
-            </h1>
+            <div className="flex items-start justify-between gap-3">
+              <h1 className="text-3xl md:text-4xl font-bold text-foreground flex-1">
+                {benefit.name}
+              </h1>
+              <ShareButton type="benefit" slug={benefit.slug} title={benefit.name} iconOnly />
+            </div>
           </div>
 
           {/* Descripción + CTA lado a lado en desktop */}

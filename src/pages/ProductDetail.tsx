@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { ShareButton } from '@/components/ShareButton';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -219,7 +220,10 @@ const ProductDetail = () => {
             {product.category && (
               <span className="text-sm text-muted-foreground">{product.category.name}</span>
             )}
-            <h1 className="text-3xl md:text-4xl font-bold">{product.name}</h1>
+            <div className="flex items-start justify-between gap-3">
+              <h1 className="text-3xl md:text-4xl font-bold flex-1">{product.name}</h1>
+              <ShareButton type="product" slug={product.slug} title={product.name} iconOnly />
+            </div>
 
             <div className="flex items-center gap-3">
               <span className="text-3xl font-bold text-primary">{formatPrice(effectivePrice)}</span>

@@ -60,6 +60,11 @@ interface PaymentData {
   totalTickets: number;
   customerData: CustomerData;
   referralCode?: string;
+  // Activación de membresía APACG en el mismo flow (solo type='event')
+  pendingAnnualPayments?: Array<{ student_id: number; payment_year: number }>;
+  membershipActivationTotal?: number;
+  // Extras del evento (comida, bebida, etc) — solo type='event'
+  extras?: Array<{ id: number; name: string; quantity: number; price: number; total: number }>;
   enrollmentFee?: number;
   monthlyFee?: number;
   originalEnrollmentFee?: number;
@@ -234,6 +239,15 @@ const PaymentPage = () => {
           id: ticket.id,
           quantity: ticket.quantity
         }));
+        // Si el comprador eligió activar membresía en checkout, mandamos el array
+        // de anualidades pendientes — el backend valida y crea OrderItems mixtos.
+        if (data.pendingAnnualPayments && data.pendingAnnualPayments.length > 0) {
+          requestData.pending_annual_payments = data.pendingAnnualPayments;
+        }
+        // Extras del evento (1 voucher por línea, todo-o-nada)
+        if (data.extras && data.extras.length > 0) {
+          requestData.extras = data.extras.map(e => ({ id: e.id, quantity: e.quantity }));
+        }
       } else if (data.type === 'course') {
         // Para cursos, enviar datos del estudiante y grupo
         requestData.item_id = data.eventId;

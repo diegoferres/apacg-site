@@ -5,6 +5,7 @@ import api from '@/services/api';
 import { renderSafeHtml } from '@/lib/utils';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { ShareButton } from '@/components/ShareButton';
 import BenefitCard, { Benefit } from '@/components/BenefitCard';
 import CourseCard, { Course } from '@/components/CourseCard';
 import { MapPin, Phone, Mail, Globe, ArrowLeft, Image } from 'lucide-react';
@@ -220,9 +221,12 @@ const CommerceDetail = () => {
             {/* Commerce Details */}
             <div className="space-y-6">
               <div>
-                <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-                  {commerce.name}
-                </h1>
+                <div className="flex items-start justify-between gap-3 mb-4">
+                  <h1 className="text-3xl md:text-4xl font-bold text-foreground flex-1">
+                    {commerce.name}
+                  </h1>
+                  <ShareButton type="commerce" slug={commerce.slug} title={commerce.name} iconOnly />
+                </div>
                 <div 
                   className="text-muted-foreground leading-relaxed prose prose-sm max-w-none"
                   dangerouslySetInnerHTML={renderSafeHtml(commerce.description)}

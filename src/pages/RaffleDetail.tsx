@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { ShareButton } from '@/components/ShareButton';
 import { useToast } from '@/hooks/use-toast';
 import { formatPrice, toNumber, formatDate, renderSafeHtml } from '@/lib/utils';
 import { useStore } from '@/stores/store';
@@ -245,9 +246,12 @@ const RaffleDetail = () => {
                     <Calendar className="h-3 w-3 mr-1" />
                     {formatDate(raffle.end_date, { format: 'long' })}
                   </Badge>
-                  <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
-                    {raffle.title}
-                  </h1>
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <h1 className="text-3xl md:text-4xl font-bold text-foreground flex-1">
+                      {raffle.title}
+                    </h1>
+                    <ShareButton type="raffle" slug={raffle.slug} title={raffle.title} iconOnly />
+                  </div>
                 </div>
 
                 <div className="grid sm:grid-cols-2 gap-4">
