@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import BenefitDetail from "./pages/BenefitDetail";
 import Benefits from "./pages/Benefits";
@@ -26,7 +26,6 @@ import CourseDetail from "./pages/CourseDetail";
 import Products from "./pages/Products";
 import ProductDetail from "./pages/ProductDetail";
 import Cart from "./pages/Cart";
-import ProductCheckout from "./pages/ProductCheckout";
 
 import { ChildrenManager } from "./components/ChildrenManager";
 import ProtectedWithStudents from "./components/ProtectedWithStudents";
@@ -311,7 +310,7 @@ const App = () => {
             <Route path="/productos" element={<Products />} />
             <Route path="/producto/:slug" element={<ProductDetail />} />
             <Route path="/carrito" element={<Cart />} />
-            <Route path="/productos/checkout" element={<ProductCheckout />} />
+            <Route path="/productos/checkout" element={<Navigate to="/carrito" replace />} />
             <Route path="/cursos" element={
               <ProtectedWithStudentsRequired>
                 <Courses />

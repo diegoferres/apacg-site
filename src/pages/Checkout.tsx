@@ -59,12 +59,25 @@ interface MemberStatusFromEvent {
   member_id: number | null;
 }
 
+interface CartItemSummary {
+  product_id: number;
+  variant_id?: number | null;
+  quantity: number;
+  name: string;
+  variant_name?: string | null;
+  unit_price: number;
+  member_price?: number | null;
+  image_url?: string | null;
+}
+
 interface CheckoutEventData {
-  type: 'event' | 'raffle' | 'course';
+  type: 'event' | 'raffle' | 'course' | 'product';
   eventId?: number;
   eventSlug?: string;
   eventTitle?: string;
   tickets?: TicketDetail[];
+  // Solo para type='product': items del carrito (provienen de Cart.tsx)
+  cart?: CartItemSummary[];
   extras?: Array<{ id: number; name: string; quantity: number; price: number; total: number }>;
   // Datos pre-cargados desde EventDetail
   prefilledCi?: string;
@@ -368,6 +381,27 @@ const Checkout = () => {
 
   const recomputedTotal = ticketsTotal + extrasTotal + membershipActivationTotal;
 
+  // ====== type='product' ======
+  // Live pricing del cart: re-checkea con el backend para aplicar precio socio
+  // si el usuario está logueado como socio activo.
+  const [productPricing, setProductPricing] = useState<{ is_member: boolean; total: number } | null>(null);
+  useEffect(() => {
+    if (eventData?.type !== 'product' || !eventData.cart?.length) {
+      setProductPricing(null);
+      return;
+    }
+    const cart = eventData.cart.map((i) => ({
+      product_id: i.product_id,
+      variant_id: i.variant_id ?? undefined,
+      quantity: i.quantity,
+    }));
+    api.post('api/client/products/check-cart-pricing', { cart })
+      .then(({ data }) => setProductPricing({ is_member: !!data.data.is_member, total: Number(data.data.total) }))
+      .catch(() => setProductPricing(null));
+  }, [eventData?.type, eventData?.cart]);
+
+  const productTotal = productPricing?.total ?? eventData?.totalAmount ?? 0;
+
   const handleInputChange = (field: keyof CheckoutData) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const newFormData = {
       ...formData,
@@ -426,16 +460,24 @@ const Checkout = () => {
           }))
         : undefined;
 
-      // Preparar datos para la página de pago (usa precios recalculados si hubo match partner)
-      const paymentData = {
-        ...eventData,
-        tickets: recomputedTickets ?? eventData.tickets,
-        totalAmount: recomputedTotal,
-        is_member: appliesPartnerMemberPrice || eventData.is_member,
-        customerData: formData,
-        pendingAnnualPayments,
-        membershipActivationTotal,
-      };
+      // Preparar datos para la página de pago.
+      // Branch productos: el shape espera type='product' + cart, Payment.tsx lo arma como Bancard payload.
+      const paymentData = eventData.type === 'product'
+        ? {
+            ...eventData,
+            totalAmount: productTotal,
+            customerData: formData,
+            // cart ya viene en eventData.cart; Payment.tsx lo lee desde ahí.
+          }
+        : {
+            ...eventData,
+            tickets: recomputedTickets ?? eventData.tickets,
+            totalAmount: recomputedTotal,
+            is_member: appliesPartnerMemberPrice || eventData.is_member,
+            customerData: formData,
+            pendingAnnualPayments,
+            membershipActivationTotal,
+          };
       
       // Track inicio de checkout en GA4
       const items = [];
@@ -468,6 +510,17 @@ const Checkout = () => {
           quantity: 1,
           currency: 'PYG'
         });
+      } else if (eventData.type === 'product' && eventData.cart) {
+        eventData.cart.forEach((ci) => {
+          items.push({
+            item_id: `product_${ci.product_id}${ci.variant_id ? '_v' + ci.variant_id : ''}`,
+            item_name: ci.name,
+            item_category: 'product',
+            price: ci.unit_price,
+            quantity: ci.quantity,
+            currency: 'PYG'
+          });
+        });
       }
       
       analytics.trackBeginCheckout(eventData.totalAmount, items);
@@ -491,6 +544,8 @@ const Checkout = () => {
       navigate(`/rifa/${eventData.eventSlug}`);
     } else if (eventData?.type === 'course') {
       navigate(`/curso/${eventData.eventSlug}`);
+    } else if (eventData?.type === 'product') {
+      navigate('/carrito');
     } else {
       navigate('/');
     }
@@ -677,7 +732,7 @@ const Checkout = () => {
                       <div className="flex justify-between items-center mb-4">
                         <span className="text-lg font-semibold">Total:</span>
                         <span className="text-2xl font-bold text-primary">
-                          {formatPrice(recomputedTotal)}
+                          {formatPrice(eventData.type === 'product' ? productTotal : recomputedTotal)}
                         </span>
                       </div>
 
@@ -703,6 +758,7 @@ const Checkout = () => {
                       {eventData.type === 'event' && 'Entrada de Evento'}
                       {eventData.type === 'raffle' && 'Números de Rifa'}
                       {eventData.type === 'course' && 'Inscripción al Curso'}
+                      {eventData.type === 'product' && 'Pedido de productos'}
                     </p>
                     {eventData.type === 'course' && (
                       <div className="mt-2 text-sm space-y-2">
@@ -805,6 +861,41 @@ const Checkout = () => {
                         </div>
                       )}
                     </div>
+                  ) : eventData.type === 'product' && eventData.cart ? (
+                    <div className="space-y-3">
+                      {productPricing?.is_member && (
+                        <div className="mb-2">
+                          <MembershipBadge isMember={true} />
+                        </div>
+                      )}
+                      <h4 className="font-medium">Detalle del pedido:</h4>
+                      {eventData.cart.map((ci, idx) => {
+                        const linePrice = productPricing?.is_member && ci.member_price !== null && ci.member_price !== undefined
+                          ? ci.member_price
+                          : ci.unit_price;
+                        return (
+                          <div key={`${ci.product_id}-${ci.variant_id ?? 'none'}-${idx}`} className="flex gap-3 py-2 border-b border-gray-100">
+                            <div className="w-12 h-12 bg-muted rounded flex-shrink-0 overflow-hidden">
+                              {ci.image_url
+                                ? <img src={ci.image_url} className="w-full h-full object-cover" alt="" />
+                                : <div className="w-full h-full bg-gray-100" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm leading-tight truncate">{ci.name}</p>
+                              {ci.variant_name && (
+                                <p className="text-xs text-muted-foreground">{ci.variant_name}</p>
+                              )}
+                              <p className="text-xs text-muted-foreground">
+                                {ci.quantity} × {formatPrice(linePrice)}
+                              </p>
+                            </div>
+                            <span className="font-semibold whitespace-nowrap">
+                              {formatPrice(linePrice * ci.quantity)}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   ) : ((eventData.tickets && eventData.tickets.length > 0) || (eventData.type === 'event' && eventData.extras && eventData.extras.length > 0)) && (
                     <div className="space-y-3">
                       {/* Badge de membresía para eventos */}
@@ -901,11 +992,17 @@ const Checkout = () => {
                   )}
                   
                   <div className="pt-4 border-t">
-                    {eventData.type !== 'course' && (eventData.totalTickets ?? 0) > 0 && (
+                    {eventData.type !== 'course' && eventData.type !== 'product' && (eventData.totalTickets ?? 0) > 0 && (
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-sm">
                           {eventData.type === 'raffle' ? 'Cantidad de números:' : 'Cantidad de entradas:'}
                         </span>
+                        <span className="text-sm font-medium">{eventData.totalTickets}</span>
+                      </div>
+                    )}
+                    {eventData.type === 'product' && (eventData.totalTickets ?? 0) > 0 && (
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm">Cantidad de productos:</span>
                         <span className="text-sm font-medium">{eventData.totalTickets}</span>
                       </div>
                     )}
@@ -928,7 +1025,11 @@ const Checkout = () => {
                     <div className="flex justify-between items-center">
                       <span className="font-semibold">Total:</span>
                       <span className="text-xl font-bold text-primary">
-                        {formatPrice(eventData.type === 'event' ? recomputedTotal : eventData.totalAmount)}
+                        {formatPrice(eventData.type === 'event'
+                          ? recomputedTotal
+                          : eventData.type === 'product'
+                            ? productTotal
+                            : eventData.totalAmount)}
                       </span>
                     </div>
                   </div>

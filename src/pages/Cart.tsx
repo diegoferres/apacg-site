@@ -54,7 +54,29 @@ const Cart = () => {
 
   const handleCheckout = () => {
     if (items.length === 0) return;
-    navigate('/productos/checkout');
+    // Construir el checkout_data unificado que consume Checkout.tsx.
+    // El sidebar muestra el cart de productos y el form/flow usa el mismo
+    // pipeline que eventos/rifas/cursos.
+    const totalQty = items.reduce((acc, i) => acc + i.quantity, 0);
+    const checkoutData = {
+      type: 'product' as const,
+      eventTitle: 'Productos APACG',
+      totalAmount: subtotal,
+      totalTickets: totalQty,
+      is_member: pricing?.is_member ?? isMember,
+      cart: items.map((i) => ({
+        product_id: i.product_id,
+        variant_id: i.variant_id ?? null,
+        quantity: i.quantity,
+        name: i.name,
+        variant_name: i.variant_name ?? null,
+        unit_price: i.unit_price,
+        member_price: i.member_price ?? null,
+        image_url: i.image_url ?? null,
+      })),
+    };
+    localStorage.setItem('checkout_data', JSON.stringify(checkoutData));
+    navigate('/checkout');
   };
 
   return (

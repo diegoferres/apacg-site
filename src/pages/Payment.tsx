@@ -51,8 +51,17 @@ interface PaymentData {
   eventSlug?: string;
   eventTitle?: string;
   tickets?: TicketDetail[];
-  // Productos: cart con N items
-  cart?: Array<{ product_id: number; variant_id?: number; quantity: number }>;
+  // Productos: cart con N items (los campos extra son para el resumen visual)
+  cart?: Array<{
+    product_id: number;
+    variant_id?: number | null;
+    quantity: number;
+    name?: string;
+    variant_name?: string | null;
+    unit_price?: number;
+    member_price?: number | null;
+    image_url?: string | null;
+  }>;
   courseGroupId?: number | null;
   courseGroupData?: CourseGroupData | null;
   studentData?: StudentData;
@@ -706,6 +715,35 @@ const PaymentPage = () => {
                         </div>
                       ))}
                     </div>
+                  ) : paymentData.type === 'product' && paymentData.cart && paymentData.cart.length > 0 ? (
+                    <div className="space-y-3">
+                      <h4 className="font-medium">Detalle del pedido:</h4>
+                      {paymentData.cart.map((ci, index) => {
+                        const unit = Number(ci.unit_price ?? 0);
+                        const lineTotal = unit * ci.quantity;
+                        return (
+                          <div key={`${ci.product_id}-${ci.variant_id ?? 'none'}-${index}`} className="flex gap-3 py-2 border-b border-gray-100">
+                            <div className="w-12 h-12 bg-muted rounded flex-shrink-0 overflow-hidden">
+                              {ci.image_url
+                                ? <img src={ci.image_url} className="w-full h-full object-cover" alt="" />
+                                : <div className="w-full h-full bg-gray-100" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm leading-tight truncate">{ci.name ?? 'Producto'}</p>
+                              {ci.variant_name && (
+                                <p className="text-xs text-muted-foreground">{ci.variant_name}</p>
+                              )}
+                              <p className="text-xs text-muted-foreground">
+                                {ci.quantity} × {formatPrice(unit)}
+                              </p>
+                            </div>
+                            <span className="font-semibold whitespace-nowrap">
+                              {formatPrice(lineTotal)}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   ) : null}
                   
                   <div className="pt-4 border-t">
@@ -719,6 +757,12 @@ const PaymentPage = () => {
                         <span className="text-sm font-medium">
                           {paymentData.type === 'membership' ? (paymentData.paymentItems?.length || paymentData.studentCount) : paymentData.totalTickets}
                         </span>
+                      </div>
+                    )}
+                    {paymentData.type === 'product' && (paymentData.totalTickets ?? 0) > 0 && (
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm">Cantidad de productos:</span>
+                        <span className="text-sm font-medium">{paymentData.totalTickets}</span>
                       </div>
                     )}
                     <div className="flex justify-between items-center">

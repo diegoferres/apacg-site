@@ -70,11 +70,7 @@ const ProductDetail = () => {
     api.get(`api/client/products/${slug}`)
       .then(({ data }) => {
         setProduct(data.data);
-        // Auto-select primer variant disponible
-        if (data.data?.has_variants && data.data?.variants?.length > 0) {
-          const firstAvailable = data.data.variants.find((v: Variant) => v.is_in_stock) ?? data.data.variants[0];
-          setSelectedVariantId(firstAvailable.id);
-        }
+        setSelectedVariantId(null);
       })
       .catch((err) => {
         console.error(err);
@@ -118,6 +114,10 @@ const ProductDetail = () => {
     ? product.variants?.find((v) => v.id === selectedVariantId) ?? null
     : null;
 
+  // Si tiene variantes y no hay una seleccionada todavía, no asumimos precio/stock:
+  // el "precio desde" se muestra como base_price, pero no permitimos comprar.
+  const needsVariantPick = product.has_variants && !selectedVariant;
+
   const effectivePrice = selectedVariant ? selectedVariant.price : product.base_price;
   const effectiveStock = selectedVariant ? selectedVariant.available_stock : (product.stock ?? 0);
   const effectiveInStock = selectedVariant ? selectedVariant.is_in_stock : product.is_in_stock;
@@ -127,7 +127,8 @@ const ProductDetail = () => {
   // - pre_order: stock=0 pero allows_pre_order → comprar pre-venta
   // - out_of_stock: stock=0 y NO admite pre-order → no se puede comprar
   let saleState: 'in_stock' | 'pre_order' | 'out_of_stock';
-  if (effectiveInStock) saleState = 'in_stock';
+  if (needsVariantPick) saleState = product.is_in_stock ? 'in_stock' : (product.allows_pre_order ? 'pre_order' : 'out_of_stock');
+  else if (effectiveInStock) saleState = 'in_stock';
   else if (product.allows_pre_order) saleState = 'pre_order';
   else saleState = 'out_of_stock';
 
@@ -225,8 +226,11 @@ const ProductDetail = () => {
               <ShareButton type="product" slug={product.slug} title={product.name} iconOnly />
             </div>
 
-            <div className="flex items-center gap-3">
-              <span className="text-3xl font-bold text-primary">{formatPrice(effectivePrice)}</span>
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-3xl font-bold text-primary">
+                {needsVariantPick && <span className="text-base font-medium text-muted-foreground mr-1">desde</span>}
+                {formatPrice(effectivePrice)}
+              </span>
               {(selectedVariant?.member_price ?? product.member_price) && (
                 <Badge variant="secondary" className="bg-green-100 text-green-800">
                   Socios: {formatPrice(selectedVariant?.member_price ?? product.member_price ?? 0)}
@@ -285,13 +289,17 @@ const ProductDetail = () => {
                   </div>
                 ))}
 
-                {selectedVariant && (
+                {selectedVariant ? (
                   <div className="text-xs text-muted-foreground">
                     {selectedVariant.is_in_stock
                       ? `Stock disponible: ${selectedVariant.available_stock}`
                       : product.allows_pre_order
                         ? 'Disponible en pre-venta'
                         : 'Sin stock'}
+                  </div>
+                ) : (
+                  <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1.5">
+                    Seleccioná una opción para continuar.
                   </div>
                 )}
               </div>
@@ -303,7 +311,7 @@ const ProductDetail = () => {
                 <div className="flex items-center gap-3">
                   <span className="text-sm">Cantidad</span>
                   <div className="flex items-center border rounded-md">
-                    <button onClick={() => setQuantity((q) => Math.max(1, q - 1))} className="p-2 hover:bg-accent">
+                    <button onClick={() => setQuantity((q) => Math.max(1, q - 1))} className="p-2 hover:bg-accent" disabled={needsVariantPick}>
                       <Minus className="h-4 w-4" />
                     </button>
                     <span className="px-4 font-semibold">{quantity}</span>
@@ -313,15 +321,18 @@ const ProductDetail = () => {
                         setQuantity((q) => Math.min(max, q + 1));
                       }}
                       className="p-2 hover:bg-accent"
+                      disabled={needsVariantPick}
                     >
                       <Plus className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
 
-                <Button onClick={handleAddToCart} size="lg" className="w-full">
+                <Button onClick={handleAddToCart} size="lg" className="w-full" disabled={needsVariantPick}>
                   <ShoppingCart className="h-5 w-5 mr-2" />
-                  {saleState === 'pre_order' ? 'Reservar (pre-venta)' : 'Agregar al carrito'}
+                  {needsVariantPick
+                    ? 'Seleccioná una opción'
+                    : saleState === 'pre_order' ? 'Reservar (pre-venta)' : 'Agregar al carrito'}
                 </Button>
               </div>
             )}
