@@ -483,9 +483,9 @@ const PaymentPage = () => {
             {paymentData?.type === 'membership' ? 'Volver al Perfil' : 'Volver a Datos'}
           </Button>
 
-          <div className="grid lg:grid-cols-3 gap-8">
-            {/* Resumen de compra */}
-            <div className="lg:col-span-1 lg:order-2 order-1">
+          <div className="grid lg:grid-cols-2 gap-8">
+            {/* Resumen de compra — mismo ancho/dimensiones que la pantalla de Checkout (50/50) */}
+            <div className="lg:order-2 order-1">
               <Card className="sticky top-8">
                 <CardHeader>
                   <CardTitle className="text-lg">Resumen de Compra</CardTitle>
@@ -777,7 +777,7 @@ const PaymentPage = () => {
             </div>
 
             {/* Procesador de pago */}
-            <div className="lg:col-span-2 lg:order-1 order-2">
+            <div className="lg:order-1 order-2">
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
