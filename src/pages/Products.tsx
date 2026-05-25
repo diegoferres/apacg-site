@@ -1,31 +1,20 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Search, Package } from 'lucide-react';
+import IndependentSearchBar from '@/components/IndependentSearchBar';
+import ProductCard, { Product } from '@/components/ProductCard';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
+import { useToast } from '@/components/ui/use-toast';
 import api from '@/services/api';
-import { formatPrice } from '@/lib/utils';
-
-interface ProductSummary {
-  id: number;
-  name: string;
-  slug: string;
-  description: string | null;
-  has_variants: boolean;
-  base_price: number;
-  member_price: number | null;
-  effective_stock: number;
-  is_in_stock: boolean;
-  is_pre_order_active: boolean;
-  estimated_delivery_date: string | null;
-  cover?: { storage_path: string; storage_path_full?: string };
-  category?: { id: number; name: string };
-  variants?: Array<{ id: number; price: number; member_price: number | null }>;
-}
+import analytics from '@/services/analytics';
 
 interface Category {
   id: number;
@@ -33,147 +22,190 @@ interface Category {
 }
 
 const Products = () => {
-  const [products, setProducts] = useState<ProductSummary[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState<number | null>(null);
-  const [page, setPage] = useState(1);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
-    api.get('api/client/products/categories').then(({ data }) => {
-      setCategories(data.data || []);
-    }).catch(() => {});
+    api.get('api/client/products/categories')
+      .then(({ data }) => setCategories(data.data || []))
+      .catch(() => {});
   }, []);
 
-  useEffect(() => {
+  const fetchProducts = async (search: string, page: number, catId: number | null) => {
     setIsLoading(true);
-    const params: Record<string, string | number> = { page };
-    if (search.trim()) params.search = search.trim();
-    if (categoryId) params.category_id = categoryId;
+    try {
+      const params: Record<string, string | number> = { page };
+      if (search.trim()) params.search = search.trim();
+      if (catId) params.category_id = catId;
 
-    api.get('api/client/products', { params })
-      .then(({ data }) => {
-        setProducts(data.data?.data || []);
-        setTotalPages(data.data?.last_page || 1);
-      })
-      .catch(console.error)
-      .finally(() => setIsLoading(false));
-  }, [page, search, categoryId]);
+      const response = await api.get('api/client/products', { params });
+      setProducts(response.data.data?.data || []);
+      setTotalPages(response.data.data?.last_page || 1);
 
-  const cheapestPrice = (p: ProductSummary): number => {
-    if (p.has_variants && p.variants && p.variants.length > 0) {
-      return Math.min(...p.variants.map((v) => v.price));
+      if (response.data.data?.data?.length > 0) {
+        analytics.trackEvent('view_item_list', {
+          item_list_name: 'Productos',
+          item_list_id: 'products_page',
+          items: response.data.data.data.slice(0, 5).map((p: Product) => ({
+            item_id: p.id,
+            item_name: p.name,
+            item_category: 'product',
+          })),
+        });
+        if (search?.trim()) analytics.trackSearch(search.trim());
+      }
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudieron cargar los productos. Intente nuevamente más tarde.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
     }
-    return p.base_price;
   };
 
-  const productImageUrl = (p: ProductSummary): string | null => {
-    return p.cover?.storage_path_full || p.cover?.storage_path || null;
+  useEffect(() => {
+    const page = searchParams.get('page') ? parseInt(searchParams.get('page') || '1') : 1;
+    const search = searchParams.get('search') || '';
+    setCurrentPage(page);
+    fetchProducts(search, page, categoryId);
+  }, [searchParams, categoryId]);
+
+  const handlePageChange = (page: number) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('page', page.toString());
+    setSearchParams(newParams);
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen flex flex-col">
       <Navbar />
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">Productos APACG</h1>
-          <p className="text-muted-foreground">Merchandising oficial de la asociación.</p>
-        </div>
+      <section className="pt-28 pb-8 px-4 bg-secondary/30">
+        <div className="container mx-auto max-w-6xl">
+          {/* Breadcrumb */}
+          <nav className="flex items-center space-x-2 text-sm text-muted-foreground mb-6">
+            <Link to="/" className="hover:text-foreground transition-colors">Inicio</Link>
+            <span>/</span>
+            <span className="text-foreground font-medium">Tienda</span>
+          </nav>
 
-        <div className="flex flex-col md:flex-row gap-3 mb-6">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar producto..."
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              className="pl-10"
-            />
-          </div>
-          <select
-            className="form-select rounded-md border border-input bg-background px-3 py-2 text-sm"
-            value={categoryId ?? ''}
-            onChange={(e) => { setCategoryId(e.target.value ? Number(e.target.value) : null); setPage(1); }}
-          >
-            <option value="">Todas las categorías</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-        </div>
+          <h1 className="text-3xl md:text-4xl font-bold mb-6 animate-fade-up">
+            Tienda APACG
+          </h1>
+          <p className="text-lg text-muted-foreground mb-8 max-w-3xl animate-fade-up">
+            Merchandising oficial y productos de A.P.A.C. GOETHE.
+          </p>
 
-        {isLoading ? (
-          <div className="text-center py-20 text-muted-foreground">Cargando...</div>
-        ) : products.length === 0 ? (
-          <div className="text-center py-20">
-            <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">No hay productos disponibles{search && ` para "${search}"`}.</p>
-          </div>
-        ) : (
-          <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {products.map((p) => {
-                const minPrice = cheapestPrice(p);
-                const imgUrl = productImageUrl(p);
-                return (
-                  <Link key={p.id} to={`/producto/${p.slug}`} className="group">
-                    <Card className="overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
-                      <div className="aspect-square overflow-hidden bg-muted">
-                        {imgUrl ? (
-                          <img src={imgUrl} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                            <Package className="h-12 w-12" />
-                          </div>
-                        )}
-                      </div>
-                      <CardContent className="p-4 flex-1 flex flex-col">
-                        {p.category && (
-                          <span className="text-xs text-muted-foreground mb-1">{p.category.name}</span>
-                        )}
-                        <h3 className="font-semibold text-base mb-2 line-clamp-2">{p.name}</h3>
-                        <div className="mt-auto">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              {p.has_variants && p.variants && p.variants.length > 0 && (
-                                <span className="text-xs text-muted-foreground">Desde </span>
-                              )}
-                              <span className="text-lg font-bold text-primary">{formatPrice(minPrice)}</span>
-                            </div>
-                            {!p.is_in_stock && p.is_pre_order_active && (
-                              <Badge variant="outline" className="border-amber-500 text-amber-700">Pre-venta</Badge>
-                            )}
-                            {!p.is_in_stock && !p.is_pre_order_active && (
-                              <Badge variant="outline" className="border-gray-400 text-gray-500">Agotado</Badge>
-                            )}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                );
-              })}
+          <div className="flex flex-col md:flex-row gap-3">
+            <div className="flex-1">
+              <IndependentSearchBar
+                placeholder="Buscar producto..."
+                showCategoryFilter={false}
+                module="products"
+              />
             </div>
-
-            {totalPages > 1 && (
-              <div className="flex justify-center gap-2 mt-8">
-                <Button variant="outline" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-                  Anterior
-                </Button>
-                <span className="self-center text-sm text-muted-foreground">
-                  {page} de {totalPages}
-                </span>
-                <Button variant="outline" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
-                  Siguiente
-                </Button>
-              </div>
+            {categories.length > 0 && (
+              <select
+                className="rounded-md border border-input bg-background px-3 py-2 text-sm md:w-56"
+                value={categoryId ?? ''}
+                onChange={(e) => setCategoryId(e.target.value ? Number(e.target.value) : null)}
+              >
+                <option value="">Todas las categorías</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
             )}
-          </>
-        )}
-      </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-12 px-4">
+        <div className="container mx-auto max-w-6xl">
+          {isLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {[...Array(8)].map((_, index) => (
+                <div key={index} className="h-80 bg-muted/30 animate-pulse rounded-lg"></div>
+              ))}
+            </div>
+          ) : products.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 auto-rows-fr">
+              {products.map((product, index) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  delay={100 + index * 80}
+                  position={index}
+                  listName="products_page"
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">
+                {searchParams.get('search')
+                  ? `No se encontraron productos que contengan "${searchParams.get('search')}".`
+                  : 'No hay productos disponibles.'}
+              </p>
+            </div>
+          )}
+
+          {totalPages > 1 && (
+            <Pagination className="mt-12">
+              <PaginationContent>
+                {currentPage > 1 && (
+                  <PaginationItem>
+                    <PaginationPrevious
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      className="cursor-pointer"
+                    />
+                  </PaginationItem>
+                )}
+                {[...Array(totalPages)].map((_, i) => {
+                  const page = i + 1;
+                  if (
+                    page === 1 ||
+                    page === totalPages ||
+                    (page >= currentPage - 1 && page <= currentPage + 1)
+                  ) {
+                    return (
+                      <PaginationItem key={page}>
+                        <PaginationLink
+                          isActive={page === currentPage}
+                          onClick={() => handlePageChange(page)}
+                          className="cursor-pointer"
+                        >
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  } else if (page === currentPage - 2 || page === currentPage + 2) {
+                    return <PaginationItem key={page}>...</PaginationItem>;
+                  }
+                  return null;
+                })}
+                {currentPage < totalPages && (
+                  <PaginationItem>
+                    <PaginationNext
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      className="cursor-pointer"
+                    />
+                  </PaginationItem>
+                )}
+              </PaginationContent>
+            </Pagination>
+          )}
+        </div>
+      </section>
 
       <Footer />
     </div>

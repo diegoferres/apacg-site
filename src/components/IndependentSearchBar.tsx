@@ -17,7 +17,7 @@ import analytics from '@/services/analytics';
 interface IndependentSearchBarProps {
   placeholder?: string;
   showCategoryFilter?: boolean;
-  module: 'benefits' | 'commerces' | 'events' | 'news' | 'raffles' | 'courses';
+  module: 'benefits' | 'commerces' | 'events' | 'news' | 'raffles' | 'courses' | 'products';
 }
 
 const IndependentSearchBar = ({ 

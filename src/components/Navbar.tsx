@@ -212,6 +212,9 @@ const Navbar = () => {
               <Link to="/novedades" className={`${navLinkClass('/novedades')} py-2`} onClick={() => setIsMenuOpen(false)}>
                 Novedades
               </Link>
+              <Link to="/productos" className={`${navLinkClass('/productos')} py-2`} onClick={() => setIsMenuOpen(false)}>
+                Tienda
+              </Link>
             </nav>
           </div>
         </div>

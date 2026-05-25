@@ -11,7 +11,8 @@ import EventCard from '@/components/EventCard';
 import CourseCard from '@/components/CourseCard';
 import RaffleCard from '@/components/RaffleCard';
 import NewsCard from '@/components/NewsCard';
-import { Store, Tag, ArrowRight, Calendar, Clock, MapPin, Users, Ticket, FileText, GraduationCap } from 'lucide-react';
+import ProductCard, { Product } from '@/components/ProductCard';
+import { Store, Tag, ArrowRight, Calendar, Clock, MapPin, Users, Ticket, FileText, GraduationCap, ShoppingBag } from 'lucide-react';
 import api from '@/services/api';
 import CommerceCard, { Commerce } from '@/components/CommerceCard';
 import { useStore } from '@/stores/store';
@@ -85,6 +86,7 @@ const Index = () => {
   const [events, setEvents] = useState<Events[]>([]);
   const [raffles, setRaffles] = useState<Raffle[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -175,15 +177,35 @@ const Index = () => {
       }
     }
 
+    const fetchProducts = async () => {
+      try {
+        const response = await api.get('api/client/products', {
+          params: { per_page: 4, featured: 1 },
+        });
+        const list = response.data.data?.data || [];
+        // Si no hay destacados, fallback a últimos productos activos
+        if (list.length === 0) {
+          const fallback = await api.get('api/client/products', { params: { per_page: 4 } });
+          setProducts(fallback.data.data?.data || []);
+        } else {
+          setProducts(list);
+        }
+      } catch (error) {
+        console.error('Error fetching products:', error);
+        setProducts([]);
+      }
+    };
+
     const fetchAllData = async () => {
       setIsLoading(true);
       await Promise.all([
         fetchBenefits(),
-        fetchCommerces(), 
+        fetchCommerces(),
         fetchNews(),
         fetchEvents(),
         fetchRaffles(),
-        fetchCourses()
+        fetchCourses(),
+        fetchProducts(),
       ]);
       setIsLoading(false);
     };
@@ -370,8 +392,38 @@ const Index = () => {
         </div>
       </section>
       
+      {/* Tienda Section */}
+      {products.length > 0 && (
+        <section id="tienda-section" className="py-16 px-4">
+          <div className="container mx-auto max-w-6xl">
+            <div className="flex justify-between items-center mb-8">
+              <h2 className="text-2xl md:text-3xl font-bold animate-fade-up">
+                Tienda APACG
+              </h2>
+              <Button variant="ghost" asChild className="gap-1 animate-fade-up">
+                <Link to="/productos">
+                  Ver todos <ArrowRight className="h-4 w-4 ml-1" />
+                </Link>
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6 auto-rows-fr">
+              {products.map((product, index) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  delay={100 + index * 80}
+                  position={index}
+                  listName="home_tienda"
+                />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Featured Stores Section */}
-      <section id="comercios-section" className="py-16 px-4">
+      <section id="comercios-section" className="py-16 px-4 bg-muted/30">
         <div className="container mx-auto max-w-6xl">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-2xl md:text-3xl font-bold animate-fade-up">
