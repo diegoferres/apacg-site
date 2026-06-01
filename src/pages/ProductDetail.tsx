@@ -60,7 +60,8 @@ const ProductDetail = () => {
 
   const [product, setProduct] = useState<ProductDetailData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
+  // Selección por atributo (no por variant_id) — soporta combinaciones multi-atributo
+  const [selections, setSelections] = useState<Record<string, string>>({});
   const [quantity, setQuantity] = useState(1);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
@@ -70,7 +71,7 @@ const ProductDetail = () => {
     api.get(`api/client/products/${slug}`)
       .then(({ data }) => {
         setProduct(data.data);
-        setSelectedVariantId(null);
+        setSelections({});
       })
       .catch((err) => {
         console.error(err);
@@ -109,14 +110,57 @@ const ProductDetail = () => {
   ];
   const activeImage = allImages[activeImageIndex];
 
-  // Variant seleccionada (si aplica)
-  const selectedVariant = product.has_variants
-    ? product.variants?.find((v) => v.id === selectedVariantId) ?? null
-    : null;
+  // Atributos únicos para el selector (ej: size + color). Se computa de las variantes existentes.
+  const variantAttributes: Record<string, string[]> = {};
+  if (product.has_variants && product.variants) {
+    for (const v of product.variants) {
+      if (!v.attributes) continue;
+      for (const [k, val] of Object.entries(v.attributes)) {
+        if (!variantAttributes[k]) variantAttributes[k] = [];
+        if (!variantAttributes[k].includes(val)) variantAttributes[k].push(val);
+      }
+    }
+  }
+  const variantAttributeKeys = Object.keys(variantAttributes);
+
+  // Variant resuelto: el que matchea TODAS las selecciones del usuario.
+  // Si falta seleccionar algún atributo, queda en null (no se asume precio/stock).
+  const selectedVariant: Variant | null = (() => {
+    if (!product.has_variants || !product.variants) return null;
+    if (variantAttributeKeys.length === 0) return null;
+    if (variantAttributeKeys.some((k) => !selections[k])) return null;
+    return (
+      product.variants.find((v) =>
+        variantAttributeKeys.every((k) => v.attributes?.[k] === selections[k]),
+      ) ?? null
+    );
+  })();
 
   // Si tiene variantes y no hay una seleccionada todavía, no asumimos precio/stock:
   // el "precio desde" se muestra como base_price, pero no permitimos comprar.
   const needsVariantPick = product.has_variants && !selectedVariant;
+
+  // Para un (key, val) dado, ¿existe alguna variante que combine ese valor con las OTRAS selecciones actuales?
+  // Si no existe → la combinación es imposible → botón deshabilitado.
+  const isCombinationViable = (key: string, val: string): boolean => {
+    if (!product.variants) return false;
+    const hypothetical = { ...selections, [key]: val };
+    return product.variants.some((v) =>
+      Object.entries(hypothetical).every(([k, sel]) => v.attributes?.[k] === sel),
+    );
+  };
+
+  // Para un (key, val) dado, ¿hay stock O pre-order activo para esa combinación parcial?
+  const isCombinationPurchasable = (key: string, val: string): boolean => {
+    if (!product.variants) return false;
+    const hypothetical = { ...selections, [key]: val };
+    const matches = product.variants.filter((v) =>
+      Object.entries(hypothetical).every(([k, sel]) => v.attributes?.[k] === sel),
+    );
+    if (matches.length === 0) return false;
+    if (matches.some((v) => v.is_in_stock)) return true;
+    return !!product.allows_pre_order;
+  };
 
   const effectivePrice = selectedVariant ? selectedVariant.price : product.base_price;
   const effectiveStock = selectedVariant ? selectedVariant.available_stock : (product.stock ?? 0);
@@ -131,18 +175,6 @@ const ProductDetail = () => {
   else if (effectiveInStock) saleState = 'in_stock';
   else if (product.allows_pre_order) saleState = 'pre_order';
   else saleState = 'out_of_stock';
-
-  // Atributos únicos para el selector (ej: size + color)
-  const variantAttributes: Record<string, string[]> = {};
-  if (product.has_variants && product.variants) {
-    for (const v of product.variants) {
-      if (!v.attributes) continue;
-      for (const [k, val] of Object.entries(v.attributes)) {
-        if (!variantAttributes[k]) variantAttributes[k] = [];
-        if (!variantAttributes[k].includes(val)) variantAttributes[k].push(val);
-      }
-    }
-  }
 
   const handleAddToCart = () => {
     if (saleState === 'out_of_stock') return;
@@ -269,29 +301,40 @@ const ProductDetail = () => {
               <p className="text-muted-foreground whitespace-pre-line">{product.description}</p>
             )}
 
-            {/* Selector de variantes */}
-            {product.has_variants && Object.keys(variantAttributes).length > 0 && (
+            {/* Selector de variantes — selecciones independientes por atributo */}
+            {product.has_variants && variantAttributeKeys.length > 0 && (
               <div className="space-y-3">
-                {Object.entries(variantAttributes).map(([key, values]) => (
+                {variantAttributeKeys.map((key) => (
                   <div key={key}>
                     <label className="text-sm font-semibold mb-2 block">{attrTitle(key)}</label>
                     <div className="flex flex-wrap gap-2">
-                      {values.map((val) => {
-                        // Encuentro variantes que coinciden con este valor para ese attribute
-                        const matchingVariants = (product.variants ?? []).filter((v) => v.attributes?.[key] === val);
-                        // Para multi-attribute, una variante exacta requeriría que todos los seleccionados coincidan;
-                        // por simplicidad seleccionamos la primera que matchea ese valor (suficiente para size + opcional color)
-                        const variantWithThisVal = matchingVariants[0];
-                        const isSelected = selectedVariant?.attributes?.[key] === val;
-                        const hasStock = matchingVariants.some((v) => v.is_in_stock);
+                      {variantAttributes[key].map((val) => {
+                        const isSelected = selections[key] === val;
+                        const viable = isCombinationViable(key, val);
+                        const purchasable = isCombinationPurchasable(key, val);
+                        const disabled = !viable || !purchasable;
+                        // Estado visual:
+                        //   - seleccionado → primario
+                        //   - no viable (no existe combinación con otras selecciones) → opaco + tachado
+                        //   - no comprable (sin stock y sin pre-order) → opaco + tachado
+                        //   - normal → fondo blanco con borde
+                        const classes = isSelected
+                          ? 'border-primary bg-primary text-primary-foreground'
+                          : disabled
+                            ? 'border-input bg-background opacity-40 line-through cursor-not-allowed'
+                            : 'border-input bg-background hover:bg-accent';
+                        const title = !viable
+                          ? 'No disponible con la combinación elegida'
+                          : !purchasable
+                            ? 'Sin stock'
+                            : undefined;
                         return (
                           <button
                             key={val}
-                            onClick={() => variantWithThisVal && setSelectedVariantId(variantWithThisVal.id)}
-                            className={`px-4 py-2 border rounded-md text-sm transition-colors ${
-                              isSelected ? 'border-primary bg-primary text-primary-foreground' : 'border-input bg-background hover:bg-accent'
-                            } ${!hasStock && !product.allows_pre_order ? 'opacity-50 line-through' : ''}`}
-                            disabled={!hasStock && !product.allows_pre_order}
+                            onClick={() => !disabled && setSelections((prev) => ({ ...prev, [key]: val }))}
+                            disabled={disabled}
+                            title={title}
+                            className={`px-4 py-2 border rounded-md text-sm transition-colors ${classes}`}
                           >
                             {val}
                           </button>
@@ -311,7 +354,7 @@ const ProductDetail = () => {
                   </div>
                 ) : (
                   <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1.5">
-                    Seleccioná una opción para continuar.
+                    Seleccioná {variantAttributeKeys.length > 1 ? 'todas las opciones' : 'una opción'} para continuar.
                   </div>
                 )}
               </div>
