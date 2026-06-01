@@ -4,6 +4,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import IndependentSearchBar from '@/components/IndependentSearchBar';
 import ProductCard, { Product } from '@/components/ProductCard';
+import StickyCartBar from '@/components/StickyCartBar';
 import {
   Pagination,
   PaginationContent,
@@ -207,6 +208,7 @@ const Products = () => {
         </div>
       </section>
 
+      <StickyCartBar />
       <Footer />
     </div>
   );
