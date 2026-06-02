@@ -21,6 +21,7 @@ export interface Event {
   price_from: number;
   member_price_from: number | null;
   is_informational: boolean;
+  is_sold_out?: boolean;
   cover?: {
     storage_path_full: string;
   };
@@ -118,14 +119,18 @@ const EventCard = ({ event, delay = 0, position = 0, listName = 'events_list' }:
           
           <div className={`flex items-center pt-4 mt-auto ${event.is_informational ? 'justify-end' : 'justify-between'}`}>
             {!event.is_informational && (
-              <div>
-                <span className="text-xs text-muted-foreground">Desde</span>
-                <p className="text-xl font-bold text-primary">
-                  {formatPrice(event.member_price_from ?? event.price_from)}
-                </p>
-              </div>
+              event.is_sold_out ? (
+                <Badge variant="destructive" className="text-sm">Agotado</Badge>
+              ) : (
+                <div>
+                  <span className="text-xs text-muted-foreground">Desde</span>
+                  <p className="text-xl font-bold text-primary">
+                    {formatPrice(event.member_price_from ?? event.price_from)}
+                  </p>
+                </div>
+              )
             )}
-            
+
             <Button asChild className="bg-primary hover:bg-primary/90">
               <span>Ver Detalles</span>
             </Button>

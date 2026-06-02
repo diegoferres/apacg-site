@@ -24,6 +24,7 @@ interface TicketType {
   member_price_format: string | null;
   has_member_price: boolean;
   stock: number;
+  stock_available: number;
 }
 
 interface EventExtra {
@@ -306,7 +307,7 @@ const EventDetail = () => {
     const newQuantity = Math.max(0, currentQuantity + change);
     const ticketType = event.ticket_types.find(t => t.id === ticketId);
     
-    if (ticketType && newQuantity <= ticketType.stock) {
+    if (ticketType && newQuantity <= ticketType.stock_available) {
       // Track selección de tickets (solo cuando se agrega)
       if (change > 0 && newQuantity > currentQuantity) {
         analytics.trackEvent('add_to_cart', {
@@ -659,33 +660,37 @@ const EventDetail = () => {
                       </div>
                       
                       {!event.is_informational && (
-                        <div className="flex items-center gap-3">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            aria-label="Disminuir cantidad"
-                            onClick={() => updateTicketQuantity(ticketType.id, -1)}
-                            disabled={!selectedTickets[ticketType.id]}
-                            className="h-8 w-8"
-                          >
-                            <Minus className="h-4 w-4" />
-                          </Button>
-                          
-                          <span className="w-8 text-center font-semibold">
-                            {selectedTickets[ticketType.id] || 0}
-                          </span>
-                          
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            aria-label="Aumentar cantidad"
-                            onClick={() => updateTicketQuantity(ticketType.id, 1)}
-                            disabled={(selectedTickets[ticketType.id] || 0) >= ticketType.stock}
-                            className="h-8 w-8"
-                          >
-                            <Plus className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        ticketType.stock_available <= 0 ? (
+                          <Badge variant="destructive" className="text-xs">Agotado</Badge>
+                        ) : (
+                          <div className="flex items-center gap-3">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              aria-label="Disminuir cantidad"
+                              onClick={() => updateTicketQuantity(ticketType.id, -1)}
+                              disabled={!selectedTickets[ticketType.id]}
+                              className="h-8 w-8"
+                            >
+                              <Minus className="h-4 w-4" />
+                            </Button>
+
+                            <span className="w-8 text-center font-semibold">
+                              {selectedTickets[ticketType.id] || 0}
+                            </span>
+
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              aria-label="Aumentar cantidad"
+                              onClick={() => updateTicketQuantity(ticketType.id, 1)}
+                              disabled={(selectedTickets[ticketType.id] || 0) >= ticketType.stock_available}
+                              className="h-8 w-8"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        )
                       )}
                     </div>
                     );
