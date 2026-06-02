@@ -1,15 +1,29 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { ShoppingCart, ArrowRight } from 'lucide-react';
 import { useCartStore } from '@/stores/cart';
 import { useStore } from '@/stores/store';
 import { formatPrice } from '@/lib/utils';
 
+// En estas rutas no mostramos la barra: o ya estás en el carrito,
+// o ya entraste al flujo de pago, donde sumar otra CTA confunde.
+const EXCLUDED_PATHS = [
+  '/carrito',
+  '/checkout',
+  '/pago',
+  '/pago-exitoso',
+  '/pago-membresia',
+  '/inscripcion-alumnos',
+];
+
 const StickyCartBar = () => {
   const items = useCartStore((s) => s.items);
   const user = useStore((s) => s.user);
+  const location = useLocation();
   const isMember = !!user?.member;
 
   if (items.length === 0) return null;
+  if (EXCLUDED_PATHS.includes(location.pathname)) return null;
+  if (location.pathname.startsWith('/checkout/')) return null;
 
   const itemCount = items.reduce((acc, i) => acc + i.quantity, 0);
   const total = items.reduce((acc, i) => {

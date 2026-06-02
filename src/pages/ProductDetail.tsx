@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import StickyCartBar from '@/components/StickyCartBar';
 import { ShareButton } from '@/components/ShareButton';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -401,7 +400,6 @@ const ProductDetail = () => {
         </div>
       </section>
 
-      <StickyCartBar />
       <Footer />
     </div>
   );

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Store, Calendar, GraduationCap, Ticket, Building2, FileText } from 'lucide-react';
+import { Store, Calendar, GraduationCap, Ticket, Building2, FileText, ShoppingBag } from 'lucide-react';
 
 interface NavItem {
   id: string;
@@ -33,6 +33,12 @@ const navItems: NavItem[] = [
     label: 'Rifas',
     icon: Ticket,
     sectionId: 'rifas-section'
+  },
+  {
+    id: 'tienda',
+    label: 'Tienda',
+    icon: ShoppingBag,
+    sectionId: 'tienda-section'
   },
   {
     id: 'comercios',

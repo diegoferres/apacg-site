@@ -43,6 +43,7 @@ import api from "./services/api";
 import analytics from "./services/analytics";
 import RouteTracker from "./components/RouteTracker";
 import ScrollToTop from "./components/ScrollToTop";
+import StickyCartBar from "./components/StickyCartBar";
 
 const queryClient = new QueryClient();
 
@@ -267,12 +268,16 @@ const App = () => {
           />
           
           {/* Student Data Splash Controller con acceso a location */}
-          <StudentDataSplashController 
+          <StudentDataSplashController
             showStudentSplash={showStudentSplash}
             handleStudentDataComplete={handleStudentDataComplete}
             membershipStatus={membershipStatus}
             fetchMembershipStatus={fetchMembershipStatus}
           />
+
+          {/* Sticky cart bar global en mobile — visible mientras haya items, salvo en cart/checkout/pago */}
+          <StickyCartBar />
+
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/beneficios" element={
