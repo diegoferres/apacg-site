@@ -192,10 +192,13 @@ export const ChildrenManager = () => {
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'No configurado';
     try {
+      // timeZone:'UTC' preserva la fecha calendario tal cual está guardada
+      // (sino una fecha UTC midnight se vería un día antes en Paraguay).
       return new Date(dateString).toLocaleDateString('es-PY', {
         day: '2-digit',
         month: '2-digit',
-        year: 'numeric'
+        year: 'numeric',
+        timeZone: 'UTC',
       });
     } catch {
       return 'Fecha inválida';

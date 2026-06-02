@@ -141,10 +141,18 @@ export function formatPrice(amount: number | string): string {
 }
 
 /**
- * Formatea una fecha de manera segura evitando problemas de timezone
- * @param dateString - La fecha en formato ISO string, d-m-Y H:i:s, o null/undefined
+ * Formatea una fecha respetando timezone Paraguay (UTC-4).
+ *
+ * Reglas:
+ * - Backend Laravel serializa timestamps en UTC con sufijo `Z` (ej. "2026-06-02T00:29:00.000000Z").
+ * - Si `includeTime`, convertimos a hora local de Paraguay (`America/Asuncion`).
+ * - Si NO `includeTime` (date-only), mostramos los componentes UTC tal cual los guardó el admin
+ *   (sino una fecha guardada como "2026-06-26" UTC se vería como "25/06/2026" en PY).
+ * - Formato legacy `d-m-Y H:i:s` se asume ya en hora Paraguay → preservamos componentes via UTC.
+ *
+ * @param dateString - Fecha ISO 8601, "Y-m-d H:i:s", "d-m-Y H:i:s", o null/undefined
  * @param options - Opciones de formateo
- * @returns La fecha formateada en español o "No definido" si es inválida
+ * @returns Fecha formateada en español o "No definido" si es inválida
  */
 export function formatDate(
   dateString: string | null | undefined,
@@ -156,55 +164,53 @@ export function formatDate(
 ): string {
   const { format = 'long', includeYear = true, includeTime = false } = options;
 
-  if (!dateString || dateString === 'No definido' || dateString.trim() === '') {
+  if (!dateString || dateString === 'No definido' || (typeof dateString === 'string' && dateString.trim() === '')) {
     return 'No definido';
   }
 
   try {
     let date: Date;
-    
-    // Intentar diferentes formatos de fecha
-    // Formato 1: "19-06-2025 20:36:52" (d-m-Y H:i:s)
-    const dmyMatch = dateString.match(/(\d{2})-(\d{2})-(\d{4})(?:\s+(\d{2}):(\d{2}):(\d{2}))?/);
+    // `legacyLocal=true` indica que el input ya viene formateado en hora Paraguay.
+    // Para preservar los componentes tal cual, construimos como UTC y formateamos en UTC.
+    let legacyLocal = false;
+
+    // Formato legacy: "19-06-2025 20:36:52" (d-m-Y H:i:s, hora Paraguay)
+    const dmyMatch = String(dateString).match(/^(\d{2})-(\d{2})-(\d{4})(?:\s+(\d{2}):(\d{2}):(\d{2}))?$/);
     if (dmyMatch) {
-      const [_, day, month, year, hours = '0', minutes = '0', seconds = '0'] = dmyMatch;
-      date = new Date(
+      const [, day, month, year, hours = '0', minutes = '0', seconds = '0'] = dmyMatch;
+      date = new Date(Date.UTC(
         parseInt(year),
         parseInt(month) - 1,
         parseInt(day),
         parseInt(hours),
         parseInt(minutes),
-        parseInt(seconds)
-      );
-    } 
-    // Formato 2: "2025-06-19 20:36:52" o "2025-06-19T20:36:52" (Y-m-d H:i:s o ISO)
-    else {
-      const ymdMatch = dateString.match(/(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}):(\d{2}):(\d{2}))?/);
-      if (ymdMatch) {
-        const [_, year, month, day, hours = '0', minutes = '0', seconds = '0'] = ymdMatch;
-        date = new Date(
-          parseInt(year),
-          parseInt(month) - 1,
-          parseInt(day),
-          parseInt(hours),
-          parseInt(minutes),
-          parseInt(seconds)
-        );
-      } else {
-        // Intentar parsear como fecha ISO estándar
-        date = new Date(dateString);
-      }
+        parseInt(seconds),
+      ));
+      legacyLocal = true;
+    } else {
+      // ISO 8601, "Y-m-d H:i:s" sin TZ, o "Y-m-d" date-only.
+      const normalized = String(dateString).trim().replace(' ', 'T');
+      const hasTime = normalized.includes('T');
+      const hasTz = /[Zz]|[+-]\d{2}:?\d{2}$/.test(normalized);
+      // Si tiene componente de hora pero no TZ → asumir UTC (convención Laravel).
+      // Si es date-only ("2026-06-26") → new Date() lo interpreta como UTC midnight por spec.
+      // Si tiene TZ → confiamos en el parse nativo.
+      date = hasTime && !hasTz ? new Date(normalized + 'Z') : new Date(normalized);
     }
-    
+
     if (isNaN(date.getTime())) {
       return 'No definido';
     }
 
-    // Formatear según las opciones
-    // short: "15 abr 2026" | long: "15 de abril de 2026" | medium: "15/04/2026"
+    // Timezone para display:
+    // - Datetime "real" (includeTime, no legacy) → hora Paraguay
+    // - Date-only o legacy → preservar componentes UTC (= calendar date que guardó el admin)
+    const displayTimezone = legacyLocal || !includeTime ? 'UTC' : 'America/Asuncion';
+
     const formatOptions: Intl.DateTimeFormatOptions = {
       day: 'numeric',
       month: format === 'long' ? 'long' : format === 'short' ? 'short' : '2-digit',
+      timeZone: displayTimezone,
     };
 
     if (includeYear) {
@@ -217,9 +223,10 @@ export function formatDate(
       formatOptions.hour12 = false;
     }
 
-    const formatted = includeTime ? date.toLocaleString('es-ES', formatOptions) : date.toLocaleDateString('es-ES', formatOptions);
+    const formatted = includeTime
+      ? date.toLocaleString('es-ES', formatOptions)
+      : date.toLocaleDateString('es-ES', formatOptions);
 
-    // Para formato short, capitalizar el mes: "15 abr 2026"
     if (format === 'short') {
       return formatted.replace(/\./g, '');
     }

@@ -479,9 +479,10 @@ const PaymentSuccess = () => {
                                     <>
                                       {' · Entrega estimada: '}
                                       <strong>
-                                        {new Date(
+                                        {formatDate(
                                           (item.details || item.item_details).estimated_delivery_date,
-                                        ).toLocaleDateString('es-PY')}
+                                          { format: 'medium' },
+                                        )}
                                       </strong>
                                     </>
                                   )}

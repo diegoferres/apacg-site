@@ -9,7 +9,7 @@ import { Card } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { ArrowLeft, Package, ShoppingCart, Plus, Minus } from 'lucide-react';
 import api from '@/services/api';
-import { formatPrice } from '@/lib/utils';
+import { formatPrice, formatDate } from '@/lib/utils';
 import { useCartStore, type CartItem } from '@/stores/cart';
 
 interface Variant {
@@ -287,7 +287,7 @@ const ProductDetail = () => {
               <div className="bg-amber-50 border border-amber-200 rounded p-3 text-sm">
                 <span className="font-semibold text-amber-800">Pre-venta activa.</span>
                 {product.estimated_delivery_date && (
-                  <> Entrega estimada: <strong>{new Date(product.estimated_delivery_date).toLocaleDateString('es-PY')}</strong>.</>
+                  <> Entrega estimada: <strong>{formatDate(product.estimated_delivery_date, { format: 'medium' })}</strong>.</>
                 )}
               </div>
             )}
