@@ -21,6 +21,7 @@ import analytics from '@/services/analytics';
 import { useTour } from '@/hooks/useTour';
 import { homeTourSteps } from '@/config/tours';
 import TourHelpButton from '@/components/TourHelpButton';
+import { useCartStore } from '@/stores/cart';
 
 export interface News {
   id: number;
@@ -67,6 +68,9 @@ export interface Raffle {
 const Index = () => {
   const user = useStore((state) => state.user);
   const isLoggedIn = !!user?.id;
+  // Si hay items en el carrito, en mobile la StickyCartBar ocupa la franja inferior;
+  // empujamos el botón de ayuda hacia arriba para que no quede tapado.
+  const hasCartItems = useCartStore((s) => s.items.length > 0);
 
   const { startTour } = useTour({
     tourId: 'home',
@@ -221,8 +225,12 @@ const Index = () => {
     <div className="min-h-screen flex flex-col">
       <Navbar />
 
-      {/* Tour Help Button - Fixed */}
-      <div className="fixed bottom-6 right-6 z-50">
+      {/* Tour Help Button - Fixed. En mobile sube cuando la StickyCartBar está visible */}
+      <div
+        className={`fixed right-6 z-50 transition-[bottom] duration-200 ${
+          hasCartItems ? 'bottom-28 md:bottom-6' : 'bottom-6'
+        }`}
+      >
         <TourHelpButton onClick={startTour} label="Ver tour de la web" />
       </div>
 
