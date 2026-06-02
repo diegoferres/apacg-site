@@ -34,6 +34,13 @@ interface EventExtra {
   status: 'active' | 'inactive';
 }
 
+interface EventImage {
+  id: number;
+  type: 'cover' | 'image';
+  storage_path: string;
+  storage_path_full?: string;
+}
+
 interface Event {
   id: number;
   title: string;
@@ -49,9 +56,8 @@ interface Event {
   extras_description?: string | null;
   ticket_types: TicketType[];
   extras?: EventExtra[];
-  cover: {
-    storage_path_full: string;
-  }
+  cover?: EventImage | null;
+  gallery?: EventImage[];
 }
 
 const EventDetail = () => {
@@ -83,6 +89,7 @@ const EventDetail = () => {
   const { user, isLoggedIn } = useStore();
   const [isMember, setIsMember] = useState(false);
   const [membershipChecked, setMembershipChecked] = useState(false);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   // Verificar membresía real (status + pagos al día)
   useEffect(() => {
@@ -119,6 +126,7 @@ const EventDetail = () => {
         setIsLoading(true);
         const response = await api.get(`/api/client/events/${slug}`);
         setEvent(response.data.data);
+        setActiveImageIndex(0);
         
         // Track visualización del evento
         if (response.data.data) {
@@ -436,23 +444,50 @@ const EventDetail = () => {
           </Button>
           
           <div className="grid lg:grid-cols-2 gap-6 lg:gap-12">
-            {/* Event Image */}
-            <div className="space-y-4">
-              {event.cover ? (
-                <img
-                  src={event.cover?.storage_path_full}
-                  alt={event.title}
-                  className="w-full rounded-lg"
-                />
-              ) : (
-                <div className="relative aspect-[4/3] bg-gradient-to-br from-primary/10 to-primary/20 rounded-lg flex items-center justify-center">
-                  <div className="text-center">
-                    <Ticket className="h-16 w-16 text-primary/60 mx-auto mb-4" />
-                    <p className="text-primary/80 font-medium">Evento Especial</p>
-                  </div>
+            {/* Event Images — cover principal + thumbnails de galería */}
+            {(() => {
+              const allImages: EventImage[] = [
+                ...(event.cover ? [event.cover] : []),
+                ...(event.gallery ?? []),
+              ];
+              const activeImage = allImages[activeImageIndex] ?? allImages[0];
+              return (
+                <div className="space-y-3">
+                  {activeImage ? (
+                    <img
+                      src={activeImage.storage_path_full || activeImage.storage_path}
+                      alt={event.title}
+                      className="w-full rounded-lg"
+                    />
+                  ) : (
+                    <div className="relative aspect-[4/3] bg-gradient-to-br from-primary/10 to-primary/20 rounded-lg flex items-center justify-center">
+                      <div className="text-center">
+                        <Ticket className="h-16 w-16 text-primary/60 mx-auto mb-4" />
+                        <p className="text-primary/80 font-medium">Evento Especial</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {allImages.length > 1 && (
+                    <div className="flex gap-2 overflow-x-auto pb-2">
+                      {allImages.map((img, idx) => (
+                        <button
+                          key={img.id}
+                          onClick={() => setActiveImageIndex(idx)}
+                          className={`flex-shrink-0 w-20 h-20 rounded border-2 overflow-hidden ${idx === activeImageIndex ? 'border-primary' : 'border-transparent'}`}
+                        >
+                          <img
+                            src={img.storage_path_full || img.storage_path}
+                            className="w-full h-full object-cover"
+                            alt=""
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              );
+            })()}
             
             {/* Event Details */}
             <div className="space-y-6">
