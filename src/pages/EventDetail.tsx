@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { MapPin, Calendar, Clock, Ticket, ArrowLeft, Plus, Minus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Carousel, CarouselApi, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { ShareButton } from '@/components/ShareButton';
@@ -89,7 +90,12 @@ const EventDetail = () => {
   const { user, isLoggedIn } = useStore();
   const [isMember, setIsMember] = useState(false);
   const [membershipChecked, setMembershipChecked] = useState(false);
-  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  // Carousel: el embla api es la fuente de verdad del slide actual.
+  // currentSlide se sincroniza vía `select` event para resaltar la thumbnail activa.
+  // autoplayStopped se setea en true cuando el usuario interactúa — el autoplay no vuelve.
+  const [carouselApi, setCarouselApi] = useState<CarouselApi>();
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const autoplayStoppedRef = useRef(false);
 
   // Verificar membresía real (status + pagos al día)
   useEffect(() => {
@@ -126,7 +132,10 @@ const EventDetail = () => {
         setIsLoading(true);
         const response = await api.get(`/api/client/events/${slug}`);
         setEvent(response.data.data);
-        setActiveImageIndex(0);
+        // Reset estado de galería: vuelve al primer slide y reactiva autoplay
+        autoplayStoppedRef.current = false;
+        setCurrentSlide(0);
+        carouselApi?.scrollTo(0, true);
         
         // Track visualización del evento
         if (response.data.data) {
@@ -147,6 +156,33 @@ const EventDetail = () => {
 
     fetchEvent();
   }, [slug]);
+
+  // Sincronizar el indicador de thumbnail activa con el slide actual del carousel.
+  // También detectar el inicio de drag para detener el autoplay (respeta intención del usuario).
+  useEffect(() => {
+    if (!carouselApi) return;
+    const onSelect = () => setCurrentSlide(carouselApi.selectedScrollSnap());
+    const onPointerDown = () => { autoplayStoppedRef.current = true; };
+    carouselApi.on('select', onSelect);
+    carouselApi.on('pointerDown', onPointerDown);
+    onSelect();
+    return () => {
+      carouselApi.off('select', onSelect);
+      carouselApi.off('pointerDown', onPointerDown);
+    };
+  }, [carouselApi]);
+
+  // Autoplay cada 4s mientras el usuario no haya interactuado.
+  // Solo arranca si hay 2+ imágenes; sino no tiene sentido rotar.
+  const galleryImageCount = (event?.cover ? 1 : 0) + (event?.gallery?.length ?? 0);
+  useEffect(() => {
+    if (!carouselApi || galleryImageCount <= 1) return;
+    const interval = setInterval(() => {
+      if (autoplayStoppedRef.current) return;
+      carouselApi.scrollNext();
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [carouselApi, galleryImageCount]);
 
   // Restaurar selección guardada al volver del login
   useEffect(() => {
@@ -444,37 +480,55 @@ const EventDetail = () => {
           </Button>
           
           <div className="grid lg:grid-cols-2 gap-6 lg:gap-12">
-            {/* Event Images — cover principal + thumbnails de galería */}
+            {/* Event Images — carousel con swipe + autoplay + thumbnails */}
             {(() => {
               const allImages: EventImage[] = [
                 ...(event.cover ? [event.cover] : []),
                 ...(event.gallery ?? []),
               ];
-              const activeImage = allImages[activeImageIndex] ?? allImages[0];
+
+              if (allImages.length === 0) {
+                return (
+                  <div className="relative aspect-[4/3] bg-gradient-to-br from-primary/10 to-primary/20 rounded-lg flex items-center justify-center">
+                    <div className="text-center">
+                      <Ticket className="h-16 w-16 text-primary/60 mx-auto mb-4" />
+                      <p className="text-primary/80 font-medium">Evento Especial</p>
+                    </div>
+                  </div>
+                );
+              }
+
               return (
                 <div className="space-y-3">
-                  {activeImage ? (
-                    <img
-                      src={activeImage.storage_path_full || activeImage.storage_path}
-                      alt={event.title}
-                      className="w-full rounded-lg"
-                    />
-                  ) : (
-                    <div className="relative aspect-[4/3] bg-gradient-to-br from-primary/10 to-primary/20 rounded-lg flex items-center justify-center">
-                      <div className="text-center">
-                        <Ticket className="h-16 w-16 text-primary/60 mx-auto mb-4" />
-                        <p className="text-primary/80 font-medium">Evento Especial</p>
-                      </div>
-                    </div>
-                  )}
+                  <Carousel
+                    setApi={setCarouselApi}
+                    opts={{ loop: true, align: 'start' }}
+                    className="w-full"
+                  >
+                    <CarouselContent className="ml-0">
+                      {allImages.map((img) => (
+                        <CarouselItem key={img.id} className="pl-0">
+                          <img
+                            src={img.storage_path_full || img.storage_path}
+                            alt={event.title}
+                            className="w-full rounded-lg select-none"
+                            draggable={false}
+                          />
+                        </CarouselItem>
+                      ))}
+                    </CarouselContent>
+                  </Carousel>
 
                   {allImages.length > 1 && (
                     <div className="flex gap-2 overflow-x-auto pb-2">
                       {allImages.map((img, idx) => (
                         <button
                           key={img.id}
-                          onClick={() => setActiveImageIndex(idx)}
-                          className={`flex-shrink-0 w-20 h-20 rounded border-2 overflow-hidden ${idx === activeImageIndex ? 'border-primary' : 'border-transparent'}`}
+                          onClick={() => {
+                            autoplayStoppedRef.current = true;
+                            carouselApi?.scrollTo(idx);
+                          }}
+                          className={`flex-shrink-0 w-20 h-20 rounded border-2 overflow-hidden ${idx === currentSlide ? 'border-primary' : 'border-transparent'}`}
                         >
                           <img
                             src={img.storage_path_full || img.storage_path}
