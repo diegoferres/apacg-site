@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Download, Mail, Home, Loader2, CreditCard, Calendar, Hash, Receipt } from 'lucide-react';
+import { CheckCircle, Download, Mail, Home, Loader2, CreditCard, Calendar, Hash, Receipt, MapPin } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { formatPrice, formatDate, toNumber } from '@/lib/utils';
@@ -265,30 +265,43 @@ const PaymentSuccess = () => {
       case 'App\\Models\\CourseGroup':
         // Construir descripción detallada para cursos
         let description = 'Inscripción a curso';
-        
+
         // Agregar nombre del curso si está disponible
         if (details.course_title) {
           description = `Inscripción a ${details.course_title}`;
         }
-        
+
         // Agregar grupo si está disponible
         if (details.course_group_name) {
           description += ` - ${details.course_group_name}`;
         } else if (details.group_name) {
           description += ` - ${details.group_name}`;
         }
-        
+
         // Agregar estudiante si está disponible
         if (details.student_data?.name || details.student_name) {
           const studentName = details.student_data?.name || details.student_name;
           description += ` (Estudiante: ${studentName})`;
         }
-        
+
         return description;
+      case 'App\\Models\\Product':
+      case 'App\\Models\\ProductVariant': {
+        const productName = details.product_name || 'Producto';
+        return details.variant_name ? `${productName} · ${details.variant_name}` : productName;
+      }
       default:
         return 'Item';
     }
   };
+
+  // ¿La orden contiene al menos un producto físico? Lo usamos para mostrar el callout
+  // de "Retiro en APACG" solo en órdenes de tienda (no en eventos/cursos/rifas).
+  const hasProductItems = paymentDetails?.order.items.some(
+    (item) =>
+      item.orderable_type === 'App\\Models\\Product' ||
+      item.orderable_type === 'App\\Models\\ProductVariant',
+  ) ?? false;
 
   const getItemBreakdown = (item: any) => {
     const details = item.details || item.item_details || {};
@@ -455,6 +468,26 @@ const PaymentSuccess = () => {
                                 ))}
                               </div>
                             )}
+
+                            {/* Chip de pre-venta + fecha estimada para productos */}
+                            {(item.details || item.item_details)?.is_pre_order && (
+                              <div className="ml-0 inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded bg-amber-50 border border-amber-200 text-amber-800">
+                                <Calendar className="h-3 w-3" />
+                                <span>
+                                  Pre-venta
+                                  {(item.details || item.item_details)?.estimated_delivery_date && (
+                                    <>
+                                      {' · Entrega estimada: '}
+                                      <strong>
+                                        {new Date(
+                                          (item.details || item.item_details).estimated_delivery_date,
+                                        ).toLocaleDateString('es-PY')}
+                                      </strong>
+                                    </>
+                                  )}
+                                </span>
+                              </div>
+                            )}
                           </div>
                         );
                       })}
@@ -513,10 +546,25 @@ const PaymentSuccess = () => {
                 </div>
               )}
 
+              {/* Callout específico para productos físicos: solo retiro en APACG */}
+              {hasProductItems && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-5 text-left">
+                  <div className="flex items-start gap-3">
+                    <MapPin className="h-6 w-6 text-amber-700 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-semibold text-amber-900">Solo retiro en APACG</p>
+                      <p className="text-sm text-amber-800 mt-1">
+                        No realizamos envíos a domicilio. Te avisaremos por email cuando tu pedido esté listo para retirar.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Próximos pasos */}
               <div className="bg-muted/30 rounded-lg p-6 space-y-4">
                 <h3 className="font-semibold text-lg">¿Qué sigue ahora?</h3>
-                
+
                 <div className="space-y-3 text-left">
                   <div className="flex items-start gap-3">
                     <Mail className="h-5 w-5 text-primary mt-0.5" />
@@ -527,7 +575,7 @@ const PaymentSuccess = () => {
                       </p>
                     </div>
                   </div>
-                  
+
                 </div>
               </div>
 
