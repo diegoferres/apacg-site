@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
+import analytics from '@/services/analytics';
 
 export type ShareEntityType = 'event' | 'raffle' | 'benefit' | 'product' | 'commerce';
 
@@ -64,6 +65,7 @@ export const ShareButton = ({
           text: shareText,
           url: shareUrl,
         });
+        analytics.trackShare('native', type, slug);
         return true;
       } catch (err) {
         // Usuario canceló — no mostrar error
@@ -77,6 +79,7 @@ export const ShareButton = ({
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
+      analytics.trackShare('copy_link', type, slug);
       toast({ title: 'Link copiado', description: 'Pegalo donde quieras compartirlo.' });
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -134,19 +137,32 @@ export const ShareButton = ({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
         <DropdownMenuItem asChild>
-          <a href={buildExternalUrl('whatsapp')} target="_blank" rel="noopener noreferrer">
+          <a
+            href={buildExternalUrl('whatsapp')}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => analytics.trackShare('whatsapp', type, slug)}
+          >
             <MessageCircle className="h-4 w-4 mr-2 text-green-600" />
             WhatsApp
           </a>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <a href={buildExternalUrl('facebook')} target="_blank" rel="noopener noreferrer">
+          <a
+            href={buildExternalUrl('facebook')}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => analytics.trackShare('facebook', type, slug)}
+          >
             <Facebook className="h-4 w-4 mr-2 text-blue-600" />
             Facebook
           </a>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <a href={buildExternalUrl('email')}>
+          <a
+            href={buildExternalUrl('email')}
+            onClick={() => analytics.trackShare('email', type, slug)}
+          >
             <Mail className="h-4 w-4 mr-2 text-amber-600" />
             Email
           </a>

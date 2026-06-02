@@ -132,38 +132,39 @@ class Analytics {
     }
 
     try {
-      // Método 1: gtag directo (preferido para page views)
+      // GA4: el evento 'page_view' es el que reporta navegación en una SPA.
+      // gtag('config', ID, {...}) NO emite page_view por sí solo — solo actualiza
+      // configuración (y en index.html ya tenemos send_page_view: false).
+      // Ref: https://developers.google.com/analytics/devguides/collection/ga4/single-page-applications
       if (typeof window.gtag !== 'undefined') {
-        window.gtag('config', this.measurementId, {
+        window.gtag('event', 'page_view', {
           page_title: data.title,
           page_location: data.location,
           page_path: data.path,
-          custom_map: {
-            dimension1: data.userType || 'guest'
-          }
+          send_to: this.measurementId,
+          user_type: data.userType || 'guest',
         });
-        
-        this.log('Page view tracked via gtag:', data);
+
+        this.log('Page view tracked via gtag event:', data);
       } else {
-        // Método 2: react-ga4 como fallback
+        // Fallback: react-ga4 (también emite event:page_view bajo el capó)
         ReactGA.send({
           hitType: 'pageview',
           page: data.path,
           title: data.title,
-          location: data.location
+          location: data.location,
         });
-        
+
         this.log('Page view tracked via react-ga4:', data);
       }
     } catch (error) {
       console.error('Error tracking page view:', error);
-      
-      // Retry con react-ga4
+
       try {
         ReactGA.send({
           hitType: 'pageview',
           page: data.path,
-          title: data.title
+          title: data.title,
         });
       } catch (retryError) {
         console.error('Retry failed:', retryError);
