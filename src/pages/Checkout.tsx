@@ -146,7 +146,7 @@ const Checkout = () => {
   const [checkingMembership, setCheckingMembership] = useState(false);
   const [partnerPricing, setPartnerPricing] = useState<{
     applies_member_price: boolean;
-    ticket_types: Array<{ id: number; effective_price: number }>;
+    ticket_types: Array<{ id: number; price: number; member_price: number | null; effective_price: number }>;
     member_status?: {
       is_apacg_member: boolean;
       is_active: boolean;
@@ -160,16 +160,16 @@ const Checkout = () => {
   const [isCheckingPricing, setIsCheckingPricing] = useState(false);
   // Si el comprador es socio inactivo, puede optar por activar pagando las
   // cuotas pendientes de sus alumnos junto con las entradas (transacción única).
-  // Pre-marcado si el comprador ya eligió activar desde EventDetail (memberStatusFromEvent.can_activate)
+  //
+  // Default DESmarcado: la activación es OPCIONAL y debe ser un opt-in explícito
+  // del usuario. Si marca el checkbox, los tickets pasan a precio socio + se suma
+  // la anualidad (display y cobro coherentes). Si NO marca (default), los tickets
+  // se muestran a precio general — ver getEffectivePriceFor — coherente con lo
+  // que SalesController::store cobra cuando no recibe pending_annual_payments.
+  //
+  // (Pre-marcar el checkbox sin opt-in genera percepción de "obliga a pagar
+  // membresía" — bug reportado en producción, 2026-06-02).
   const [activateMembership, setActivateMembership] = useState(false);
-
-  // Pre-marcar el checkbox al recibir la oferta de activación desde el evento.
-  useEffect(() => {
-    if (eventData?.memberStatusFromEvent?.can_activate
-        && eventData.pendingAnnualPayments && eventData.pendingAnnualPayments.length > 0) {
-      setActivateMembership(true);
-    }
-  }, [eventData?.memberStatusFromEvent?.can_activate, eventData?.pendingAnnualPayments]);
 
   // Sincronizar CI desde EventDetail incluso si formData ya se inicializó.
   // El useEffect grande de abajo se ejecuta solo en mount/cuando cambia user, así
@@ -359,7 +359,16 @@ const Checkout = () => {
 
   const getEffectivePriceFor = (ticketId: number, fallback: number): number => {
     const match = partnerPricing?.ticket_types.find((t) => t.id === ticketId);
-    return match ? match.effective_price : fallback;
+    if (!match) return fallback;
+    // Socio inactivo que NO optó por activar membresía → backend cobra precio
+    // general (SalesController::store línea 195 + 284: appliesToBuyer retorna
+    // false para inactivo, y unit_price = getEffectivePrice(false) = price).
+    // Reflejamos eso en el display para mantener coherencia precio-visto vs
+    // precio-cobrado. Si user marca el checkbox, vuelve a effective_price (socio).
+    if (canActivateMembership && !activateMembership) {
+      return match.price;
+    }
+    return match.effective_price;
   };
 
   const recomputedTickets = eventData?.tickets?.map((t) => {
@@ -909,7 +918,7 @@ const Checkout = () => {
                               </div>
                             </div>
                           ) : (
-                            <MembershipBadge isMember={isMember || appliesPartnerMemberPrice} />
+                            <MembershipBadge isMember={appliesPartnerMemberPrice} />
                           )}
                           {appliesPartnerMemberPrice && !isMember && (
                             <div className="mt-2 p-3 rounded-md text-sm bg-green-50 border border-green-200 text-green-800">
@@ -936,7 +945,7 @@ const Checkout = () => {
                                 <p className="font-medium text-sm">{ticket.name}</p>
                                 <p className="text-xs text-muted-foreground">
                                   {ticket.quantity} × {formatPrice(ticket.price)}
-                                  {(isMember || appliesPartnerMemberPrice) ? (
+                                  {appliesPartnerMemberPrice ? (
                                     <span className="text-green-600 ml-1">(Socio)</span>
                                   ) : eventData.is_member !== undefined ? (
                                     <span className="text-orange-600 ml-1">(No Socio)</span>
