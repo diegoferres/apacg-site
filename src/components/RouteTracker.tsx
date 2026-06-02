@@ -18,63 +18,73 @@ interface RouteTrackerProps {
 export const RouteTracker = ({ userType = 'guest', contentData }: RouteTrackerProps) => {
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const { user } = useStore();
+  // Selectores granulares de Zustand — devuelven primitivos estables, no el objeto user entero.
+  // Antes el dep `user` causaba re-fire del useEffect (y page_view duplicado) cada vez que el
+  // store actualizaba referencia, aunque no cambiaran los campos relevantes.
+  const userId = useStore((s) => s.user?.id);
+  const isMember = useStore((s) => !!s.user?.member);
+  const membershipStatus = useStore((s) => s.user?.member?.status);
+  const studentsCount = useStore((s) => s.user?.member?.students?.length ?? 0);
+
   const previousPathRef = useRef<string>('');
   const pageStartTimeRef = useRef<number>(Date.now());
 
+  // Effect 1 — identificación del usuario.
+  // Se dispara solo cuando los datos del user realmente cambian (no en cada navegación).
   useEffect(() => {
-    // Inicializar analytics si no está inicializado
     if (!analytics.isInitialized()) {
       analytics.initialize();
     }
-
-    // Configurar propiedades del usuario si está logueado
-    if (user) {
-      analytics.setUserId(user.id);
+    if (userId) {
+      analytics.setUserId(userId);
       analytics.setUserProperties({
-        user_type: user.member ? 'member' : 'guest',
-        membership_status: user.member?.status,
-        students_count: user.member?.students?.length || 0,
+        user_type: isMember ? 'member' : 'guest',
+        membership_status: membershipStatus,
+        students_count: studentsCount,
       });
+    }
+  }, [userId, isMember, membershipStatus, studentsCount]);
+
+  // Effect 2 — page tracking.
+  // Solo depende de la ruta y los flags pasados como prop. NO depende de `user` —
+  // cambiar status de membresía no causa page_view fantasma.
+  useEffect(() => {
+    if (!analytics.isInitialized()) {
+      analytics.initialize();
     }
 
     const currentPath = location.pathname + location.search;
     const previousPath = previousPathRef.current;
 
-    // Track tiempo en página anterior si hubo navegación
     if (previousPath && previousPath !== currentPath) {
       const timeSpent = Date.now() - pageStartTimeRef.current;
       analytics.trackTimeOnPage(timeSpent, previousPath);
     }
 
-    // Generar título dinámico
     const title = generatePageTitle({
       path: location.pathname,
       searchParams,
       contentData,
-      userType
+      userType,
     });
 
-    // Track page view con título dinámico
     analytics.trackPageView({
       path: location.pathname,
       title,
       location: window.location.href,
       referrer: document.referrer,
-      userType
+      userType,
     });
 
-    // Track eventos específicos por ruta
     trackRouteSpecificEvents(location.pathname, searchParams, contentData);
 
-    // Actualizar referencias para próxima navegación
     previousPathRef.current = currentPath;
     pageStartTimeRef.current = Date.now();
-
-    // Actualizar título del documento
     document.title = title;
-
-  }, [location.pathname, location.search, userType, contentData, searchParams, user]);
+    // Dep `contentData` puede ser objeto inline del parent → re-fire por nueva ref aunque
+    // el contenido no cambie. Hoy ningún caller pasa contentData, así que no es activo.
+    // Si en el futuro algún caller lo pasa, conviene extraer primitivos (contentData?.title, etc.)
+  }, [location.pathname, location.search, userType, contentData, searchParams]);
 
   return null;
 };

@@ -50,42 +50,39 @@ class Analytics {
   private debugMode = false;
   private eventQueue: Array<{ name: string; params: Record<string, unknown>; timestamp: number }> = [];
 
-  // Inicializar GA4
+  /**
+   * Inicializa el servicio. NO inicializa gtag — gtag se carga e inicializa
+   * directamente desde index.html para que esté listo antes de que React monte.
+   *
+   * Esta función solo:
+   *  - Verifica que gtag esté disponible (puede no estarlo si ad blocker rompió el script)
+   *  - Setea `measurementId` y `initialized`
+   *  - Procesa la cola de eventos que llegaron antes del montaje
+   *
+   * El ID debe coincidir con el de index.html (que es la fuente real de gtag).
+   * Si VITE_GA4_MEASUREMENT_ID no está seteado, cae al hardcoded — pero si lo cambiás
+   * en .env también tenés que actualizar index.html (Vite no sustituye env vars
+   * automáticamente en index.html sin la sintaxis %VITE_X%, que no usamos para
+   * evitar builds rotos cuando la var falta).
+   */
   initialize() {
+    if (this.initialized) return;
+
     const gaId = import.meta.env.VITE_GA4_MEASUREMENT_ID || 'G-89V72T7N4S';
     this.debugMode = import.meta.env.DEV || window.location.hostname.includes('test');
-    
-    if (!gaId || this.initialized) {
-      this.log('GA4 already initialized or no ID provided');
-      return;
+    this.measurementId = gaId;
+    this.initialized = true;
+
+    if (typeof window.gtag === 'undefined') {
+      // Probablemente ad blocker o falla del CDN googletagmanager.com.
+      // No abortamos para que los eventos no queden bloqueados en cola — pero
+      // no se van a enviar a GA4 (sería esperable: ~10-30% de usuarios afectados).
+      this.log('Warning: window.gtag no detectado. Posible ad blocker o falla de red.');
+    } else {
+      this.log('GA4 ready. measurementId=', gaId, '| debug=', this.debugMode);
     }
 
-    try {
-      // Verificar si gtag está disponible
-      if (typeof window.gtag === 'undefined') {
-        this.log('Warning: gtag not found, initializing with react-ga4 only');
-      }
-
-      ReactGA.initialize(gaId, {
-        gaOptions: {
-          send_page_view: false, // Control manual de page views
-        },
-        gtagOptions: {
-          debug_mode: this.debugMode,
-        },
-      });
-
-      this.measurementId = gaId;
-      this.initialized = true;
-
-      this.log('Google Analytics 4 initialized successfully with ID:', gaId);
-      this.log('Debug mode:', this.debugMode);
-      
-      // Procesar eventos en cola si los hay
-      this.processEventQueue();
-    } catch (error) {
-      console.error('Error initializing Google Analytics:', error);
-    }
+    this.processEventQueue();
   }
 
   // Sistema de logging condicional
