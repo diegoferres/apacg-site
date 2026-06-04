@@ -13,7 +13,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, MailCheck, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Loader2, MailCheck, AlertCircle, CheckCircle2, LogIn } from 'lucide-react';
 import api from '@/services/api';
 import { useStore } from '@/stores/store';
 
@@ -35,6 +35,14 @@ interface InviteData {
 interface InvalidInvite {
   valid: false;
   reason: 'not_found' | 'revoked' | 'expired' | 'already_accepted';
+  // Presentes solo con reason='already_accepted' (re-click del link tras
+  // aceptar): permiten redirigir al panel del recurso en vez de error seco.
+  invited_email?: string;
+  entity?: {
+    type: string;
+    id: number;
+    title: string;
+  };
 }
 
 type ResolveResponse = { data: InviteData | InvalidInvite };
@@ -64,6 +72,9 @@ const AcceptInvite = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [invite, setInvite] = useState<InviteData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Re-click del link después de haber aceptado: estado amigable con redirect
+  // al panel del recurso (o al login web, que ya redirige solo a sus stats).
+  const [alreadyAccepted, setAlreadyAccepted] = useState<InvalidInvite | null>(null);
 
   // Form state — cambia según el path (register/login/just-accept)
   const [name, setName] = useState('');
@@ -80,6 +91,8 @@ const AcceptInvite = () => {
       .then((res) => {
         if (res.data.data.valid) {
           setInvite(res.data.data);
+        } else if (res.data.data.reason === 'already_accepted' && res.data.data.entity) {
+          setAlreadyAccepted(res.data.data);
         } else {
           setError(reasonToMessage(res.data.data.reason));
         }
@@ -97,6 +110,17 @@ const AcceptInvite = () => {
       })
       .finally(() => setIsLoading(false));
   }, [token]);
+
+  // Si ya aceptó y está logueado con el email del invite, ir directo al panel
+  // del recurso (full reload: el admin Vue lee la sesión del server).
+  useEffect(() => {
+    if (!alreadyAccepted?.entity) return;
+    const matches = user && alreadyAccepted.invited_email
+      && user.email?.toLowerCase() === alreadyAccepted.invited_email.toLowerCase();
+    if (matches) {
+      window.location.assign(`/admin/${alreadyAccepted.entity.type}s/${alreadyAccepted.entity.id}/stats`);
+    }
+  }, [alreadyAccepted, user]);
 
   const handleAccept = async () => {
     if (!token) return;
@@ -167,6 +191,43 @@ const AcceptInvite = () => {
       <Centered>
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <p className="mt-3 text-muted-foreground">Cargando invitación...</p>
+      </Centered>
+    );
+  }
+
+  // Re-click tras aceptar: card amigable. Si está logueado con el email
+  // correcto, el useEffect de arriba ya lo redirige al panel; este render
+  // cubre el caso sin sesión (botón al login web, que redirige solo a sus
+  // stats vía createIntended) o sesión con otro email.
+  if (alreadyAccepted?.entity) {
+    return (
+      <Centered>
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 h-14 w-14 rounded-full bg-green-100 flex items-center justify-center">
+              <CheckCircle2 className="h-7 w-7 text-green-600" />
+            </div>
+            <CardTitle>Ya aceptaste esta invitación</CardTitle>
+            <CardDescription>
+              Tenés acceso a <strong>"{alreadyAccepted.entity.title}"</strong>.
+              {alreadyAccepted.invited_email && (
+                <> Iniciá sesión con <strong>{alreadyAccepted.invited_email}</strong> para entrar.</>
+              )}
+            </CardDescription>
+          </CardHeader>
+          <CardFooter className="flex flex-col gap-2">
+            <Button
+              className="w-full"
+              onClick={() => window.location.assign('/login')}
+            >
+              <LogIn className="h-4 w-4 mr-2" />
+              Iniciar sesión
+            </Button>
+            <Button asChild variant="ghost" className="w-full">
+              <Link to="/">Volver al inicio</Link>
+            </Button>
+          </CardFooter>
+        </Card>
       </Centered>
     );
   }
