@@ -12,6 +12,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import Brand180 from "@/components/Brand180";
 import analytics from '@/services/analytics';
 
 // Mock API call - Replace with actual API call later
@@ -179,6 +180,10 @@ const Register = () => {
               </div>
             </CardFooter>
           </Card>
+          <span className="mt-4 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+            <span>Plataforma desarrollada por</span>
+            <Brand180 className="h-4 w-auto" medium="register" />
+          </span>
         </div>
       </main>
       

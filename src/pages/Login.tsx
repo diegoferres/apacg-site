@@ -31,6 +31,7 @@ import analytics from '@/services/analytics';
 import { useTour } from '@/hooks/useTour';
 import { loginTourSteps } from '@/config/tours';
 import TourHelpButton from '@/components/TourHelpButton';
+import Brand180 from '@/components/Brand180';
 
 const formSchema = z.object({
   identifier: z.string().min(1, "Por favor ingresa tu correo electrónico o cédula"),
@@ -363,9 +364,15 @@ const Login = () => {
           </CardFooter>
         </Card>
 
-        <p className="text-center text-sm text-muted-foreground mt-4">
-          © {new Date().getFullYear()} A.P.A.C. GOETHE. Todos los derechos reservados.
-        </p>
+        <div className="text-center mt-4 space-y-2">
+          <p className="text-sm text-muted-foreground">
+            © {new Date().getFullYear()} A.P.A.C. GOETHE. Todos los derechos reservados.
+          </p>
+          <span className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+            <span>Plataforma desarrollada por</span>
+            <Brand180 className="h-4 w-auto" medium="login" />
+          </span>
+        </div>
       </div>
     </div>
   );

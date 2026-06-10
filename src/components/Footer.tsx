@@ -2,6 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useStore } from '@/stores/store';
+import Brand180 from '@/components/Brand180';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -63,9 +64,10 @@ const Footer = () => {
         
         <div className="border-t border-border/30 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center text-sm text-muted-foreground">
           <p>© {currentYear} A.P.A.C. GOETHE. Todos los derechos reservados.</p>
-          <p className="mt-4 md:mt-0 flex items-center">
-            <span className="font-bold">Desarrollado por</span> <a className='font-bold ml-1' target='_blank' href="https://180softlab.com">180SoftLab</a> 
-          </p>
+          <span className="mt-4 md:mt-0 flex items-center gap-2">
+            <span className="text-xs">Plataforma desarrollada por</span>
+            <Brand180 className="h-5 w-auto" medium="footer" />
+          </span>
         </div>
       </div>
     </footer>
