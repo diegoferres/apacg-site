@@ -27,11 +27,11 @@ const Brand180: React.FC<Brand180Props> = ({
     className="inline-flex items-center transition-opacity hover:opacity-80"
   >
     <img
-      src={white ? '/brand/180softlab-wordmark-white.svg' : '/brand/180softlab-wordmark.svg'}
+      src={`${import.meta.env.BASE_URL}brand/${white ? '180softlab-wordmark-white.svg' : '180softlab-wordmark.svg'}`}
       alt="180softlab"
       className={className}
       width={193}
-      height={45}
+      height={40}
     />
   </a>
 );
