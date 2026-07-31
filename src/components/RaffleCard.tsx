@@ -65,7 +65,9 @@ const RaffleCard = ({ raffle, delay = 0, position = 0, listName = 'raffles_list'
             <img
               src={raffle.cover?.storage_path_full}
               alt={raffle.title}
-              className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
+              /* object-top: la portada de una rifa suele ser un afiche vertical, y lo que vende
+                  (titulo, precio, premio principal) esta arriba. Centrado se recortaba justo eso. */
+              className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
               loading="lazy"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />

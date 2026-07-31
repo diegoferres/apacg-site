@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { MapPin, Calendar, Clock, Ticket, ArrowLeft, Plus, Minus } from 'lucide-react';
+import { MapPin, Calendar, Clock, Ticket, ArrowLeft, Plus, Minus, Maximize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { ShareButton } from '@/components/ShareButton';
@@ -35,6 +36,7 @@ const RaffleDetail = () => {
   const [quantity, setQuantity] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [coverExpanded, setCoverExpanded] = useState(false);
   const { user, isLoggedIn } = useStore();
 
   // Detectar y almacenar código de referido (con vencimiento — ver useReferralCode)
@@ -261,14 +263,26 @@ const RaffleDetail = () => {
             <div className="lg:col-span-2 space-y-6">
               {/* Raffle Image */}
               {raffle.cover ? (
-                <div className="relative aspect-video overflow-hidden rounded-lg">
+                /* La portada de una rifa suele ser un flyer vertical con la lista de premios.
+                   Con aspect-video + object-cover se recortaba a una franja del medio y no se
+                   podía leer nada. Se respeta la proporción real de la imagen y se puede tocar
+                   para verla completa. */
+                <button
+                  type="button"
+                  onClick={() => setCoverExpanded(true)}
+                  className="group relative block w-full overflow-hidden rounded-lg bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  aria-label="Ver la imagen de la rifa en grande"
+                >
                   <img
                     src={raffle.cover?.storage_path_full}
                     alt={raffle.title}
-                    className="w-full h-full object-cover object-center"
+                    className="mx-auto block h-auto w-full max-h-[75vh] object-contain"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-                </div>
+                  <span className="absolute bottom-2 right-2 flex items-center gap-1 rounded-md bg-black/60 px-2 py-1 text-xs text-white">
+                    <Maximize2 className="h-3 w-3" />
+                    Ver en grande
+                  </span>
+                </button>
               ) : (
                 <div className="relative aspect-video bg-gradient-to-br from-primary/10 to-primary/20 rounded-lg flex items-center justify-center">
                   <div className="text-center">
@@ -373,6 +387,21 @@ const RaffleDetail = () => {
           </div>
         </div>
       </section>
+
+      {/* La imagen a pantalla completa: es donde está la lista de premios con su letra chica,
+          así que se muestra entera y con scroll si no entra. */}
+      <Dialog open={coverExpanded} onOpenChange={setCoverExpanded}>
+        <DialogContent className="max-w-3xl p-2 sm:p-4">
+          <DialogTitle className="sr-only">{raffle.title}</DialogTitle>
+          <div className="max-h-[85vh] overflow-y-auto">
+            <img
+              src={raffle.cover?.storage_path_full}
+              alt={raffle.title}
+              className="mx-auto block h-auto w-full"
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Mobile sticky CTA */}
       <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-background/95 backdrop-blur-md border-t border-border/40 p-4">
