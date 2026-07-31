@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import logoImg from '/logo.png';
 import { useParams, useNavigate, useSearchParams, Link } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
@@ -55,6 +56,14 @@ const Profile = () => {
     hijos: any[];
   } | null>(null);
   const [qrExpanded, setQrExpanded] = useState(false);
+  // La fila de fichas se desliza: al cambiar de sección se centra la activa para que se vean
+  // las opciones de los costados y no quede escondida fuera de la vista.
+  const activePillRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    // block:'nearest' para que centre la fila horizontal sin arrastrar el scroll de la página.
+    activePillRef.current?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+  }, [activeTab]);
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -668,65 +677,79 @@ const Profile = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="md:col-span-1">
             <Card className="mb-6" data-tour="profile-card">
-              <CardHeader className="text-center">
-                <div className="flex justify-center mb-4">
-                  <Avatar className="h-24 w-24">
-                    {user?.avatar ? (
-                      <AvatarImage src={user?.avatar} alt={user?.name} />
-                    ) : (
-                      <AvatarFallback className="text-2xl">{user?.name?.charAt(0) || 'U'}</AvatarFallback>
-                    )}
-                  </Avatar>
-                </div>
-                <CardTitle className="flex items-center justify-center gap-2">
-                  {user?.name || name}
-                  {user?.member?.status === "Activo" ? (
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                  ) : (
-                    <XCircle className="h-5 w-5 text-red-500" />
-                  )}
-                </CardTitle>
-                <div className="text-sm text-muted-foreground text-center">
-                  <div className="flex items-center justify-center gap-2 mt-1">
-                    <Mail className="h-4 w-4" />
-                    <span>{email || user?.email}</span>
+              {/* Es el carnet de socio: se le da forma de tarjeta física, con la emisora arriba,
+                  el titular grande y el QR al costado. Antes era una columna centrada que ocupaba
+                  casi una pantalla de alto antes de llegar a lo que el socio viene a hacer. */}
+              <CardContent className="p-0">
+                <div className="rounded-lg bg-primary p-4 text-primary-foreground sm:p-5">
+                  <div className="flex items-center justify-between gap-2 border-b border-primary-foreground/15 pb-3">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <img src={logoImg} alt="" className="h-7 w-6 shrink-0 object-contain" />
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-semibold uppercase leading-tight tracking-wider">
+                          A.P.A.C. Goethe
+                        </p>
+                        <p className="text-[10px] leading-tight text-primary-foreground/60">Carnet de socio</p>
+                      </div>
+                    </div>
+                    {/* El estado que vale en el carnet es el mismo que muestra la pestaña de
+                        membresía (is_active_member), que además exige las cuotas de los hijos al
+                        día. El status crudo del socio puede decir "Activo" con anualidades
+                        impagas, y quedaban dos estados contradictorios en la misma pantalla. */}
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                        membershipStatus?.is_active_member
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}
+                    >
+                      {membershipStatus?.is_active_member ? 'Activa' : 'Inactiva'}
+                    </span>
                   </div>
-                  <div className="flex items-center justify-center gap-2 mt-1">
-                    <Phone className="h-4 w-4" />
-                    <span>{phone || user?.member?.phone}</span>
+
+                  <div className="flex items-start gap-4 pt-4">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] uppercase tracking-widest text-primary-foreground/50">Titular</p>
+                      <p className="truncate text-lg font-semibold leading-tight">{user?.name || name}</p>
+
+                      <p className="mt-3 text-[10px] uppercase tracking-widest text-primary-foreground/50">Cédula</p>
+                      <p className="font-mono text-sm tracking-wider">
+                        {user?.member?.document_number || user?.member?.member_number}
+                      </p>
+
+                      <div className="mt-3 space-y-1 text-xs text-primary-foreground/70">
+                        <div className="flex items-center gap-1.5">
+                          <Mail className="h-3 w-3 shrink-0" />
+                          <span className="truncate">{email || user?.email}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Phone className="h-3 w-3 shrink-0" />
+                          <span>{phone || user?.member?.phone}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Fondo blanco sí o sí: el QR lo escanea el celular de otra persona. */}
+                    <button
+                      type="button"
+                      onClick={() => setQrExpanded(true)}
+                      className="shrink-0 rounded-md bg-white p-1.5 transition-transform hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
+                      aria-label="Ampliar código QR del carnet"
+                    >
+                      <img
+                        src={user?.member?.qr_code_base64 || user?.member?.image?.storage_path_full}
+                        alt="Código QR del carnet de socio"
+                        className="h-[92px] w-[92px]"
+                      />
+                      <span className="mt-0.5 flex items-center justify-center gap-1 text-[9px] leading-none text-slate-500">
+                        <QrCode className="h-2.5 w-2.5" />
+                        Ampliar
+                      </span>
+                    </button>
                   </div>
                 </div>
-              </CardHeader>
-              
-              <CardContent className="flex flex-col items-center">
-                {/* El QR es el carnet que el socio muestra en la puerta. A 128px y con el brillo
-                    del celular al mínimo cuesta que lo lean, así que se puede tocar para verlo
-                    a pantalla completa. */}
-                <button
-                  type="button"
-                  onClick={() => setQrExpanded(true)}
-                  className="mb-2 p-2 bg-white rounded-lg transition-transform hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  aria-label="Ampliar código QR del carnet"
-                >
-                  <img
-                    src={user?.member?.qr_code_base64 || user?.member?.image?.storage_path_full}
-                    alt="Código QR del carnet de socio"
-                    className="h-32 w-32"
-                  />
-                </button>
-                <p className="text-xs text-muted-foreground mb-3 flex items-center gap-1">
-                  <QrCode className="h-3 w-3" />
-                  Tocá el código para ampliarlo
-                </p>
-                <p className="text-sm font-medium mb-4">CI: {user?.member?.document_number || user?.member?.member_number}</p>
-                <Button 
-                  variant="destructive" 
-                  className="w-full"
-                  onClick={handleLogout}
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Cerrar Sesión
-                </Button>
+
+                {/* Cerrar sesión no se repite acá: ya está en la barra superior. */}
               </CardContent>
             </Card>
 
@@ -754,62 +777,40 @@ const Profile = () => {
             </Dialog>
 
 
-            <Card>
+            <Card className="overflow-hidden">
               <CardContent className="p-0">
-                <div className="divide-y">
-                  <Button 
-                    variant={activeTab === "membership" ? "default" : "ghost"} 
-                    className="w-full justify-start rounded-none h-12"
-                    onClick={() => setActiveTab("membership")}
-                  >
-                    <CreditCard className="mr-2 h-5 w-5" />
-                    Ver Membresía
-                  </Button>
-                  <Button 
-                    variant={activeTab === "benefits" ? "default" : "ghost"} 
-                    className="w-full justify-start rounded-none h-12"
-                    onClick={() => setActiveTab("benefits")}
-                  >
-                    <Gift className="mr-2 h-5 w-5" />
-                    Beneficios Reclamados
-                  </Button>
-                  <Button 
-                    variant={activeTab === "edit" ? "default" : "ghost"} 
-                    className="w-full justify-start rounded-none h-12"
-                    onClick={() => setActiveTab("edit")}
-                  >
-                    <Edit className="mr-2 h-5 w-5" />
-                    Editar Perfil
-                  </Button>
-                  <Button 
-                    variant={activeTab === "raffles" ? "default" : "ghost"} 
-                    className="w-full justify-start rounded-none h-12"
-                    onClick={() => setActiveTab("raffles")}
-                  >
-                    <Ticket className="mr-2 h-5 w-5" />
-                    Rifas
-                  </Button>
-                  <Button 
-                    variant={activeTab === "orders" ? "default" : "ghost"} 
-                    className="w-full justify-start rounded-none h-12"
-                    onClick={() => setActiveTab("orders")}
-                  >
-                    <Receipt className="mr-2 h-5 w-5" />
-                    Mis Compras
-                  </Button>
-                  <Button 
-                    variant={activeTab === "children" ? "default" : "ghost"} 
-                    className="w-full justify-start rounded-none h-12 relative"
-                    onClick={() => setActiveTab("children")}
-                  >
-                    <GraduationCap className="mr-2 h-5 w-5" />
-                    Hijos Matriculados
-                    {totalPendingPayments > 0 && (
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] h-5 flex items-center justify-center">
-                        {totalPendingPayments}
-                      </span>
-                    )}
-                  </Button>
+                {/* En celular es una fila de fichas que se desliza: seis botones a pantalla
+                    completa empujaban el contenido fuera de la vista. En escritorio vuelve a ser
+                    la lista vertical de siempre. */}
+                <div className="flex gap-2 overflow-x-auto px-3 py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:flex-col sm:gap-0 sm:divide-y sm:overflow-visible sm:p-0">
+                  {/* Ordenadas por lo que el socio realmente hace: primero el estado de su
+                      membresía y lo que tiene que pagar, después lo que usa seguido (rifas,
+                      compras). Beneficios sólo lista lo ya reclamado y editar el perfil se toca
+                      una vez cada tanto, así que van al final. */}
+                  {[
+                    { id: 'membership', label: 'Membresía', icon: CreditCard },
+                    { id: 'children', label: 'Hijos', icon: GraduationCap, badge: totalPendingPayments },
+                    { id: 'raffles', label: 'Rifas', icon: Ticket },
+                    { id: 'orders', label: 'Mis Compras', icon: Receipt },
+                    { id: 'benefits', label: 'Beneficios', icon: Gift },
+                    { id: 'edit', label: 'Editar Perfil', icon: Edit },
+                  ].map(({ id, label, icon: Icon, badge }) => (
+                    <Button
+                      key={id}
+                      ref={activeTab === id ? activePillRef : undefined}
+                      variant={activeTab === id ? 'default' : 'ghost'}
+                      className="h-9 shrink-0 rounded-full px-3.5 sm:h-12 sm:w-full sm:justify-start sm:rounded-none sm:px-4"
+                      onClick={() => setActiveTab(id)}
+                    >
+                      <Icon className="mr-2 h-4 w-4 shrink-0 sm:h-5 sm:w-5" />
+                      <span className="whitespace-nowrap">{label}</span>
+                      {badge > 0 && (
+                        <span className="ml-2 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-100 px-1.5 text-xs font-medium text-red-800 sm:ml-auto">
+                          {badge}
+                        </span>
+                      )}
+                    </Button>
+                  ))}
                 </div>
               </CardContent>
             </Card>
@@ -1568,23 +1569,48 @@ const Profile = () => {
                         <div key={order.id} className="border rounded-lg p-4">
                           <div className="flex items-start justify-between mb-3">
                             <div className="flex gap-3">
-                              <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center">
-                                {order.items[0]?.type === 'Course' ? (
-                                  <GraduationCap className="h-8 w-8 text-blue-600" />
-                                ) : order.items[0]?.type === 'Event' ? (
-                                  <Calendar className="h-8 w-8 text-green-600" />
-                                ) : (
-                                  <Ticket className="h-8 w-8 text-purple-600" />
+                              {(() => {
+                                // Un ícono y una etiqueta por cada tipo real de compra. Antes
+                                // cualquier cosa que no fuera curso o evento caía en el ícono de
+                                // ticket y en la etiqueta "Item".
+                                const tipo = order.items[0]?.type;
+                                const Icono = tipo === 'Course' || tipo === 'CourseGroup' ? GraduationCap
+                                  : tipo === 'EventTicketType' || tipo === 'Event' ? Calendar
+                                  : tipo === 'EventExtra' ? Gift
+                                  : tipo === 'Product' || tipo === 'ProductVariant' ? Store
+                                  : tipo === 'StudentAnnualPayment' ? CreditCard
+                                  : Ticket;
+                                return (
+                                  <div className="w-14 h-14 sm:w-16 sm:h-16 bg-muted rounded-lg flex items-center justify-center shrink-0">
+                                    <Icono className="h-7 w-7 sm:h-8 sm:w-8 text-muted-foreground" />
+                                  </div>
+                                );
+                              })()}
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-semibold break-words">
+                                  {order.items[0]?.name || 'Compra'}
+                                  {order.items.length > 1 && (
+                                    <span className="ml-1 font-normal text-muted-foreground">
+                                      y {order.items.length - 1} ítem{order.items.length > 2 ? 's' : ''} más
+                                    </span>
+                                  )}
+                                </h3>
+                                {order.items[0]?.detail && (
+                                  <p className="text-sm text-muted-foreground break-words">{order.items[0].detail}</p>
                                 )}
-                              </div>
-                              <div className="flex-1">
-                                <h3 className="font-semibold">{order.items[0]?.name || 'Item'}</h3>
-                                <p className="text-sm text-muted-foreground">
-                                  {order.items[0]?.type === 'Course' ? 'Inscripción al Curso' : 
-                                   order.items[0]?.type === 'Event' ? 'Entrada de Evento' : 
-                                   order.items[0]?.type === 'Raffle' ? 'Números de Rifa' : 'Item'}
+                                <p className="text-xs text-muted-foreground">
+                                  {(() => {
+                                    const t = order.items[0]?.type;
+                                    if (t === 'Course' || t === 'CourseGroup') return 'Inscripción a curso';
+                                    if (t === 'EventTicketType' || t === 'Event') return 'Entrada de evento';
+                                    if (t === 'EventExtra') return 'Extra del evento';
+                                    if (t === 'Raffle') return 'Números de rifa';
+                                    if (t === 'Product' || t === 'ProductVariant') return 'Producto';
+                                    if (t === 'StudentAnnualPayment') return 'Cuota anual';
+                                    return 'Compra';
+                                  })()}
                                 </p>
-                                
+
                                 {/* Detalles específicos por tipo */}
                                 {order.items.map((item, index) => (
                                   <div key={index} className="mt-2 space-y-1">
