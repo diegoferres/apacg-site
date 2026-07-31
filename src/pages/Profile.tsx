@@ -6,8 +6,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { QrCode, LogOut, User, CreditCard, Gift, Edit, Mail, Phone, Calendar, CheckCircle, XCircle, Receipt, ExternalLink, Ticket, Users, Copy, MapPin, Store, Tag, GraduationCap, Clock, Download } from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { useToast } from "@/hooks/use-toast";
 import { formatPrice, formatDate, toNumber } from "@/lib/utils";
@@ -46,9 +46,15 @@ const Profile = () => {
   const [currentOrdersPage, setCurrentOrdersPage] = useState(1);
   const [totalOrdersPages, setTotalOrdersPages] = useState(1);
   const [membershipStatus, setMembershipStatus] = useState(null);
-  const [selectedRaffleStudents, setSelectedRaffleStudents] = useState([]);
-  const [showStudentsModal, setShowStudentsModal] = useState(false);
-  const [selectedRaffle, setSelectedRaffle] = useState(null);
+  const [referralInfo, setReferralInfo] = useState<{
+    referrer_code: string | null;
+    motivo: string | null;
+    ventas: Array<{ orden: string; fecha: string; rifa: string; numeros: number; por_numero: number; acumulado: number }>;
+    total_numeros: number;
+    total_acumulado: number;
+    hijos: any[];
+  } | null>(null);
+  const [qrExpanded, setQrExpanded] = useState(false);
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -295,15 +301,29 @@ const Profile = () => {
             id: raffle.id,
             title: raffle.title,
             slug: raffle.slug,
-            draw_date: raffle.draw_date,
+            draw_date: raffle.draw_date_formatted ?? raffle.draw_date,
             location: null, // No hay campo de ubicación en el modelo actual
-            price: raffle.price
+            // price viene ya formateado del backend ("10.000"); parseFloat lo leería como 10
+            // por el punto. price_raw es el número real.
+            price: raffle.price_raw ?? raffle.price
           })));
         }
       } catch (error) {
         console.error('Error fetching raffles:', error);
         // Si hay error, mostrar array vacío en lugar de datos mock
         setRaffles([]);
+      }
+    };
+
+    const fetchReferralInfo = async () => {
+      try {
+        const response = await api.get('api/client/profile/referral');
+        if (response.data.success) {
+          setReferralInfo(response.data.data);
+        }
+      } catch (error) {
+        console.error('Error fetching referral info:', error);
+        setReferralInfo(null);
       }
     };
 
@@ -336,6 +356,7 @@ const Profile = () => {
     };
     
     fetchRaffles();
+    fetchReferralInfo();
     fetchData();
   }, [user?.id, user?.member?.id, isLoggedIn]);
 
@@ -560,25 +581,21 @@ const Profile = () => {
     }
   };
 
-  const handleViewStudents = async (raffle) => {
-    setSelectedRaffle(raffle);
-    
-    if (user?.member?.students?.length > 0) {
-      setSelectedRaffleStudents(user.member.students.map(student => ({
-        ...student,
-        school_year: student.school_year || "N/A"
-      })));
-    } else {
-      // Si no hay estudiantes reales, mostrar array vacío
-      setSelectedRaffleStudents([]);
-    }
-    
-    setShowStudentsModal(true);
-  };
+  // Link de referido del SOCIO (no por hijo): un único código sirve para
+  // cualquier rifa activa, solo cambia el slug de destino.
+  const copyReferralLink = (raffle: { slug: string; title: string }) => {
+    const code = referralInfo?.referrer_code;
 
-  const copyReferralLink = (student, raffleName) => {
-    // Validar que tenemos todos los datos necesarios
-    if (!selectedRaffle?.slug) {
+    if (!code) {
+      toast({
+        title: "Sin link de referido disponible",
+        description: referralInfo?.motivo || "No se encontró un código de referido para tu cuenta.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!raffle?.slug) {
       toast({
         title: "Error",
         description: "No se puede generar el link: información de rifa incompleta",
@@ -587,22 +604,13 @@ const Profile = () => {
       return;
     }
 
-    if (!student?.referrer_code) {
-      toast({
-        title: "Error",
-        description: "No se puede generar el link: código de referido no disponible",
-        variant: "destructive",
-      });
-      return;
-    }
-
     const baseUrl = window.location.origin;
-    const referralLink = `${baseUrl}/rifa/${selectedRaffle.slug}?ref=${student.referrer_code}`;
-    
+    const referralLink = `${baseUrl}/rifa/${raffle.slug}?ref=${code}`;
+
     navigator.clipboard.writeText(referralLink).then(() => {
       toast({
         title: "Link copiado",
-        description: `Link de referido para "${raffleName || 'la rifa'}" copiado al portapapeles`,
+        description: `Link de referido para "${raffle.title || 'la rifa'}" copiado al portapapeles`,
       });
     }).catch(() => {
       toast({
@@ -691,13 +699,25 @@ const Profile = () => {
               </CardHeader>
               
               <CardContent className="flex flex-col items-center">
-                <div className="mb-4 p-2 bg-white rounded-lg">
-                  <img 
-                    src={user?.member?.qr_code_base64 || user?.member?.image?.storage_path_full} 
-                    alt="QR Code" 
-                    className="h-32 w-32" 
+                {/* El QR es el carnet que el socio muestra en la puerta. A 128px y con el brillo
+                    del celular al mínimo cuesta que lo lean, así que se puede tocar para verlo
+                    a pantalla completa. */}
+                <button
+                  type="button"
+                  onClick={() => setQrExpanded(true)}
+                  className="mb-2 p-2 bg-white rounded-lg transition-transform hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  aria-label="Ampliar código QR del carnet"
+                >
+                  <img
+                    src={user?.member?.qr_code_base64 || user?.member?.image?.storage_path_full}
+                    alt="Código QR del carnet de socio"
+                    className="h-32 w-32"
                   />
-                </div>
+                </button>
+                <p className="text-xs text-muted-foreground mb-3 flex items-center gap-1">
+                  <QrCode className="h-3 w-3" />
+                  Tocá el código para ampliarlo
+                </p>
                 <p className="text-sm font-medium mb-4">CI: {user?.member?.document_number || user?.member?.member_number}</p>
                 <Button 
                   variant="destructive" 
@@ -709,7 +729,31 @@ const Profile = () => {
                 </Button>
               </CardContent>
             </Card>
-            
+
+            {/* QR ampliado. Fondo blanco sólido y el código lo más grande que entre: se escanea
+                desde el celular de otra persona, muchas veces con poca luz. */}
+            <Dialog open={qrExpanded} onOpenChange={setQrExpanded}>
+              <DialogContent className="sm:max-w-md bg-white p-6">
+                <DialogTitle className="text-center text-lg">
+                  {user?.name || name}
+                </DialogTitle>
+                <DialogDescription className="text-center -mt-1">
+                  Carnet de socio · CI {user?.member?.document_number || user?.member?.member_number}
+                </DialogDescription>
+                <div className="flex justify-center py-2">
+                  <img
+                    src={user?.member?.qr_code_base64 || user?.member?.image?.storage_path_full}
+                    alt="Código QR del carnet de socio, ampliado"
+                    className="w-full max-w-[19rem] aspect-square object-contain"
+                  />
+                </div>
+                <p className="text-center text-xs text-muted-foreground">
+                  Mostrá este código para identificarte como socio.
+                </p>
+              </DialogContent>
+            </Dialog>
+
+
             <Card>
               <CardContent className="p-0">
                 <div className="divide-y">
@@ -1345,60 +1389,165 @@ const Profile = () => {
             )}
             
             {activeTab === "raffles" && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Ticket className="mr-2 h-5 w-5" />
-                    Rifas Disponibles
-                  </CardTitle>
-                  <CardDescription>
-                    Lista de rifas activas para generar links de referidos
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {raffles.length > 0 ? (
-                    <div className="space-y-4">
-                      {raffles.map((raffle) => (
-                        <div key={raffle.id} className="p-6 border rounded-lg">
-                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                            <div className="space-y-2">
-                              <h3 className="text-lg font-semibold">{raffle.title}</h3>
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Calendar className="h-4 w-4" />
-                                <span>Sorteo: {raffle.draw_date}</span>
-                              </div>
-                              {raffle.location && (
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                  <MapPin className="h-4 w-4" />
-                                  <span>{raffle.location}</span>
-                                </div>
-                              )}
-                              <div className="text-lg font-semibold text-primary">
-                                {formatPrice(raffle.price)}
-                              </div>
-                            </div>
-                            <Button 
-                              onClick={() => handleViewStudents(raffle)}
-                              className="md:w-auto w-full"
-                            >
-                              <Users className="mr-2 h-4 w-4" />
-                              Ver Alumnos
-                            </Button>
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Copy className="mr-2 h-5 w-5" />
+                      Tu Link de Referido
+                    </CardTitle>
+                    <CardDescription>
+                      Compartilo y ganá por cada número de rifa vendido a través tuyo
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {referralInfo?.referrer_code ? (
+                      <div className="space-y-4">
+                        {/* El código identifica al socio: sin esto el título de la card no se
+                            entiende, porque el link se copia por rifa más abajo. */}
+                        <div className="flex flex-wrap items-center gap-2 text-sm">
+                          <span className="text-muted-foreground">Tu código:</span>
+                          <code className="px-2 py-1 rounded bg-muted font-mono font-semibold tracking-wide">
+                            {referralInfo.referrer_code}
+                          </code>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                          <div className="p-3 sm:p-4 bg-muted rounded-lg text-center">
+                            <p className="text-xl sm:text-2xl font-bold text-primary">{referralInfo.total_numeros}</p>
+                            <p className="text-xs sm:text-sm text-muted-foreground">Números vendidos</p>
+                          </div>
+                          <div className="p-3 sm:p-4 bg-muted rounded-lg text-center">
+                            <p className="text-xl sm:text-2xl font-bold text-primary break-words">
+                              {formatPrice(referralInfo.total_acumulado)}
+                            </p>
+                            <p className="text-xs sm:text-sm text-muted-foreground">Acumulado</p>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                   ) : (
-                     <div className="text-center py-8">
-                       <Ticket className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                       <h3 className="text-lg font-medium mb-2">No hay rifas disponibles</h3>
-                       <p className="text-muted-foreground">
-                         Actualmente no hay rifas activas disponibles.
-                       </p>
-                     </div>
-                   )}
-                </CardContent>
-              </Card>
+
+                        {referralInfo.ventas && referralInfo.ventas.length > 0 ? (
+                          <div>
+                            <h4 className="font-medium mb-2">Detalle de ventas</h4>
+
+                            {/* En celular la tabla de 6 columnas deja "Por número" y "Acumulado"
+                                fuera de pantalla — justo lo que el socio quiere ver. Abajo de sm
+                                se muestra una tarjeta por venta; de sm para arriba, la tabla. */}
+                            <div className="space-y-3 sm:hidden">
+                              {referralInfo.ventas.map((venta, index) => (
+                                <div key={index} className="rounded-lg border p-3">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                      <p className="font-medium leading-tight break-words">{venta.rifa}</p>
+                                      <p className="text-xs text-muted-foreground mt-0.5">
+                                        {formatDate(venta.fecha, { format: 'short' })} · {venta.orden}
+                                      </p>
+                                    </div>
+                                    <p className="text-lg font-bold text-primary whitespace-nowrap">
+                                      {formatPrice(venta.acumulado)}
+                                    </p>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground mt-2">
+                                    {venta.numeros} {venta.numeros === 1 ? 'número' : 'números'} × {formatPrice(venta.por_numero)}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+
+                            <div className="hidden sm:block overflow-x-auto">
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead>Orden</TableHead>
+                                    <TableHead>Fecha</TableHead>
+                                    <TableHead>Rifa</TableHead>
+                                    <TableHead className="text-right">Números</TableHead>
+                                    <TableHead className="text-right">Por número</TableHead>
+                                    <TableHead className="text-right">Acumulado</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {referralInfo.ventas.map((venta, index) => (
+                                    <TableRow key={index}>
+                                      <TableCell className="whitespace-nowrap">{venta.orden}</TableCell>
+                                      <TableCell className="whitespace-nowrap">{formatDate(venta.fecha, { format: 'short' })}</TableCell>
+                                      <TableCell>{venta.rifa}</TableCell>
+                                      <TableCell className="text-right">{venta.numeros}</TableCell>
+                                      <TableCell className="text-right whitespace-nowrap">{formatPrice(venta.por_numero)}</TableCell>
+                                      <TableCell className="text-right whitespace-nowrap font-medium">{formatPrice(venta.acumulado)}</TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">Todavía no tenés ventas registradas por tu link de referido.</p>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        {referralInfo?.motivo || 'Cargando información de referidos...'}
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Ticket className="mr-2 h-5 w-5" />
+                      Rifas Disponibles
+                    </CardTitle>
+                    <CardDescription>
+                      Lista de rifas activas para compartir tu link de referido
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {raffles.length > 0 ? (
+                      <div className="space-y-4">
+                        {raffles.map((raffle) => (
+                          <div key={raffle.id} className="p-4 sm:p-6 border rounded-lg">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                              <div className="space-y-1.5 min-w-0">
+                                <h3 className="text-base sm:text-lg font-semibold break-words">{raffle.title}</h3>
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                  <Calendar className="h-4 w-4 shrink-0" />
+                                  <span>Sorteo: {raffle.draw_date}</span>
+                                </div>
+                                {raffle.location && (
+                                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <MapPin className="h-4 w-4 shrink-0" />
+                                    <span>{raffle.location}</span>
+                                  </div>
+                                )}
+                                <div className="text-base sm:text-lg font-semibold text-primary">
+                                  {formatPrice(raffle.price)} <span className="text-xs font-normal text-muted-foreground">por número</span>
+                                </div>
+                              </div>
+                              <Button
+                                onClick={() => copyReferralLink(raffle)}
+                                className="md:w-auto w-full shrink-0"
+                                disabled={!referralInfo?.referrer_code}
+                              >
+                                <Copy className="mr-2 h-4 w-4" />
+                                Copiar Link de Referido
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                     ) : (
+                       <div className="text-center py-8">
+                         <Ticket className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                         <h3 className="text-lg font-medium mb-2">No hay rifas disponibles</h3>
+                         <p className="text-muted-foreground">
+                           Actualmente no hay rifas activas disponibles.
+                         </p>
+                       </div>
+                     )}
+                  </CardContent>
+                </Card>
+              </div>
             )}
 
             {activeTab === "orders" && (
@@ -1698,53 +1847,7 @@ const Profile = () => {
           </div>
         </div>
       </main>
-      
-      {/* Modal para mostrar alumnos y links de referido */}
-      <Dialog open={showStudentsModal} onOpenChange={setShowStudentsModal}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Alumnos para {selectedRaffle?.title}
-            </DialogTitle>
-            <DialogDescription>
-              Genera links de referido para cada alumno matriculado
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-3 max-h-96 overflow-y-auto">
-            {selectedRaffleStudents.length > 0 ? (
-              selectedRaffleStudents.map((student) => (
-                <div key={student.id} className="p-3 border rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-medium">{student.first_name || student.fist_name} {student.last_name}</h4>
-                      <p className="text-sm text-muted-foreground">{student.grade || student.school_year || ''}{student.section ? ` - ${student.section}` : ''}</p>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => copyReferralLink(student, selectedRaffle?.title)}
-                      className="shrink-0"
-                    >
-                      <Copy className="h-4 w-4 mr-1" />
-                      Copiar Link
-                    </Button>
-                  </div>
-                </div>
-              ))
-             ) : (
-               <div className="text-center py-8">
-                 <Users className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-                 <p className="text-sm text-muted-foreground">
-                   No hay alumnos matriculados para generar links de referido.
-                 </p>
-               </div>
-             )}
-          </div>
-        </DialogContent>
-      </Dialog>
-      
+
       {/* Student Data Splash - Solo desde perfil manualmente */}
       <StudentDataSplash 
         isOpen={showStudentSplash}

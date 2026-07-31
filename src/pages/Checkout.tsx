@@ -261,6 +261,8 @@ const Checkout = () => {
       // Limpiar el parámetro de error de la URL sin recargar la página
       const newUrl = window.location.pathname;
       window.history.replaceState({}, '', newUrl);
+      // El pago falló: no dejar el código de referido latente para un reintento
+      // ambiguo más adelante (se vuelve a capturar si el usuario reingresa por el link).
     }
     // Intentar leer datos del localStorage primero
     const savedData = localStorage.getItem('checkout_data');

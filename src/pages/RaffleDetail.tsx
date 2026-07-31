@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { MapPin, Calendar, Clock, Ticket, ArrowLeft, Plus, Minus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +12,7 @@ import { formatPrice, toNumber, formatDate, renderSafeHtml } from '@/lib/utils';
 import { useStore } from '@/stores/store';
 import api from '@/services/api';
 import analytics from '@/services/analytics';
+import { useReferralCode, getReferralCode } from '@/hooks/useReferralCode';
 
 interface Raffle {
   id: number;
@@ -29,29 +30,15 @@ interface Raffle {
 const RaffleDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const [raffle, setRaffle] = useState<Raffle>();
   const { toast } = useToast();
   const [quantity, setQuantity] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const { user, isLoggedIn } = useStore();
-  
-  // Detectar y almacenar código de referido
-  useEffect(() => {
-    const referralCode = searchParams.get('ref');
-    if (referralCode) {
-      console.log('Código de referido detectado:', referralCode);
-      localStorage.setItem('referral_code', referralCode);
-      
-      // Opcional: mostrar toast informando al usuario
-      toast({
-        title: "¡Link de referido activado!",
-        description: "Esta compra será acreditada al estudiante referente.",
-        className: "bg-green-50 border-green-200",
-      });
-    }
-  }, [searchParams, toast]);
+
+  // Detectar y almacenar código de referido (con vencimiento — ver useReferralCode)
+  useReferralCode();
 
   useEffect(() => {
     const fetchRaffle = async () => {
@@ -187,8 +174,8 @@ const RaffleDetail = () => {
       );
     }
 
-    // Obtener código de referido si existe
-    const referralCode = localStorage.getItem('referral_code');
+    // Obtener código de referido si existe (y aún no venció)
+    const referralCode = getReferralCode();
 
     // Proceder al checkout con datos detallados
     const checkoutData = {
@@ -210,6 +197,11 @@ const RaffleDetail = () => {
 
     // Guardar datos del checkout en localStorage
     localStorage.setItem('checkout_data', JSON.stringify(checkoutData));
+
+    // Acá NO se limpia el código: el comprador puede volver atrás y reintentar (cambiar la
+    // cantidad, corregir un dato), y borrarlo en este punto haría que el segundo intento se
+    // pierda la imputación al socio. Se limpia recién cuando la compra termina de verdad, y
+    // si se abandona vence solo por el TTL.
 
     // Navegar al checkout
     navigate('/checkout');

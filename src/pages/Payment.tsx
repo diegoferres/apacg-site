@@ -9,6 +9,7 @@ import Footer from '@/components/Footer';
 import { formatPrice, formatDate } from '@/lib/utils';
 import api from '@/services/api';
 import analytics from '@/services/analytics';
+import { clearReferralCode } from '@/hooks/useReferralCode';
 
 interface TicketDetail {
   id: number;
@@ -393,7 +394,7 @@ const PaymentPage = () => {
     localStorage.removeItem('payment_data');
     localStorage.removeItem('checkout_data');
     localStorage.removeItem('current_payment');
-    localStorage.removeItem('referral_code'); // Limpiar código de referido usado
+    clearReferralCode(); // Limpiar código de referido usado
     // NO limpiar checkout_form_data para preservar datos del formulario para guests
     
     // Redirigir a página de éxito con datos
@@ -414,10 +415,13 @@ const PaymentPage = () => {
     }
     
     setError('Hubo un problema procesando el pago. Por favor, verifique sus datos e intente nuevamente.');
+    // El código de referido NO se limpia acá: el mensaje invita a reintentar, y borrarlo haría
+    // que el reintento pierda la imputación al socio. Si el comprador abandona, vence por TTL.
   };
 
   const handlePaymentCancel = () => {
     console.log('Payment cancelled by user');
+    // Tampoco se limpia al cancelar: vuelve al checkout y suele reintentar.
     // NO limpiar checkout_form_data para preservar datos del formulario
     navigate('/checkout');
   };

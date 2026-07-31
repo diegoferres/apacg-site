@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { MapPin, Calendar, Clock, Ticket, ArrowLeft, Plus, Minus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -65,7 +65,6 @@ interface Event {
 const EventDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const [event, setEvent] = useState<Event>();
   const { toast } = useToast();
   const [selectedTickets, setSelectedTickets] = useState<Record<number, number>>({});
@@ -111,22 +110,9 @@ const EventDetail = () => {
     }
   }, [isLoggedIn, user]);
 
-  // Detectar y almacenar código de referido
-  useEffect(() => {
-    const referralCode = searchParams.get('ref');
-    if (referralCode) {
-      console.log('Código de referido detectado:', referralCode);
-      localStorage.setItem('referral_code', referralCode);
-      
-      // Opcional: mostrar toast informando al usuario
-      toast({
-        title: "¡Link de referido activado!",
-        description: "Esta compra será acreditada al estudiante referente.",
-        className: "bg-green-50 border-green-200",
-      });
-    }
-  }, [searchParams, toast]);
-  
+  // Nota: el link de referido de socio hoy es exclusivo de rifas — los eventos
+  // no capturan ni envían `?ref=` (ver useReferralCode en RaffleDetail).
+
   useEffect(() => {
     const fetchEvent = async () => {
       try {
@@ -391,9 +377,6 @@ const EventDetail = () => {
       );
     }
 
-    // Obtener código de referido si existe
-    const referralCode = localStorage.getItem('referral_code');
-
     // Proceder al checkout con datos detallados
     const ticketDetails = Object.entries(selectedTickets)
       .filter(([_, quantity]) => quantity > 0)
@@ -440,7 +423,6 @@ const EventDetail = () => {
       extras: extraDetails,
       totalAmount: getTotalPrice(),
       totalTickets: getTotalTickets(),
-      referralCode: referralCode,
       is_member: isMember || appliesPriceFromCi,
       // Pre-cargar CI ingresado en el evento
       prefilledCi: buyerCi.trim() || undefined,
