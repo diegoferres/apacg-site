@@ -122,7 +122,7 @@ const PaymentPage = () => {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
-        <main className="flex-grow container mx-auto px-4 pt-24 pb-12">
+        <main className="flex-grow container mx-auto px-4 page-top pb-12">
           <div className="max-w-2xl mx-auto">
             <Button variant="outline" className="mb-6" onClick={handleGoBack}>
               <ArrowLeft className="mr-2 h-4 w-4" />
@@ -146,7 +146,7 @@ const PaymentPage = () => {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
-      <main className="flex-grow container mx-auto px-4 pt-24 pb-12">
+      <main className="flex-grow container mx-auto px-4 page-top pb-12">
         {/* Breadcrumb */}
         <Breadcrumb className="mb-6">
           <BreadcrumbList>

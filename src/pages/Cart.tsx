@@ -82,7 +82,7 @@ const Cart = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <div className="container mx-auto px-4 pt-24 pb-6">
+      <div className="container mx-auto px-4 page-top pb-6">
         <Button variant="ghost" asChild className="mb-4">
           <Link to="/productos"><ArrowLeft className="h-4 w-4 mr-2" /> Seguir comprando</Link>
         </Button>

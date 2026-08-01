@@ -1,19 +1,44 @@
 import { useStore } from "@/stores/store";
 import { Navigate } from "react-router-dom";
-import { useState, useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
+import { useEffect } from "react";
+import { toast } from "@/hooks/use-toast";
 
 interface Props {
   children: React.ReactNode;
 }
 
+/**
+ * Deja pasar a visitantes anonimos y a admins. A un socio logueado le exige tener sus alumnos
+ * cargados y con cedula; si no, lo manda al inicio con un aviso.
+ */
 const ProtectedWithStudentsRequired = ({ children }: Props) => {
   const { user, isLoggedIn, isLoading } = useStore();
-  const { toast } = useToast();
 
+  // Los admins pasan por encima de todas las validaciones
+  const isAdmin = user?.roles?.some((role: any) => role.name === 'admin' || role.name === 'Administrador') ?? false;
 
+  const students = user?.member?.students ?? [];
+  const faltanDatosDeAlumnos =
+    !isLoading &&
+    isLoggedIn &&
+    !!user &&
+    !isAdmin &&
+    !!user.member &&
+    (students.length === 0 || students.some((s: any) => !s.ci || s.ci.trim() === ''));
 
-  // Show loading while auth is still loading
+  // El aviso va en un efecto, no en el render: `toast` actualiza estado y llamarlo mientras se
+  // renderiza disparaba un ciclo infinito ("Too many re-renders") que dejaba la pantalla en
+  // blanco en vez de redirigir. El hook queda antes de cualquier return para no romper el orden.
+  useEffect(() => {
+    if (faltanDatosDeAlumnos) {
+      toast({
+        title: "Registro de estudiantes requerido",
+        description: "Para acceder a esta sección, primero debes registrar a tus estudiantes.",
+        variant: "default",
+      });
+    }
+  }, [faltanDatosDeAlumnos]);
+
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
@@ -23,46 +48,22 @@ const ProtectedWithStudentsRequired = ({ children }: Props) => {
     );
   }
 
-  // If user is logged in, check if they have students
   if (isLoggedIn && user) {
-    
-    // FIRST: If user is admin, allow access (admins bypass all validations)
-    // Check Laravel Permissions structure: user.roles array with role objects
-    const isAdmin = user.roles?.some((role: any) => role.name === 'admin' || role.name === 'Administrador');
-    
     if (isAdmin) {
       return <>{children}</>;
     }
-    
-    // SECOND: If user doesn't have member data, redirect to home (only for non-admin users)
+
+    // Sin datos de socio no hay nada que validar: al inicio
     if (!user.member) {
       return <Navigate to="/" replace />;
     }
 
-    // Check if user has students with complete CI data
-    const students = user.member.students || [];
-    const hasStudents = students.length > 0;
-    const studentsWithCI = students.filter(student => student.ci && student.ci.trim() !== '');
-    const allStudentsHaveCI = students.length > 0 && studentsWithCI.length === students.length;
-    
-    
-    if (!hasStudents || !allStudentsHaveCI) {
-      
-      // Show informative message to user
-      toast({
-        title: "Registro de estudiantes requerido",
-        description: "Para acceder a esta sección, primero debes registrar a tus estudiantes.",
-        variant: "default",
-      });
-      
+    if (faltanDatosDeAlumnos) {
       return <Navigate to="/" replace />;
     }
-    
-    
   }
 
-  // If no user is logged in, allow access (guest)
-  // If user has students, allow access
+  // Invitados y socios con los alumnos completos
   return <>{children}</>;
 };
 

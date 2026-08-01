@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { ShareButton } from '@/components/ShareButton';
+import PageHeader from '@/components/PageHeader';
 import { useToast } from '@/hooks/use-toast';
 import { formatPrice, toNumber, formatDate, renderSafeHtml } from '@/lib/utils';
 import { useStore } from '@/stores/store';
@@ -38,6 +39,10 @@ const RaffleDetail = () => {
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const [coverExpanded, setCoverExpanded] = useState(false);
   const { user, isLoggedIn } = useStore();
+
+  // En mobile los controles de cantidad y la compra viven SOLO en la barra inferior fija: asi
+  // estan siempre a mano sin importar donde este el scroll, y no se duplican con la tarjeta
+  // (que en mobile queda como informacion de precio).
 
   // Detectar y almacenar código de referido (con vencimiento — ver useReferralCode)
   useReferralCode();
@@ -89,7 +94,7 @@ const RaffleDetail = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="pt-24 pb-12">
+        <div className="page-top pb-12">
           <div className="container mx-auto px-4 md:px-6">
             <div className="grid lg:grid-cols-2 gap-12">
               <div className="h-96 bg-muted/30 animate-pulse rounded-lg"></div>
@@ -114,7 +119,7 @@ const RaffleDetail = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="pt-24 pb-12 text-center">
+        <div className="page-top pb-12 text-center">
           <h1 className="text-2xl font-bold">Rifa no encontrada</h1>
           <Button asChild className="mt-4">
             <Link to="/rifas">Volver a Rifas</Link>
@@ -127,8 +132,10 @@ const RaffleDetail = () => {
 
 
   const updateQuantity = (change: number) => {
-    const newQuantity = Math.max(0, quantity + change);
-    
+    // Forma funcional: con taps rapidos seguidos, `quantity` de la clausura queda desactualizado
+    // y se pierden incrementos (3 taps podian dejar el contador en 1).
+    setQuantity((actual) => Math.max(0, actual + change));
+
     // Track agregar al carrito (solo cuando se agrega)
     if (change > 0 && raffle) {
       analytics.trackEvent('add_to_cart', {
@@ -143,8 +150,6 @@ const RaffleDetail = () => {
         }]
       });
     }
-    
-    setQuantity(newQuantity);
   };
 
   const getTotalPrice = () => {
@@ -213,55 +218,27 @@ const RaffleDetail = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      {/* Hero Section */}
-      <section className="pt-24 pb-20 lg:pb-12">
+      {/* Hero Section.
+          El navbar es fixed: reservamos exactamente su alto real (--navbar-h, que publica el
+          propio Navbar) mas un respiro chico. Antes era pt-24 fijo, que en mobile dejaba un
+          hueco muerto cuando el navbar medía menos, y tapaba el contenido cuando medía mas. */}
+      <section className="page-top pb-44 lg:pb-12">
         <div className="container mx-auto px-4 md:px-6">
-          {/* Breadcrumb */}
-          <nav aria-label="Breadcrumb" className="flex items-center space-x-2 text-sm text-muted-foreground mb-6">
-            <Link to="/" className="hover:text-foreground transition-colors">Inicio</Link>
-            <span>/</span>
-            <Link to="/rifas" className="hover:text-foreground transition-colors">Rifas</Link>
-            <span>/</span>
-            <span className="text-foreground font-medium">{raffle.title}</span>
-          </nav>
+          <PageHeader
+            crumbs={[
+              { label: 'Inicio', to: '/' },
+              { label: 'Rifas', to: '/rifas' },
+              { label: raffle.title },
+            ]}
+          />
           
-          {/* Back Button */}
-          <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Volver
-          </Button>
-          
-          {/* Header Card with Raffle Info */}
-          <Card className="mb-8">
-            <CardContent className="p-6 md:p-8">
-              <div className="space-y-6">
-                <div>
-                  <Badge className="mb-3 bg-primary/10 text-primary hover:bg-primary/20">
-                    <Calendar className="h-3 w-3 mr-1" />
-                    {formatDate(raffle.end_date, { format: 'long' })}
-                  </Badge>
-                  <div className="flex items-start justify-between gap-3 mb-2">
-                    <h1 className="text-3xl md:text-4xl font-bold text-foreground flex-1">
-                      {raffle.title}
-                    </h1>
-                    <ShareButton type="raffle" slug={raffle.slug} title={raffle.title} iconOnly />
-                  </div>
-                </div>
-
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div className="flex items-center text-muted-foreground">
-                    <Clock className="h-5 w-5 mr-3 text-primary flex-shrink-0" />
-                    <span>Sortea el {formatDate(raffle.end_date, { format: 'long' })}</span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <div className="grid lg:grid-cols-3 gap-8">
-            {/* Raffle Description */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Raffle Image */}
+          {/* Misma distribucion que el detalle de evento: dos columnas parejas, la imagen a la
+              izquierda y a la derecha el titulo con los datos y la compra. Antes el titulo iba en
+              una tarjeta a todo el ancho y la imagen quedaba en 2/3 (con franjas vacias a los
+              lados, porque el flyer es vertical) contra una columna de compra casi vacia. */}
+          <div className="grid gap-6 lg:grid-cols-2 lg:gap-12">
+            {/* Imagen de la rifa */}
+            <div>
               {raffle.cover ? (
                 /* La portada de una rifa suele ser un flyer vertical con la lista de premios.
                    Con aspect-video + object-cover se recortaba a una franja del medio y no se
@@ -291,86 +268,82 @@ const RaffleDetail = () => {
                   </div>
                 </div>
               )}
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-xl md:text-2xl">Acerca de la Rifa</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div 
-                    className="text-muted-foreground leading-relaxed prose prose-sm max-w-none"
-                    dangerouslySetInnerHTML={renderSafeHtml(isDescriptionExpanded ? raffle.description : truncateText(raffle.description))}
-                  />
-                  {shouldShowReadMore && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-                      className="mt-3 text-primary hover:text-primary/80 p-0 h-auto font-medium"
-                    >
-                      {isDescriptionExpanded ? 'Ver menos' : 'Ver más'}
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
             </div>
-            
-            {/* Purchase Section */}
+
+            {/* Datos de la rifa + compra */}
             <div className="space-y-6">
-              
-              <Card className="sticky top-24">
+              <div>
+                <Badge className="mb-3 bg-primary/10 text-primary hover:bg-primary/20">
+                  <Calendar className="h-3 w-3 mr-1" />
+                  {formatDate(raffle.end_date, { format: 'long' })}
+                </Badge>
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <h1 className="flex-1 text-3xl font-bold text-foreground md:text-4xl">
+                    {raffle.title}
+                  </h1>
+                  <ShareButton type="raffle" slug={raffle.slug} title={raffle.title} iconOnly />
+                </div>
+                <div className="flex items-center text-muted-foreground">
+                  <Clock className="mr-3 h-5 w-5 flex-shrink-0 text-primary" />
+                  <span>Sortea el {formatDate(raffle.end_date, { format: 'long' })}</span>
+                </div>
+              </div>
+
+              {/* En mobile toda la compra vive en la barra fija de abajo, asi que esta tarjeta
+                  no aporta nada: se muestra desde lg, donde la barra no existe. */}
+              <Card className="hidden lg:block">
                 <CardHeader>
                   <CardTitle className="text-lg md:text-xl">Participar en la Rifa</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="p-4 border rounded-lg hover:border-primary/20 transition-colors">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                      <div className="flex-1">
-                        <h4 className="font-semibold">Número de Rifa</h4>
-                        <span className="text-xl md:text-2xl font-bold text-primary">
-                          {formatPrice(toNumber(raffle.price))}
-                        </span>
-                      </div>
-                      
-                      <div className="flex items-center gap-3 justify-center sm:justify-end">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          aria-label="Disminuir cantidad"
-                          onClick={() => updateQuantity(-1)}
-                          disabled={quantity === 0}
-                          className="h-8 w-8"
-                        >
-                          <Minus className="h-4 w-4" />
-                        </Button>
-                        
-                        <span className="w-8 text-center font-semibold">
-                          {quantity}
-                        </span>
-                        
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          aria-label="Aumentar cantidad"
-                          onClick={() => updateQuantity(1)}
-                          className="h-8 w-8"
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
+                  {/* Precio y selector en una sola fila. El selector solo desde lg: en mobile
+                      vive en la barra fija de abajo, para no tener dos controles para lo mismo */}
+                  <div className="flex items-center justify-between gap-3 rounded-lg border p-4 transition-colors hover:border-primary/20">
+                    <div className="min-w-0">
+                      <h4 className="font-semibold">Número de Rifa</h4>
+                      <span className="text-xl font-bold text-primary md:text-2xl">
+                        {formatPrice(toNumber(raffle.price))}
+                      </span>
+                    </div>
+
+                    <div className="hidden shrink-0 items-center gap-2 lg:flex">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        aria-label="Disminuir cantidad"
+                        onClick={() => updateQuantity(-1)}
+                        disabled={quantity === 0}
+                        className="h-9 w-9"
+                      >
+                        <Minus className="h-4 w-4" />
+                      </Button>
+
+                      <span className="w-6 text-center font-semibold tabular-nums">
+                        {quantity}
+                      </span>
+
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        aria-label="Aumentar cantidad"
+                        onClick={() => updateQuantity(1)}
+                        className="h-9 w-9"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
-                  
-                  {/* Purchase Button */}
+
+                  {/* Total + CTA, solo desde lg (en mobile esta en la barra fija) */}
                   {quantity > 0 && (
-                    <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
-                      <div className="flex justify-between items-center mb-4">
+                    <div className="hidden rounded-lg border border-primary/20 bg-primary/5 p-4 lg:block">
+                      <div className="mb-4 flex items-center justify-between gap-3">
                         <span className="font-semibold">Total:</span>
-                        <span className="text-xl md:text-2xl font-bold text-primary">
+                        <span className="text-xl font-bold text-primary md:text-2xl">
                           {formatPrice(getTotalPrice())}
                         </span>
                       </div>
-                      
+
                       <Button
                         onClick={handlePurchase}
                         disabled={isLoading}
@@ -380,6 +353,28 @@ const RaffleDetail = () => {
                         Comprar números
                       </Button>
                     </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-xl md:text-2xl">Acerca de la Rifa</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div
+                    className="prose prose-sm max-w-none leading-relaxed text-muted-foreground"
+                    dangerouslySetInnerHTML={renderSafeHtml(isDescriptionExpanded ? raffle.description : truncateText(raffle.description))}
+                  />
+                  {shouldShowReadMore && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                      className="mt-3 h-auto p-0 font-medium text-primary hover:text-primary/80"
+                    >
+                      {isDescriptionExpanded ? 'Ver menos' : 'Ver más'}
+                    </Button>
                   )}
                 </CardContent>
               </Card>
@@ -403,40 +398,53 @@ const RaffleDetail = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Mobile sticky CTA */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-background/95 backdrop-blur-md border-t border-border/40 p-4">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+      {/* Barra de compra fija en mobile: unico punto de compra en pantallas chicas. Lleva su
+          descripcion (precio unitario o total segun haya seleccion) para que siempre se entienda
+          que se esta comprando sin volver a subir. */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 border-t-2 border-primary/20 bg-background px-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 shadow-[0_-8px_24px_-6px_rgba(0,0,0,0.18)] lg:hidden">
+        <div className="mb-2.5 flex items-end justify-between gap-3">
+          <div className="min-w-0">
+            <p className="truncate text-xs text-muted-foreground">
+              {quantity > 0 ? `${quantity} ${quantity === 1 ? 'número' : 'números'} × ${formatPrice(toNumber(raffle.price))}` : 'Número de Rifa'}
+            </p>
+            <p className="text-2xl font-bold leading-tight text-primary">
+              {quantity > 0 ? formatPrice(getTotalPrice()) : formatPrice(toNumber(raffle.price))}
+            </p>
+          </div>
+
+          {/* Selector grande: es el control principal de la pantalla en mobile */}
+          <div className="flex shrink-0 items-center gap-1 rounded-full border bg-muted/40 p-1">
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
               aria-label="Disminuir cantidad"
               onClick={() => updateQuantity(-1)}
               disabled={quantity === 0}
-              className="h-9 w-9"
+              className="h-10 w-10 rounded-full hover:bg-background"
             >
-              <Minus className="h-4 w-4" />
+              <Minus className="h-5 w-5" />
             </Button>
-            <span className="w-8 text-center font-semibold">{quantity}</span>
+            <span className="w-7 text-center text-lg font-bold tabular-nums">{quantity}</span>
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
               aria-label="Aumentar cantidad"
               onClick={() => updateQuantity(1)}
-              className="h-9 w-9"
+              className="h-10 w-10 rounded-full hover:bg-background"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-5 w-5" />
             </Button>
           </div>
-          <Button
-            onClick={handlePurchase}
-            disabled={isLoading || quantity === 0}
-            className="flex-1"
-            size="lg"
-          >
-            {quantity > 0 ? `Comprar ${formatPrice(getTotalPrice())}` : 'Seleccionar números'}
-          </Button>
         </div>
+
+        <Button
+          onClick={handlePurchase}
+          disabled={isLoading || quantity === 0}
+          size="lg"
+          className="h-12 w-full text-base font-semibold"
+        >
+          {quantity > 0 ? `Comprar ${formatPrice(getTotalPrice())}` : 'Seleccioná tus números'}
+        </Button>
       </div>
 
       <Footer />

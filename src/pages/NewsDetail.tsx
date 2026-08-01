@@ -1,10 +1,11 @@
 
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { formatDate, renderSafeHtml } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Navbar from '@/components/Navbar';
+import PageHeader from '@/components/PageHeader';
 import Footer from '@/components/Footer';
 import { Calendar, ArrowLeft, FileText } from 'lucide-react';
 import { NewsItem } from './News';
@@ -15,6 +16,7 @@ import analytics from '@/services/analytics';
 
 const NewsDetail = () => {
   const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
   const [newsItem, setNewsItem] = useState<NewsItem & { fullContent: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -49,7 +51,7 @@ const NewsDetail = () => {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
-        <div className="pt-28 pb-16 px-4 flex-1">
+        <div className="page-top pb-16 px-4 flex-1">
           <div className="container mx-auto max-w-4xl">
             <div className="animate-pulse">
               <div className="h-8 bg-muted rounded w-1/4 mb-6"></div>
@@ -73,7 +75,7 @@ const NewsDetail = () => {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
-        <div className="pt-28 pb-16 px-4 flex-1">
+        <div className="page-top pb-16 px-4 flex-1">
           <div className="container mx-auto max-w-4xl text-center">
             <h1 className="text-2xl font-bold mb-4">Novedad no encontrada</h1>
             <p className="text-muted-foreground mb-8">
@@ -96,24 +98,13 @@ const NewsDetail = () => {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
-      <article className="pt-28 pb-16 px-4 flex-1">
+      <article className="page-top pb-16 px-4 flex-1">
         <div className="container mx-auto max-w-4xl">
-          {/* Breadcrumb */}
-          <nav aria-label="Breadcrumb" className="flex items-center space-x-2 text-sm text-muted-foreground mb-6">
-            <Link to="/" className="hover:text-foreground transition-colors">Inicio</Link>
-            <span>/</span>
-            <Link to="/novedades" className="hover:text-foreground transition-colors">Novedades</Link>
-            <span>/</span>
-            <span className="text-foreground font-medium line-clamp-1">{newsItem.title}</span>
-          </nav>
-          
-          {/* Back button */}
-          <Button variant="ghost" asChild className="mb-6 -ml-4">
-            <Link to="/novedades">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Volver a Novedades
-            </Link>
-          </Button>
+          <PageHeader
+            crumbs={[{ label: 'Inicio', to: '/' }, { label: 'Novedades', to: '/novedades' }, { label: newsItem.title }]}
+            onBack={() => navigate('/novedades')}
+            backLabel="Volver a Novedades"
+          />
           
           {/* Header */}
           <header className="mb-8">

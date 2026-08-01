@@ -638,7 +638,7 @@ const Profile = () => {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
-        <main className="flex-grow container mx-auto px-4 pt-24 pb-12 flex justify-center items-center">
+        <main className="flex-grow container mx-auto px-4 page-top pb-12 flex justify-center items-center">
           <p>Cargando...</p>
         </main>
         <Footer />
@@ -656,7 +656,7 @@ const Profile = () => {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
-      <main className="flex-grow container mx-auto px-4 pt-24 pb-12">
+      <main className="flex-grow container mx-auto px-4 page-top pb-12">
         <div className="flex items-center justify-between mb-6">
           <Breadcrumb>
           <BreadcrumbList>

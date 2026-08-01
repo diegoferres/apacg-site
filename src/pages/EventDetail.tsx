@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { MapPin, Calendar, Clock, Ticket, ArrowLeft, Plus, Minus } from 'lucide-react';
+import { MapPin, Calendar, Clock, Ticket, Plus, Minus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Carousel, CarouselApi, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import Navbar from '@/components/Navbar';
+import PageHeader from '@/components/PageHeader';
 import Footer from '@/components/Footer';
 import { ShareButton } from '@/components/ShareButton';
 import { useToast } from '@/hooks/use-toast';
@@ -234,7 +235,7 @@ const EventDetail = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="pt-24 pb-12">
+        <div className="page-top pb-12">
           <div className="container mx-auto px-4 md:px-6">
             <div className="grid lg:grid-cols-2 gap-6 lg:gap-12">
               <div className="h-96 bg-muted/30 animate-pulse rounded-lg"></div>
@@ -259,7 +260,7 @@ const EventDetail = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="pt-24 pb-12 text-center">
+        <div className="page-top pb-12 text-center">
           <h1 className="text-2xl font-bold">Evento no encontrado</h1>
           <Button asChild className="mt-4">
             <Link to="/eventos">Volver a Eventos</Link>
@@ -443,24 +444,13 @@ const EventDetail = () => {
       <Navbar />
       
       {/* Hero Section */}
-      <section className="pt-24 pb-12">
+      <section className="page-top pb-12">
         <div className="container mx-auto px-4 md:px-6">
-          {/* Breadcrumb */}
-          <nav aria-label="Breadcrumb" className="flex items-center space-x-2 text-sm text-muted-foreground mb-6">
-            <Link to="/" className="hover:text-foreground transition-colors">Inicio</Link>
-            <span>/</span>
-            <Link to="/eventos" className="hover:text-foreground transition-colors">Eventos</Link>
-            <span>/</span>
-            <span className="text-foreground font-medium">{event.title}</span>
-          </nav>
-          
-          {/* Back Button */}
-          <Button variant="ghost" asChild className="mb-6">
-            <Link to="/eventos">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Volver a Eventos
-            </Link>
-          </Button>
+          <PageHeader
+            crumbs={[{ label: 'Inicio', to: '/' }, { label: 'Eventos', to: '/eventos' }, { label: event.title }]}
+            onBack={() => navigate('/eventos')}
+            backLabel="Volver a Eventos"
+          />
           
           <div className="grid lg:grid-cols-2 gap-6 lg:gap-12">
             {/* Event Images — carousel con swipe + autoplay + thumbnails */}

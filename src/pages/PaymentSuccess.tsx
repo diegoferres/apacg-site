@@ -351,7 +351,7 @@ const PaymentSuccess = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="pt-24 pb-12 flex items-center justify-center">
+        <div className="page-top pb-12 flex items-center justify-center">
           <div className="text-center">
             <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
             <p>Cargando detalles del pago...</p>
@@ -366,7 +366,7 @@ const PaymentSuccess = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      <div className="pt-24 pb-12">
+      <div className="page-top pb-12">
         <div className="container mx-auto px-4 md:px-6 max-w-4xl">
           <Card className="text-center">
             <CardHeader className="pb-4">

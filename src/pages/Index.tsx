@@ -235,7 +235,7 @@ const Index = () => {
       </div>
 
       {/* Hero Section */}
-      <section className="pt-20 pb-8 md:pt-28 md:pb-16 px-4 relative hero-gradient overflow-hidden">
+      <section className="page-top pb-8 md:pb-16 px-4 relative hero-gradient overflow-hidden">
         <div className="container mx-auto max-w-6xl relative z-10">
           <div className="text-center mb-12 animate-fade-up">
             <Badge variant="outline" className="mb-4 py-1 px-3 bg-primary/5">

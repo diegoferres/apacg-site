@@ -88,6 +88,21 @@
     font-feature-settings: "ss01" on, "ss02" on, "cv01" on, "cv03" on;
   }
 
+  /* Espacio estandar bajo el navbar (que es fixed).
+     El Navbar publica su alto real en --navbar-h; antes cada pantalla usaba pt-24 fijo, que
+     dejaba un hueco muerto cuando el navbar medía menos y lo tapaba cuando medía más (por
+     ejemplo al scrollear, o si el contenido envuelve en pantallas angostas).
+     El fallback cubre el primer frame, antes de que el Navbar monte. */
+  .page-top {
+    padding-top: calc(var(--navbar-h, 5.5rem) + 0.5rem);
+  }
+
+  @media (min-width: 768px) {
+    .page-top {
+      padding-top: calc(var(--navbar-h, 5.5rem) + 1.5rem);
+    }
+  }
+
   /* Glass Effect */
   .glass {
     background: rgba(255, 255, 255, 0.65);

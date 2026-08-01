@@ -44,7 +44,7 @@ const PaymentConfirmation = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      <div className="pt-24 pb-12">
+      <div className="page-top pb-12">
         <div className="container mx-auto px-4 md:px-6 max-w-4xl">
           <div className="text-center py-12">
             <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />

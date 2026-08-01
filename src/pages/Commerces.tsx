@@ -70,7 +70,7 @@ const Commerces = () => {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
-      <section className="pt-28 pb-8 px-4 bg-secondary/30">
+      <section className="page-top pb-8 px-4 bg-secondary/30">
         <div className="container mx-auto max-w-6xl">
           {/* Breadcrumb */}
           <nav className="flex items-center space-x-2 text-sm text-muted-foreground mb-6">

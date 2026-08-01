@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import logoImg from '/logo.png';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,29 @@ const Navbar = () => {
   const user = useStore((state) => state.user);
   const setUser = useStore((state) => state.setUser);
   const location = useLocation();
+  const headerRef = useRef<HTMLElement>(null);
+
+  // El navbar es fixed, asi que las paginas tienen que reservar su alto. En vez de que cada
+  // una hardcodee un valor (que se desfasa cuando el navbar cambia de alto: al scrollear, con
+  // sesion iniciada, o si el contenido envuelve en pantallas angostas), publicamos el alto real
+  // en --navbar-h y las paginas lo consumen.
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const publicar = () => {
+      document.documentElement.style.setProperty('--navbar-h', `${Math.round(el.getBoundingClientRect().height)}px`);
+    };
+    publicar();
+    // border-box: el alto cambia tambien por el padding (py-3 -> py-4 en md, py-2 al scrollear),
+    // y el content-box por si solo no refleja ese cambio.
+    const ro = new ResizeObserver(publicar);
+    ro.observe(el, { box: 'border-box' });
+    window.addEventListener('resize', publicar);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', publicar);
+    };
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -65,15 +88,16 @@ const Navbar = () => {
 
   return (
     <header
+      ref={headerRef}
       className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
-        scrolled ? 'glass-navbar py-2 shadow-sm' : 'py-4'
+        scrolled ? 'glass-navbar py-2 shadow-sm' : 'py-3 md:py-4'
       }`}
     >
       <div className="container mx-auto px-4 md:px-6">
         <div className="flex items-center justify-between">
-          <Link to="/" className="flex items-center space-x-2 animate-fade-in">
+          <Link to="/" className="flex items-center space-x-2 animate-fade-in shrink-0">
             <div className="flex items-center gap-2 text-primary">
-              <img src={logoImg} alt="Logo" className="h-14 w-12" />
+              <img src={logoImg} alt="Logo" className="h-11 w-10 md:h-14 md:w-12" />
             </div>
           </Link>
 
@@ -140,18 +164,20 @@ const Navbar = () => {
           </nav>
 
           {/* Mobile buttons */}
-          <div className="md:hidden flex items-center gap-2">
+          <div className="md:hidden flex min-w-0 items-center gap-1">
             <CartDrawer />
             {user && user.id ? (
               <>
                 <Button
                   asChild
                   variant={location.pathname === "/perfil" ? "default" : "ghost"}
-                  className="gap-1"
+                  className="min-w-0 gap-1 px-2"
                 >
-                  <Link to="/perfil" className="flex items-center">
-                    <UserCircle className="h-5 w-5" />
-                    <span className="ml-1 text-sm">
+                  {/* El nombre se trunca: si envuelve, el navbar crece y empuja el contenido
+                      de todas las paginas hacia abajo. */}
+                  <Link to="/perfil" className="flex min-w-0 items-center">
+                    <UserCircle className="h-5 w-5 shrink-0" />
+                    <span className="ml-1 max-w-[5.5rem] truncate text-sm">
                       {user.name?.split(' ')[0] || 'Perfil'}
                     </span>
                   </Link>

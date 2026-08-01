@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
+import PageHeader from '@/components/PageHeader';
 import Footer from '@/components/Footer';
 import { ShareButton } from '@/components/ShareButton';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft, Package, ShoppingCart, Plus, Minus } from 'lucide-react';
+import { Package, ShoppingCart, Plus, Minus } from 'lucide-react';
 import api from '@/services/api';
 import { formatPrice, formatDate } from '@/lib/utils';
 import { useCartStore, type CartItem } from '@/stores/cart';
@@ -84,7 +85,7 @@ const ProductDetail = () => {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
-        <div className="pt-24 pb-12 container mx-auto px-4 md:px-6 text-center text-muted-foreground">Cargando...</div>
+        <div className="page-top pb-12 container mx-auto px-4 md:px-6 text-center text-muted-foreground">Cargando...</div>
         <Footer />
       </div>
     );
@@ -94,7 +95,7 @@ const ProductDetail = () => {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
-        <div className="pt-24 pb-12 container mx-auto px-4 md:px-6 text-center">
+        <div className="page-top pb-12 container mx-auto px-4 md:px-6 text-center">
           <p className="text-muted-foreground mb-4">Producto no encontrado.</p>
           <Button onClick={() => navigate('/productos')} variant="outline">Volver a la Tienda</Button>
         </div>
@@ -209,24 +210,13 @@ const ProductDetail = () => {
     <div className="min-h-screen flex flex-col">
       <Navbar />
 
-      <section className="pt-24 pb-12">
+      <section className="page-top pb-12">
         <div className="container mx-auto px-4 md:px-6">
-          {/* Breadcrumb */}
-          <nav aria-label="Breadcrumb" className="flex items-center space-x-2 text-sm text-muted-foreground mb-6">
-            <Link to="/" className="hover:text-foreground transition-colors">Inicio</Link>
-            <span>/</span>
-            <Link to="/productos" className="hover:text-foreground transition-colors">Tienda</Link>
-            <span>/</span>
-            <span className="text-foreground font-medium">{product.name}</span>
-          </nav>
-
-          {/* Back Button */}
-          <Button variant="ghost" asChild className="mb-6">
-            <Link to="/productos">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Volver a la Tienda
-            </Link>
-          </Button>
+          <PageHeader
+            crumbs={[{ label: 'Inicio', to: '/' }, { label: 'Tienda', to: '/productos' }, { label: product.name }]}
+            onBack={() => navigate('/productos')}
+            backLabel="Volver a la Tienda"
+          />
 
           <div className="grid lg:grid-cols-2 gap-6 lg:gap-12">
           {/* Galería */}

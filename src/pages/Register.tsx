@@ -83,7 +83,7 @@ const Register = () => {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
-      <main className="flex-grow container mx-auto px-4 pt-24 pb-12">
+      <main className="flex-grow container mx-auto px-4 page-top pb-12">
         <div className="max-w-md mx-auto">
           <Card>
             <CardHeader>

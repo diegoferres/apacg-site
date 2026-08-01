@@ -139,7 +139,7 @@ const CourseDetail = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="pt-24 pb-16 flex items-center justify-center">
+        <div className="page-top pb-16 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
             <p className="text-muted-foreground">Cargando curso...</p>
@@ -154,7 +154,7 @@ const CourseDetail = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="pt-24 pb-16 flex items-center justify-center">
+        <div className="page-top pb-16 flex items-center justify-center">
           <div className="text-center">
             <h1 className="text-2xl font-bold mb-4">Curso no encontrado</h1>
             <p className="text-muted-foreground mb-6">El curso que buscas no existe o no está disponible.</p>
@@ -170,7 +170,7 @@ const CourseDetail = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      <div className="pt-24 pb-24 lg:pb-16">
+      <div className="page-top pb-24 lg:pb-16">
         <div className="container mx-auto px-4">
           {/* Back button */}
           <Button 

@@ -24,6 +24,7 @@ import {
   ChevronUp
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
+import PageHeader from '@/components/PageHeader';
 import Footer from '@/components/Footer';
 import { ShareButton } from '@/components/ShareButton';
 import BenefitCard, { Benefit } from '@/components/BenefitCard';
@@ -201,22 +202,11 @@ const BenefitDetail = () => {
       <Navbar />
       
       {/* Hero Section */}
-      <section className="pt-24 pb-12">
+      <section className="page-top pb-12">
         <div className="container mx-auto px-4 md:px-6">
-          {/* Breadcrumb */}
-          <nav aria-label="Breadcrumb" className="flex items-center space-x-2 text-sm text-muted-foreground mb-6">
-            <Link to="/" className="hover:text-foreground transition-colors">Inicio</Link>
-            <span>/</span>
-            <Link to="/beneficios" className="hover:text-foreground transition-colors">Beneficios</Link>
-            <span>/</span>
-            <span className="text-foreground font-medium">{benefit.name}</span>
-          </nav>
-          
-          {/* Back Button */}
-          <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Volver
-          </Button>
+          <PageHeader
+            crumbs={[{ label: 'Inicio', to: '/' }, { label: 'Beneficios', to: '/beneficios' }, { label: benefit.name }]}
+          />
           
           {/* Imagen del beneficio */}
           {benefit.cover && !imageError ? (

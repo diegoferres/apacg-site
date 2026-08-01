@@ -452,7 +452,7 @@ const PaymentPage = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="pt-24 pb-12 flex items-center justify-center">
+        <div className="page-top pb-12 flex items-center justify-center">
           <div className="text-center space-y-4">
             <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
             <p className="text-muted-foreground">Cargando datos de pago...</p>
@@ -467,7 +467,7 @@ const PaymentPage = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="pt-24 pb-12 text-center">
+        <div className="page-top pb-12 text-center">
           <h1 className="text-2xl font-bold mb-4">No se encontraron datos de pago</h1>
           <Button onClick={() => navigate('/')}>Volver a Inicio</Button>
         </div>
@@ -480,7 +480,7 @@ const PaymentPage = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      <div className="pt-24 pb-12">
+      <div className="page-top pb-12">
         <div className="container mx-auto px-4 md:px-6 max-w-4xl">
           <Button variant="ghost" onClick={handleGoBack} className="mb-6">
             <ArrowLeft className="h-4 w-4 mr-2" />
