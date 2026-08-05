@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import logoImg from '/logo.png';
+import addToGoogleWalletBadge from "@/assets/add-to-google-wallet-es419.svg";
 import { useParams, useNavigate, useSearchParams, Link } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
@@ -56,6 +57,12 @@ const Profile = () => {
     hijos: any[];
   } | null>(null);
   const [qrExpanded, setQrExpanded] = useState(false);
+  const [walletLoading, setWalletLoading] = useState(false);
+  const [walletInstalled, setWalletInstalled] = useState(false);
+  // El "Save to Google Wallet" abre la app de Google Wallet, que en iPhone no guarda
+  // pases: el socio terminaría en una página de Google sin poder hacer nada. Hasta que
+  // esté Apple Wallet, en iOS solo queda el QR de la tarjeta de arriba.
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   // La fila de fichas se desliza: al cambiar de sección se centra la activa para que se vean
   // las opciones de los costados y no quede escondida fuera de la vista.
   const activePillRef = useRef<HTMLButtonElement>(null);
@@ -219,6 +226,62 @@ const Profile = () => {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Error descargando entradas:', error);
+    }
+  };
+
+  // Si ya lo tiene guardado no tiene sentido invitarlo a agregarlo otra vez.
+  // Silencioso a propósito: que falle esta consulta no debe romper el perfil, en el
+  // peor caso el botón queda como "Agregar" y el socio agrega un pase que ya tiene.
+  useEffect(() => {
+    if (!isLoggedIn || !user?.member) return;
+
+    let cancelled = false;
+
+    api.get('api/client/me/wallet-pass/status')
+      .then((response) => {
+        if (!cancelled) {
+          setWalletInstalled(!!response.data?.data?.google?.installed);
+        }
+      })
+      .catch(() => { /* sin estado: se muestra el botón de agregar */ });
+
+    return () => { cancelled = true; };
+  }, [isLoggedIn, user?.member]);
+
+  // Pide el "Save to Google Wallet" link al backend y manda al socio a guardarlo.
+  // El pase se arma del lado del servidor: acá solo se abre la URL que devuelve.
+  const addToGoogleWallet = async () => {
+    setWalletLoading(true);
+    try {
+      const response = await api.get('api/client/me/wallet-pass/google');
+      const saveUrl = response.data?.data?.save_url;
+
+      if (!saveUrl) {
+        throw new Error('El backend no devolvió save_url');
+      }
+
+      analytics.trackEvent('add_to_google_wallet', {
+        member_id: user?.member?.id,
+      });
+
+      // Navegación directa y no window.open: en Android el link tiene que abrirse en
+      // el mismo contexto para que lo tome la app de Google Wallet, y un popup se
+      // come el bloqueador del navegador.
+      window.location.href = saveUrl;
+    } catch (error: any) {
+      const code = error?.response?.data?.error;
+      const message = code === 'WALLET_DISABLED'
+        ? 'El carnet digital todavía no está habilitado. Probá más adelante.'
+        : code === 'NOT_A_MEMBER'
+          ? 'Tu cuenta no está vinculada a un socio APACG.'
+          : 'No pudimos generar tu carnet digital. Intentalo de nuevo en un momento.';
+
+      toast({
+        title: 'No se pudo agregar a Google Wallet',
+        description: message,
+        variant: 'destructive',
+      });
+      setWalletLoading(false);
     }
   };
 
@@ -748,6 +811,44 @@ const Profile = () => {
                     </button>
                   </div>
                 </div>
+
+                {/* El mismo carnet, pero guardado en el celular: el socio lo muestra sin
+                    entrar a la web ni buscar el mail, y el estado se le actualiza solo
+                    cuando paga o vence. */}
+                {!isIOS && (
+                  <div className="p-4 pt-3 sm:p-5 sm:pt-4">
+                    {walletInstalled ? (
+                      <div className="flex items-center justify-center gap-2 rounded-md bg-green-50 px-3 py-2.5 text-sm text-green-800">
+                        <CheckCircle className="h-4 w-4 shrink-0" />
+                        Ya está en tu Google Wallet
+                      </div>
+                    ) : (
+                      <>
+                        {/* Badge oficial de Google (es-419). Sus lineamientos de marca prohíben
+                            expresamente hacer una versión propia del botón, así que esto es el
+                            SVG que ellos distribuyen y no se le cambia el color ni el texto. */}
+                        <button
+                          type="button"
+                          onClick={addToGoogleWallet}
+                          disabled={walletLoading}
+                          aria-label="Agregar carnet de socio a Google Wallet"
+                          className="block w-full rounded-full transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                        >
+                          <img
+                            src={addToGoogleWalletBadge}
+                            alt="Agregar a Google Wallet"
+                            className="mx-auto h-12 w-auto max-w-full"
+                          />
+                        </button>
+                        <p className="mt-2 text-center text-[11px] leading-tight text-muted-foreground">
+                          {walletLoading
+                            ? 'Generando tu carnet…'
+                            : 'Llevá tu carnet en el celular, sin entrar a la web.'}
+                        </p>
+                      </>
+                    )}
+                  </div>
+                )}
 
                 {/* Cerrar sesión no se repite acá: ya está en la barra superior. */}
               </CardContent>
