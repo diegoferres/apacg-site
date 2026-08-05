@@ -59,9 +59,9 @@ const Profile = () => {
   const [qrExpanded, setQrExpanded] = useState(false);
   const [walletLoading, setWalletLoading] = useState(false);
   const [walletInstalled, setWalletInstalled] = useState(false);
-  // El "Save to Google Wallet" abre la app de Google Wallet, que en iPhone no guarda
-  // pases: el socio terminaría en una página de Google sin poder hacer nada. Hasta que
-  // esté Apple Wallet, en iOS solo queda el QR de la tarjeta de arriba.
+  // Cada sistema con su wallet: el "Save to Google Wallet" no guarda pases en iPhone
+  // (el socio terminaría en una página de Google sin poder hacer nada), y el .pkpass
+  // de Apple no sirve en Android. Por eso se muestra uno u otro, nunca los dos.
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   // La fila de fichas se desliza: al cambiar de sección se centra la activa para que se vean
   // las opciones de los costados y no quede escondida fuera de la vista.
@@ -240,13 +240,63 @@ const Profile = () => {
     api.get('api/client/me/wallet-pass/status')
       .then((response) => {
         if (!cancelled) {
-          setWalletInstalled(!!response.data?.data?.google?.installed);
+          // Cada plataforma tiene su propio registro: al socio le importa si lo
+          // tiene en ESTE teléfono, no en el otro sistema operativo.
+          const data = response.data?.data;
+          setWalletInstalled(!!(isIOS ? data?.apple?.installed : data?.google?.installed));
         }
       })
       .catch(() => { /* sin estado: se muestra el botón de agregar */ });
 
     return () => { cancelled = true; };
   }, [isLoggedIn, user?.member]);
+
+  // Apple no da una URL como Google: el backend devuelve el .pkpass firmado y el
+  // navegador lo abre en Wallet por el Content-Type.
+  //
+  // Se baja por axios y no navegando directo a la URL para poder mostrar el error
+  // cuando algo falla: navegando directo, un 500 le deja al socio una pantalla de
+  // JSON crudo. PENDIENTE: validar en un iPhone real que Safari abra Wallet desde
+  // el blob; si no lo hiciera, hay que navegar a la URL y resignar el manejo de error.
+  const addToAppleWallet = async () => {
+    setWalletLoading(true);
+    try {
+      const response = await api.get('api/client/me/wallet-pass/apple', {
+        responseType: 'blob',
+      });
+
+      analytics.trackEvent('add_to_apple_wallet', {
+        member_id: user?.member?.id,
+      });
+
+      const blob = new Blob([response.data], { type: 'application/vnd.apple.pkpass' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'carnet-apacg.pkpass';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error: any) {
+      // Con responseType blob el cuerpo del error también viene como blob, así que
+      // hay que leerlo para saber qué pasó.
+      let code: string | undefined;
+      try {
+        code = JSON.parse(await error?.response?.data?.text?.())?.error;
+      } catch { /* respuesta no JSON: se usa el mensaje genérico */ }
+
+      toast({
+        title: 'No se pudo agregar a Apple Wallet',
+        description: code === 'WALLET_DISABLED'
+          ? 'El carnet para iPhone todavía no está disponible.'
+          : 'No pudimos generar tu carnet digital. Intentalo de nuevo en un momento.',
+        variant: 'destructive',
+      });
+    } finally {
+      setWalletLoading(false);
+    }
+  };
 
   // Pide el "Save to Google Wallet" link al backend y manda al socio a guardarlo.
   // El pase se arma del lado del servidor: acá solo se abre la URL que devuelve.
@@ -815,6 +865,35 @@ const Profile = () => {
                 {/* El mismo carnet, pero guardado en el celular: el socio lo muestra sin
                     entrar a la web ni buscar el mail, y el estado se le actualiza solo
                     cuando paga o vence. */}
+                {isIOS && (
+                  <div className="p-4 pt-3 sm:p-5 sm:pt-4">
+                    {walletInstalled ? (
+                      <div className="flex items-center justify-center gap-2 rounded-md bg-green-50 px-3 py-2.5 text-sm text-green-800">
+                        <CheckCircle className="h-4 w-4 shrink-0" />
+                        Ya está en tu Apple Wallet
+                      </div>
+                    ) : (
+                      <>
+                        {/* PENDIENTE: reemplazar por el badge oficial "Agregar a Apple Wallet".
+                            Apple no publica una URL directa de descarga (hay que bajarlo desde
+                            developer.apple.com/wallet) y prohíbe fabricar una versión propia,
+                            así que hasta tenerlo va un botón neutro que no lo imita. */}
+                        <Button
+                          className="w-full gap-2 bg-black text-white hover:bg-black/90"
+                          onClick={addToAppleWallet}
+                          disabled={walletLoading}
+                        >
+                          <CreditCard className="h-4 w-4 shrink-0" />
+                          {walletLoading ? 'Generando tu carnet…' : 'Agregar a Apple Wallet'}
+                        </Button>
+                        <p className="mt-2 text-center text-[11px] leading-tight text-muted-foreground">
+                          Llevá tu carnet en el celular, sin entrar a la web.
+                        </p>
+                      </>
+                    )}
+                  </div>
+                )}
+
                 {!isIOS && (
                   <div className="p-4 pt-3 sm:p-5 sm:pt-4">
                     {walletInstalled ? (
