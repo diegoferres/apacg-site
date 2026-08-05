@@ -62,7 +62,11 @@ const Profile = () => {
   // Cada sistema con su wallet: el "Save to Google Wallet" no guarda pases en iPhone
   // (el socio terminaría en una página de Google sin poder hacer nada), y el .pkpass
   // de Apple no sirve en Android. Por eso se muestra uno u otro, nunca los dos.
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  // El iPad se reporta como Mac de escritorio desde iPadOS 13, así que el user agent
+  // solo no alcanza: sin el segundo chequeo, un socio con iPad veía el botón de Google
+  // Wallet, que en iOS no tiene forma de completarse, y nunca el de Apple.
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+    || (/Mac/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
   // La fila de fichas se desliza: al cambiar de sección se centra la activa para que se vean
   // las opciones de los costados y no quede escondida fuera de la vista.
   const activePillRef = useRef<HTMLButtonElement>(null);
