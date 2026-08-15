@@ -63,6 +63,34 @@ interface Event {
   gallery?: EventImage[];
 }
 
+// Aviso de escasez por tipo de entrada. Muestra el estado y no la cantidad exacta
+// a propósito: stock_available descuenta también las reservas de quienes están
+// pagando en ese momento, así que vuelve a subir cuando el cron las libera. Un
+// "¡Últimas 3!" que diez minutos después dice 18 queda en evidencia.
+const scarcityNotice = (ticketType: TicketType): string | null => {
+  if (ticketType.stock <= 0 || ticketType.stock_available <= 0) return null;
+  const remaining = ticketType.stock_available / ticketType.stock;
+  if (remaining <= 0.1) return '¡Últimas entradas!';
+  if (remaining <= 0.25) return 'Quedan pocas';
+  return null;
+};
+
+// Urgencia por fecha. A diferencia del stock, esto nunca retrocede.
+const salesUrgency = (date: string): string | null => {
+  const eventDay = new Date(`${date.slice(0, 10)}T00:00:00`);
+  if (Number.isNaN(eventDay.getTime())) return null;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const days = Math.round((eventDay.getTime() - today.getTime()) / 86400000);
+
+  if (days < 0) return null;
+  if (days === 0) return '¡Es hoy!';
+  if (days === 1) return '¡Es mañana!';
+  if (days <= 7) return `Faltan ${days} días`;
+  return null;
+};
+
 const EventDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
@@ -519,10 +547,18 @@ const EventDetail = () => {
             {/* Event Details */}
             <div className="space-y-6">
               <div>
-                <Badge className="mb-4 bg-primary/10 text-primary hover:bg-primary/20">
-                  <Calendar className="h-3 w-3 mr-1" />
-                  {formatDate(event.date, { format: 'long' })}
-                </Badge>
+                <div className="flex flex-wrap items-center gap-2 mb-4">
+                  <Badge className="bg-primary/10 text-primary hover:bg-primary/20">
+                    <Calendar className="h-3 w-3 mr-1" />
+                    {formatDate(event.date, { format: 'long' })}
+                  </Badge>
+                  {!event.is_informational && salesUrgency(event.date) && (
+                    <Badge className="bg-destructive/10 text-destructive hover:bg-destructive/20">
+                      <Clock className="h-3 w-3 mr-1" />
+                      {salesUrgency(event.date)}
+                    </Badge>
+                  )}
+                </div>
                 <div className="flex items-start justify-between gap-3 mb-4">
                   <h1 className="text-3xl md:text-4xl font-bold text-foreground flex-1">
                     {event.title}
@@ -594,10 +630,26 @@ const EventDetail = () => {
                   {event.ticket_types.map((ticketType) => {
                     const effectivePrice = getTicketPrice(ticketType);
                     const showsMemberPrice = appliesPriceFromCi || (isMember && ticketType.member_price !== null);
+                    const scarcity = event.is_informational ? null : scarcityNotice(ticketType);
+                    const scarcityIsCritical = scarcity === '¡Últimas entradas!';
                     return (
                     <div key={ticketType.id} className="flex items-center justify-between p-4 border rounded-lg hover:border-primary/20 transition-colors">
                       <div className="flex-1 min-w-0 pr-3">
-                        <h4 className="font-semibold">{ticketType.name}</h4>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h4 className="font-semibold">{ticketType.name}</h4>
+                          {scarcity && (
+                            <Badge
+                              variant="outline"
+                              className={
+                                scarcityIsCritical
+                                  ? 'text-[11px] border-destructive/40 bg-destructive/10 text-destructive'
+                                  : 'text-[11px] border-amber-500/40 bg-amber-500/10 text-amber-700'
+                              }
+                            >
+                              {scarcity}
+                            </Badge>
+                          )}
+                        </div>
                         {ticketType.description && (
                           <p className="text-xs text-muted-foreground leading-snug mt-0.5 mb-1.5 whitespace-pre-line">
                             {ticketType.description}
