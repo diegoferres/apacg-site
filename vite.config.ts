@@ -61,7 +61,11 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       outDir: '../apacg.com.py/public/react',  // compila directo al public de Laravel
-      emptyOutDir: true,                // no borra los assets del backend
+      // No vaciar antes de compilar: mientras dura el build (uno a dos minutos en
+      // el servidor) el sitio se sigue sirviendo con los archivos anteriores. Al
+      // terminar, index.html y el manifest se sobrescriben y pasan a apuntar a
+      // los nuevos. Los assets viejos quedan y los limpia el deploy después.
+      emptyOutDir: false,
     }
   };
 });
