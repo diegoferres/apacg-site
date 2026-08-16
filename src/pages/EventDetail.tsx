@@ -375,7 +375,10 @@ const EventDetail = () => {
   const updateExtraQty = (extraId: number, delta: number) => {
     setSelectedExtras(prev => {
       const current = prev[extraId] || 0;
-      const next = Math.max(0, Math.min(50, current + delta));
+      // Tope por línea. Los extras no tienen control de stock, así que el número
+      // es defensivo y no representa disponibilidad real; va a moverse al propio
+      // extra (columna stock) para que cada uno defina su límite.
+      const next = Math.max(0, Math.min(100, current + delta));
       const updated = { ...prev };
       if (next === 0) delete updated[extraId];
       else updated[extraId] = next;
