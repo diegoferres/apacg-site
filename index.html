@@ -16,11 +16,18 @@
          dentro del <head>: si la inyectara JavaScript, Meta no la encuentra y falla. -->
     <meta name="facebook-domain-verification" content="2y4u55wzd7s52unqe2fmrby6iktdjz" />
 
-    <link rel="icon" href="/logo.png" type="image/jpg" />
-    <link rel="shortcut icon" href="/logo.png" type="image/jpg" />
-    <link rel="icon" href="/logo.png" type="image/jpg" />
-    <link rel="shortcut icon" href="/logo.png" type="image/jpg" />
-    <link rel="icon" href="/logo.png" type="image/jpg" />
+    <!-- Los iconos reales viven en la raiz de public/ y los sirve nginx.
+         Antes esto declaraba /logo.png cinco veces y como image/jpg: esa ruta
+         no existe como archivo, la atiende el catch-all del SPA y devuelve
+         HTML. El favicon se veia bien igual porque los navegadores piden
+         /favicon.ico por convencion, no por esta declaracion. -->
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="apple-mobile-web-app-title" content="APACG" />
+    <meta name="theme-color" content="#ffffff" />
 
 
     <meta property="og:title" content="Aso. de Padres de Alumnos del Colegio GOETHE" />
