@@ -26,11 +26,19 @@
     <meta property="og:title" content="Aso. de Padres de Alumnos del Colegio GOETHE" />
     <meta property="og:description" content="Disfruta de descuentos exclusivos y promociones especiales en diferentes comercios y servicios como miembro de A.P.A.C. GOETHE." />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="/logo.png" />
+    <!-- URL absoluta y con el prefijo /react/: el sitio se sirve con base
+         /react/ en produccion, asi que /logo.png cae en el catch-all del SPA y
+         devuelve HTML en vez de la imagen. Los crawlers de WhatsApp y Facebook
+         ademas no resuelven rutas relativas de forma confiable. -->
+    <meta property="og:image" content="https://apacg.com.py/react/logo.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:url" content="https://apacg.com.py/" />
+    <meta property="og:site_name" content="A.P.A.C. GOETHE" />
+    <meta property="og:locale" content="es_PY" />
 
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:site" content="" />
-    <meta name="twitter:image" content="/logo.png" />
+    <meta name="twitter:image" content="https://apacg.com.py/react/logo.png" />
     <meta name="twitter:title" content="Aso. de Padres de Alumnos del Colegio GOETHE" />
     <meta name="twitter:description" content="Disfruta de descuentos exclusivos y promociones especiales en diferentes comercios y servicios como miembro de A.P.A.C. GOETHE." />
     
