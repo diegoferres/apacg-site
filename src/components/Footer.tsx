@@ -63,7 +63,16 @@ const Footer = () => {
         </div>
         
         <div className="border-t border-border/30 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center text-sm text-muted-foreground">
-          <p>© {currentYear} A.P.A.C. GOETHE. Todos los derechos reservados.</p>
+          <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4">
+            <p>© {currentYear} A.P.A.C. GOETHE. Todos los derechos reservados.</p>
+            {/* Anchor y no Link: /privacidad la sirve Laravel, no el router del SPA */}
+            <a
+              href="/privacidad"
+              className="hover:text-foreground transition-colors"
+            >
+              Política de Privacidad
+            </a>
+          </div>
           <span className="mt-4 md:mt-0 flex items-center gap-2">
             <span className="text-xs">Plataforma desarrollada por</span>
             <Brand180 className="h-5 w-auto" medium="footer" />
