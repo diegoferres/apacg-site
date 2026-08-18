@@ -67,6 +67,13 @@ const Profile = () => {
   // Wallet, que en iOS no tiene forma de completarse, y nunca el de Apple.
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
     || (/Mac/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+  // Apple Wallet todavia no esta operativo: el enrollment en el Apple Developer Program
+  // sigue en verificacion, asi que no hay certificado con que firmar el .pkpass y el
+  // endpoint responde 503. El boton se deja a la vista pero desactivado: esconderlo dejaria
+  // al socio con iPhone preguntandose por que en Android si y en el suyo no.
+  // Para habilitarlo: poner en true junto con APPLE_WALLET_ENABLED en el backend, y de paso
+  // reemplazar el boton por el badge oficial de Apple (ver el PENDIENTE mas abajo).
+  const APPLE_WALLET_HABILITADO = false;
   // La fila de fichas se desliza: al cambiar de sección se centra la activa para que se vean
   // las opciones de los costados y no quede escondida fuera de la vista.
   const activePillRef = useRef<HTMLButtonElement>(null);
@@ -871,7 +878,20 @@ const Profile = () => {
                     cuando paga o vence. */}
                 {isIOS && (
                   <div className="p-4 pt-3 sm:p-5 sm:pt-4">
-                    {walletInstalled ? (
+                    {!APPLE_WALLET_HABILITADO ? (
+                      <>
+                        <Button className="w-full gap-2" variant="outline" disabled>
+                          <CreditCard className="h-4 w-4 shrink-0" />
+                          Apple Wallet
+                          <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide">
+                            Próximamente
+                          </span>
+                        </Button>
+                        <p className="mt-2 text-center text-[11px] leading-tight text-muted-foreground">
+                          Lo estamos habilitando para iPhone. Mientras tanto, mostrá el código QR de arriba.
+                        </p>
+                      </>
+                    ) : walletInstalled ? (
                       <div className="flex items-center justify-center gap-2 rounded-md bg-green-50 px-3 py-2.5 text-sm text-green-800">
                         <CheckCircle className="h-4 w-4 shrink-0" />
                         Ya está en tu Apple Wallet
