@@ -26,17 +26,20 @@ import TourHelpButton from '@/components/TourHelpButton';
 import analytics from '@/services/analytics';
 
 const Profile = () => {
-  const { startTour } = useTour({
-    tourId: 'profile',
-    steps: profileTourSteps,
-    autoStart: true,
-    delay: 1500,
-  });
-
   const [activeTab, setActiveTab] = useState("membership");
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const user = useStore((state) => state.user);
+
+  const { startTour } = useTour({
+    tourId: 'profile',
+    steps: profileTourSteps,
+    // Mismo motivo que en Index: no se le muestra el paseo a quien todavia esta
+    // completando su alta.
+    autoStart: user?.setup_completed === true,
+    delay: 1500,
+  });
+
   const isLoggedIn = useStore((state) => state.isLoggedIn);
   const setUser = useStore((state) => state.setUser);
   const [payments, setPayments] = useState([]);
@@ -96,6 +99,10 @@ const Profile = () => {
   const [showStudentSplash, setShowStudentSplash] = useState(false);
 
   const isPending = user?.member?.status === "En Mora";
+  // Socios externos (member_origin === 'external') no tienen hijos matriculados: la cuota
+  // les viene exonerada de entrada y no hay anualidades que pagar. El resto de los socios
+  // (origen null en produccion) sigue exactamente el camino de siempre.
+  const isExternal = user?.member_origin === 'external';
 
   // Validate password match in real time
   useEffect(() => {
@@ -998,7 +1005,8 @@ const Profile = () => {
                     { id: 'orders', label: 'Mis Compras', icon: Receipt },
                     { id: 'benefits', label: 'Beneficios', icon: Gift },
                     { id: 'edit', label: 'Editar Perfil', icon: Edit },
-                  ].map(({ id, label, icon: Icon, badge }) => (
+                    // Los socios externos no tienen hijos matriculados: la ficha no aplica.
+                  ].filter(({ id }) => !(isExternal && id === 'children')).map(({ id, label, icon: Icon, badge }) => (
                     <Button
                       key={id}
                       ref={activeTab === id ? activePillRef : undefined}
@@ -1023,6 +1031,44 @@ const Profile = () => {
           <div className="md:col-span-2">
             {activeTab === "membership" && (
               <div className="space-y-6" data-tour="profile-membership">
+                {isExternal ? (
+                  /* Socio externo: no hay hijos ni anualidades que mostrar. La cuota viene
+                     exonerada desde el alta (ver socios:importar-externos), asi que en vez de
+                     las cards de anualidad por alumno va directo el estado de exoneracion. */
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center">
+                        <CreditCard className="mr-2 h-5 w-5" />
+                        Detalles de Membresía
+                      </CardTitle>
+                      <CardDescription>
+                        Información sobre el estado de tu membresía
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {membershipStatus ? (
+                        <div className="flex items-start gap-3 p-4 rounded-lg border bg-green-50 border-green-200">
+                          <CheckCircle className="h-6 w-6 shrink-0 text-green-600" />
+                          <div>
+                            <span className="inline-block rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-800">
+                              Cuota exonerada
+                            </span>
+                            {membershipStatus.exoneration_reason && (
+                              <p className="mt-2 text-sm text-green-700">
+                                {membershipStatus.exoneration_reason}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-center py-4">
+                          <div className="animate-pulse">Cargando información de membresía...</div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ) : (
+                <>
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center">
@@ -1265,6 +1311,8 @@ const Profile = () => {
                     )}
                   </CardContent>
                 </Card>
+                </>
+                )}
 
                 {/* Historial de pagos tradicionales (legacy) */}
                 <Card>

@@ -122,8 +122,15 @@ const App = () => {
       setShowStudentSplash(false);
       return;
     }
-    
-    
+
+    // Socios externos: no tienen hijos que cargar ni membresia que pagar (estan exonerados).
+    // El splash depende solo de si ya completaron el setup (email/telefono/contraseña).
+    if (user.member_origin === 'external') {
+      setShowStudentSplash(!user.setup_completed);
+      return;
+    }
+
+
     const students = user.member.students || [];
     const hasStudents = students.length > 0;
     

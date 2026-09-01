@@ -75,7 +75,11 @@ const Index = () => {
   const { startTour } = useTour({
     tourId: 'home',
     steps: homeTourSteps,
-    autoStart: isLoggedIn,
+    // El paseo guiado espera a que el socio haya terminado de darse de alta. Mientras el
+    // splash de primer ingreso esta abierto, el overlay del tour queda encima y le tapa
+    // los botones; peor, al cambiar el usuario esta pantalla se remonta y el tour vuelve
+    // a arrancar de cero, dejandolo en un bucle del que no puede salir.
+    autoStart: isLoggedIn && user?.setup_completed === true,
     delay: 2000,
   });
 

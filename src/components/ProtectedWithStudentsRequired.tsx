@@ -10,6 +10,8 @@ interface Props {
 /**
  * Deja pasar a visitantes anonimos y a admins. A un socio logueado le exige tener sus alumnos
  * cargados y con cedula; si no, lo manda al inicio con un aviso.
+ * Los socios externos (member_origin === 'external') no tienen hijos que cargar, asi que
+ * quedan afuera de esta validacion.
  */
 const ProtectedWithStudentsRequired = ({ children }: Props) => {
   const { user, isLoggedIn, isLoading } = useStore();
@@ -24,6 +26,7 @@ const ProtectedWithStudentsRequired = ({ children }: Props) => {
     !!user &&
     !isAdmin &&
     !!user.member &&
+    user.member_origin !== 'external' &&
     (students.length === 0 || students.some((s: any) => !s.ci || s.ci.trim() === ''));
 
   // El aviso va en un efecto, no en el render: `toast` actualiza estado y llamarlo mientras se

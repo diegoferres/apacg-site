@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
-import { LogOut, Users, AlertCircle, Lock, Eye, EyeOff, Mail, CreditCard } from "lucide-react";
+import { LogOut, Users, AlertCircle, Lock, Eye, EyeOff, Mail, CreditCard, Phone } from "lucide-react";
 import api from '@/services/api';
 import { useStore } from '@/stores/store';
 
@@ -26,8 +26,15 @@ interface StudentDataSplashProps {
 export const StudentDataSplash = ({ isOpen, onDataComplete, membershipStatus, onRefreshMembershipStatus }: StudentDataSplashProps) => {
   const [isSaving, setIsSaving] = useState(false);
   const [students, setStudents] = useState<Student[]>([]);
-  const [currentStep, setCurrentStep] = useState<'students' | 'membership' | 'password'>('students');
+  // El paso inicial del externo se decide acá y no en el efecto: si arranca en
+  // 'students' y se corrige despues del pintado, alcanza a verse un frame del
+  // cartel "No tienes estudiantes asociados", que para el es justo lo contrario
+  // de lo que le queremos decir.
+  const [currentStep, setCurrentStep] = useState<'contacto' | 'students' | 'membership' | 'password'>(
+    useStore.getState().user?.member_origin === 'external' ? 'contacto' : 'students'
+  );
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -38,6 +45,16 @@ export const StudentDataSplash = ({ isOpen, onDataComplete, membershipStatus, on
   const logout = useStore((state) => state.logout);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Socios externos no tienen hijos ni membresia que pagar (estan exonerados): su unica
+  // secuencia es contacto -> password, sin pasar por students ni membership.
+  const isExternal = user?.member_origin === 'external';
+
+  // El paso del externo se fija una sola vez. No alcanza con el estado inicial porque en
+  // una recarga el usuario todavia no esta en el store cuando se pinta la primera vez; y
+  // no puede volver a fijarse en cada corrida del efecto porque le pisaria el avance a
+  // 'password' apenas apreta Continuar.
+  const pasoDeExternoFijado = useRef(false);
 
   const { toast } = useToast();
 
@@ -67,6 +84,15 @@ export const StudentDataSplash = ({ isOpen, onDataComplete, membershipStatus, on
 
   // Load existing students from user data and determine initial step
   useEffect(() => {
+    if (isExternal) {
+      if (!pasoDeExternoFijado.current) {
+        pasoDeExternoFijado.current = true;
+        setCurrentStep('contacto');
+      }
+
+      return;
+    }
+
     if (isOpen && user?.member?.students) {
       const userStudents = user.member.students.map(student => ({
         id: student.id,
@@ -181,6 +207,30 @@ export const StudentDataSplash = ({ isOpen, onDataComplete, membershipStatus, on
     }
   };
 
+  // Paso 'contacto' (solo externos): valida email y telefono y pasa a 'password'.
+  // El guardado real se hace junto con la contraseña, en updatePasswordAndEmail.
+  const handleContactoContinue = () => {
+    if (!email || !email.includes('@')) {
+      toast({
+        title: "Error",
+        description: "Por favor ingresa un email válido",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!phone || phone.trim() === '') {
+      toast({
+        title: "Error",
+        description: "Por favor ingresa un teléfono",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setCurrentStep('password');
+  };
+
   const updatePasswordAndEmail = async () => {
     // Validate email
     if (!email || !email.includes('@')) {
@@ -218,6 +268,7 @@ export const StudentDataSplash = ({ isOpen, onDataComplete, membershipStatus, on
         email: email,
         password: password,
         password_confirmation: confirmPassword,
+        ...(isExternal ? { phone: phone } : {}),
       });
 
       // Update user data in store to reflect setup completion
@@ -301,7 +352,12 @@ export const StudentDataSplash = ({ isOpen, onDataComplete, membershipStatus, on
       >
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-center flex items-center justify-center gap-2">
-            {currentStep === 'students' ? (
+            {currentStep === 'contacto' ? (
+              <>
+                <Phone className="h-6 w-6 text-primary" />
+                Tus datos de contacto
+              </>
+            ) : currentStep === 'students' ? (
               <>
                 <Users className="h-6 w-6 text-primary" />
                 ¡Bienvenido, {user?.name}!
@@ -321,7 +377,69 @@ export const StudentDataSplash = ({ isOpen, onDataComplete, membershipStatus, on
         </DialogHeader>
         
         <Card className="border-0 shadow-none">
-          {currentStep === 'students' ? (
+          {currentStep === 'contacto' ? (
+            <>
+              <CardHeader className="text-center pb-4">
+                <CardDescription className="text-base">
+                  Estos son los datos con los que APACG se va a contactar con vos.
+                </CardDescription>
+              </CardHeader>
+
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="contacto-email" className="flex items-center gap-2">
+                      <Mail className="h-4 w-4" />
+                      Email
+                    </Label>
+                    <Input
+                      id="contacto-email"
+                      type="email"
+                      placeholder="Ingresa tu email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="contacto-phone" className="flex items-center gap-2">
+                      <Phone className="h-4 w-4" />
+                      Teléfono
+                    </Label>
+                    <Input
+                      id="contacto-phone"
+                      type="tel"
+                      placeholder="Ingresa tu teléfono"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-4 space-y-3">
+                  <Button
+                    className="w-full"
+                    onClick={handleContactoContinue}
+                    disabled={isSaving || !email || !email.includes('@') || !phone || phone.trim() === ''}
+                    size="lg"
+                  >
+                    Continuar
+                  </Button>
+
+                  <div className="text-center">
+                    <Button
+                      variant="ghost"
+                      onClick={handleLogout}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      <LogOut className="h-4 w-4 mr-2" />
+                      No ahora, continuar como invitado
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </>
+          ) : currentStep === 'students' ? (
             <>
               <CardHeader className="text-center pb-4">
                 <CardDescription className="text-base">
@@ -629,10 +747,15 @@ export const StudentDataSplash = ({ isOpen, onDataComplete, membershipStatus, on
                     <Button
                       variant="ghost"
                       onClick={() => {
+                        if (isExternal) {
+                          setCurrentStep('contacto');
+                          return;
+                        }
+
                         // Determine the previous step based on current conditions
                         const allStudentsHaveCI = students.every(student => student.ci && student.ci.trim() !== '');
                         const membershipActive = localMembershipStatus?.is_active_member || false;
-                        
+
                         if (allStudentsHaveCI && !membershipActive && localMembershipStatus) {
                           // If students are complete but membership is inactive, go back to membership
                           setCurrentStep('membership');

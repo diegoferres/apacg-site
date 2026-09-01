@@ -7,6 +7,8 @@ interface User {
   email: string;
   avatar?: string;
   setup_completed?: boolean;
+  member_origin?: string | null;
+  is_exonerated?: boolean;
   member?: {
     id: number;
     status: string;
