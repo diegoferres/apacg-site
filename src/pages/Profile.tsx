@@ -36,7 +36,7 @@ const Profile = () => {
     steps: profileTourSteps,
     // Mismo motivo que en Index: no se le muestra el paseo a quien todavia esta
     // completando su alta.
-    autoStart: user?.setup_completed === true,
+    autoStart: !!user?.setup_completed,
     delay: 1500,
   });
 

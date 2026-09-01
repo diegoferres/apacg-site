@@ -51,7 +51,8 @@ const queryClient = new QueryClient();
 // Componente para manejar StudentDataSplash con acceso a location
 const StudentDataSplashController = ({ showStudentSplash, handleStudentDataComplete, membershipStatus, fetchMembershipStatus }) => {
   const location = useLocation();
-  
+  const socioActual = useStore((state) => state.user);
+
   // Rutas donde NO debe aparecer el splash automáticamente
   const excludedPaths = ['/pago'];
   
@@ -59,7 +60,12 @@ const StudentDataSplashController = ({ showStudentSplash, handleStudentDataCompl
   const shouldShowBasedOnLocation = !excludedPaths.includes(location.pathname);
   
   return (
-    <StudentDataSplash 
+    // La key remonta el dialogo cuando cambia el socio. Sin eso su estado sobrevive al
+    // logout —el componente esta montado siempre, solo se le apaga isOpen— y el proximo
+    // que entre desde la misma computadora se encuentra el correo y el telefono del
+    // anterior ya cargados, y el paso donde aquel habia quedado.
+    <StudentDataSplash
+      key={socioActual?.id ?? 'anon'}
       isOpen={showStudentSplash && shouldShowBasedOnLocation}
       onDataComplete={handleStudentDataComplete}
       membershipStatus={membershipStatus}
