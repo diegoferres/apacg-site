@@ -1005,8 +1005,9 @@ const Profile = () => {
                     { id: 'orders', label: 'Mis Compras', icon: Receipt },
                     { id: 'benefits', label: 'Beneficios', icon: Gift },
                     { id: 'edit', label: 'Editar Perfil', icon: Edit },
-                    // Los socios externos no tienen hijos matriculados: la ficha no aplica.
-                  ].filter(({ id }) => !(isExternal && id === 'children')).map(({ id, label, icon: Icon, badge }) => (
+                    // El socio externo no tiene hijos matriculados, y las rifas son del colegio:
+                    // se venden y se rinden por grado, asi que ninguna de las dos fichas aplica.
+                  ].filter(({ id }) => !(isExternal && (id === 'children' || id === 'raffles'))).map(({ id, label, icon: Icon, badge }) => (
                     <Button
                       key={id}
                       ref={activeTab === id ? activePillRef : undefined}
