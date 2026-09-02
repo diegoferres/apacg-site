@@ -49,12 +49,19 @@ export const StudentDataSplash = ({ isOpen, onDataComplete, membershipStatus, on
   // Socios externos no tienen hijos ni membresia que pagar (estan exonerados): su unica
   // secuencia es contacto -> password, sin pasar por students ni membership.
   const isExternal = user?.member_origin === 'external';
+  const yaTeniamosDatos = Boolean(user?.email || user?.member?.phone);
 
   // El paso del externo se fija una sola vez. No alcanza con el estado inicial porque en
   // una recarga el usuario todavia no esta en el store cuando se pinta la primera vez; y
   // no puede volver a fijarse en cada corrida del efecto porque le pisaria el avance a
   // 'password' apenas apreta Continuar.
   const pasoDeExternoFijado = useRef(false);
+
+  // Lo que ya sabemos del socio se muestra para que lo confirme o lo corrija, en vez de
+  // pedirselo en blanco: de varios ya tenemos el correo o el telefono, rescatados de sus
+  // compras o de las listas del colegio. Se precarga una sola vez, cuando llega el usuario,
+  // para no pisar lo que este escribiendo.
+  const datosPrecargados = useRef(false);
 
   const { toast } = useToast();
 
@@ -81,6 +88,13 @@ export const StudentDataSplash = ({ isOpen, onDataComplete, membershipStatus, on
   useEffect(() => {
     setLocalMembershipStatus(membershipStatus);
   }, [membershipStatus]);
+
+  useEffect(() => {
+    if (!user || datosPrecargados.current) return;
+    datosPrecargados.current = true;
+    if (user.email) setEmail(user.email);
+    if (user.member?.phone) setPhone(user.member.phone);
+  }, [user]);
 
   // Load existing students from user data and determine initial step
   useEffect(() => {
@@ -355,7 +369,7 @@ export const StudentDataSplash = ({ isOpen, onDataComplete, membershipStatus, on
             {currentStep === 'contacto' ? (
               <>
                 <Phone className="h-6 w-6 text-primary" />
-                Tus datos de contacto
+                {yaTeniamosDatos ? 'Confirmá tus datos' : 'Tus datos de contacto'}
               </>
             ) : currentStep === 'students' ? (
               <>
@@ -381,7 +395,9 @@ export const StudentDataSplash = ({ isOpen, onDataComplete, membershipStatus, on
             <>
               <CardHeader className="text-center pb-4">
                 <CardDescription className="text-base">
-                  Estos son los datos con los que APACG se va a contactar con vos.
+                  {yaTeniamosDatos
+                    ? 'Estos son los datos que tenemos tuyos. Revisalos y corregí lo que haga falta: son los que APACG va a usar para contactarte.'
+                    : 'Estos son los datos con los que APACG se va a contactar con vos.'}
                 </CardDescription>
               </CardHeader>
 
