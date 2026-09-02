@@ -387,21 +387,21 @@ export const StudentDataSplash = ({ isOpen, onDataComplete, membershipStatus, on
 
               <CardContent className="space-y-6">
                 <div className="space-y-4">
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="contacto-email" className="flex items-center gap-2">
                       <Mail className="h-4 w-4" />
-                      Email
+                      Correo electrónico
                     </Label>
                     <Input
                       id="contacto-email"
                       type="email"
-                      placeholder="Ingresa tu email"
+                      placeholder="Ingresa tu correo electrónico"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                     />
                   </div>
 
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="contacto-phone" className="flex items-center gap-2">
                       <Phone className="h-4 w-4" />
                       Teléfono
@@ -476,7 +476,7 @@ export const StudentDataSplash = ({ isOpen, onDataComplete, membershipStatus, on
                               </div>
                             </div>
                             
-                            <div>
+                            <div className="space-y-2">
                               <Label htmlFor={`ci-${student.id}`}>Cédula de Identidad</Label>
                               <Input
                                 id={`ci-${student.id}`}
@@ -656,28 +656,40 @@ export const StudentDataSplash = ({ isOpen, onDataComplete, membershipStatus, on
             <>
               <CardHeader className="text-center pb-4">
                 <CardDescription className="text-base">
-                  Como es tu primera vez en el sistema, necesitas establecer un email y contraseña para poder recuperar tu cuenta fácilmente.
+                  {isExternal
+                    ? 'Elegí una contraseña para entrar de ahora en adelante, en lugar de tu cédula.'
+                    : 'Como es tu primera vez en el sistema, necesitas establecer un correo electrónico y una contraseña para poder recuperar tu cuenta fácilmente.'}
                 </CardDescription>
               </CardHeader>
               
               <CardContent className="space-y-6">
                 <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="email" className="flex items-center gap-2">
-                      <Mail className="h-4 w-4" />
-                      Email de Recuperación
-                    </Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="Ingresa tu email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">Te permitirá recuperar tu cuenta si olvidas tu contraseña</p>
-                  </div>
+                  {isExternal ? (
+                    // El externo ya dejo su correo en el paso anterior. Volver a pedirselo
+                    // aca, ademas con otro nombre, hace dudar de si es el mismo dato.
+                    <div className="rounded-md bg-muted/50 px-3 py-2 text-sm flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <span className="text-muted-foreground">Te vamos a escribir a</span>
+                      <span className="font-medium break-all">{email}</span>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Label htmlFor="email" className="flex items-center gap-2">
+                        <Mail className="h-4 w-4" />
+                        Correo electrónico
+                      </Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="Ingresa tu correo electrónico"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">Te permitirá recuperar tu cuenta si olvidas tu contraseña</p>
+                    </div>
+                  )}
 
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="password">Nueva Contraseña</Label>
                     <div className="relative">
                       <Input
@@ -705,7 +717,7 @@ export const StudentDataSplash = ({ isOpen, onDataComplete, membershipStatus, on
                     <p className="text-xs text-muted-foreground mt-1">Mínimo 6 caracteres</p>
                   </div>
 
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="confirmPassword">Confirmar Contraseña</Label>
                     <div className="relative">
                       <Input
@@ -785,7 +797,11 @@ export const StudentDataSplash = ({ isOpen, onDataComplete, membershipStatus, on
                 </div>
 
                 <div className="text-xs text-muted-foreground text-center pt-4 border-t">
-                  <p>Tu email y contraseña te permitirán acceder de forma segura y recuperar tu cuenta si es necesario.</p>
+                  <p>
+                    {isExternal
+                      ? 'Con tu cédula y esta contraseña vas a entrar de ahora en adelante.'
+                      : 'Tu correo electrónico y tu contraseña te permitirán acceder de forma segura y recuperar tu cuenta si es necesario.'}
+                  </p>
                 </div>
               </CardContent>
             </>
