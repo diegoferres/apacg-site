@@ -14,6 +14,8 @@ interface TicketType {
   description: string;
   price: number;
   stock: number;
+  /** Máximo por compra que impone el evento (lo expone el backend). */
+  max_per_order?: number | null;
 }
 
 interface Event {
@@ -43,12 +45,20 @@ const EventPurchaseModal = ({ event, isOpen, onClose }: EventPurchaseModalProps)
 
 
 
+  /**
+   * Tope efectivo del selector: el stock, o el máximo por compra del evento si es
+   * menor. Sin esto la persona podía elegir 5 entradas y enterarse del límite recién
+   * al confirmar el pago, con todo el formulario ya completado.
+   */
+  const maxFor = (ticketType: TicketType) =>
+    Math.min(ticketType.stock, ticketType.max_per_order ?? Infinity);
+
   const updateTicketQuantity = (ticketId: number, change: number) => {
     const currentQuantity = selectedTickets[ticketId] || 0;
     const newQuantity = Math.max(0, currentQuantity + change);
     const ticketType = event.ticketTypes.find(t => t.id === ticketId);
-    
-    if (ticketType && newQuantity <= ticketType.stock) {
+
+    if (ticketType && newQuantity <= maxFor(ticketType)) {
       setSelectedTickets(prev => ({
         ...prev,
         [ticketId]: newQuantity
@@ -146,6 +156,11 @@ const EventPurchaseModal = ({ event, isOpen, onClose }: EventPurchaseModalProps)
                           <Badge variant="outline" className="text-xs">
                             {ticketType.stock} disponibles
                           </Badge>
+                          {ticketType.max_per_order && (
+                            <Badge variant="secondary" className="text-xs">
+                              Máx. {ticketType.max_per_order} por cédula
+                            </Badge>
+                          )}
                         </div>
                       </div>
                       
@@ -168,7 +183,7 @@ const EventPurchaseModal = ({ event, isOpen, onClose }: EventPurchaseModalProps)
                             variant="outline"
                             size="sm"
                             onClick={() => updateTicketQuantity(ticketType.id, 1)}
-                            disabled={(selectedTickets[ticketType.id] || 0) >= ticketType.stock}
+                            disabled={(selectedTickets[ticketType.id] || 0) >= maxFor(ticketType)}
                           >
                             <Plus className="h-4 w-4" />
                           </Button>

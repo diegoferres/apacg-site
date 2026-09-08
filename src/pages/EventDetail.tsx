@@ -26,6 +26,8 @@ interface TicketType {
   has_member_price: boolean;
   stock: number;
   stock_available: number;
+  /** Máximo por compra que impone el evento (lo expone el backend). */
+  max_per_order?: number | null;
 }
 
 interface EventExtra {
@@ -317,12 +319,20 @@ const EventDetail = () => {
     return ticketType.price;
   };
 
+  /**
+   * Tope efectivo del selector: lo que queda disponible, o el máximo por compra que
+   * fija el evento si es menor. Sin esto se podían elegir 5 entradas y recibir el
+   * rechazo recién al confirmar, con el formulario ya completo.
+   */
+  const maxFor = (ticketType: TicketType) =>
+    Math.min(ticketType.stock_available, ticketType.max_per_order ?? Infinity);
+
   const updateTicketQuantity = (ticketId: number, change: number) => {
     const currentQuantity = selectedTickets[ticketId] || 0;
     const newQuantity = Math.max(0, currentQuantity + change);
     const ticketType = event.ticket_types.find(t => t.id === ticketId);
-    
-    if (ticketType && newQuantity <= ticketType.stock_available) {
+
+    if (ticketType && newQuantity <= maxFor(ticketType)) {
       // Track selección de tickets (solo cuando se agrega)
       if (change > 0 && newQuantity > currentQuantity) {
         analytics.trackEvent('add_to_cart', {
@@ -688,8 +698,14 @@ const EventDetail = () => {
                             {formatPrice(ticketType.price)}
                           </span>
                         )}
+                        {/* Se avisa el tope acá para que no sorprenda al confirmar. */}
+                        {ticketType.max_per_order && ticketType.stock_available > 0 && (
+                          <div className="text-xs text-muted-foreground mt-1">
+                            Máximo {ticketType.max_per_order} por cédula
+                          </div>
+                        )}
                       </div>
-                      
+
                       {!event.is_informational && (
                         ticketType.stock_available <= 0 ? (
                           <Badge variant="destructive" className="text-xs">Agotado</Badge>
@@ -715,7 +731,7 @@ const EventDetail = () => {
                               size="icon"
                               aria-label="Aumentar cantidad"
                               onClick={() => updateTicketQuantity(ticketType.id, 1)}
-                              disabled={(selectedTickets[ticketType.id] || 0) >= ticketType.stock_available}
+                              disabled={(selectedTickets[ticketType.id] || 0) >= maxFor(ticketType)}
                               className="h-8 w-8"
                             >
                               <Plus className="h-4 w-4" />
