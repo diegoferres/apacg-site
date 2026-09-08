@@ -585,8 +585,11 @@ const EventDetail = () => {
               {/* Validación de socio APACG por CI — muestra precio socio en vivo */}
               {!event.is_informational && event.ticket_types.some(t => t.has_member_price) && (
                 <div className="mt-8 rounded-lg border bg-muted/30 p-3 space-y-2">
+                  {/* No se pregunta "¿sos socio APACG?": eso deja afuera al ex alumno y al
+                      profesor, que no se reconocen en esa sigla, y obliga a saber algo que
+                      el sistema puede averiguar con la cédula. */}
                   <label className="block text-sm font-semibold">
-                    ¿Sos socio APACG? Ingresá tu CI para ver precio socio
+                    ¿Tenés precio socio? Ingresá tu cédula y lo verificamos
                   </label>
                   <input
                     type="text"
@@ -607,7 +610,7 @@ const EventDetail = () => {
                   )}
                   {!isCheckingPricing && memberStatus?.can_activate && (
                     <p className="text-sm text-amber-800 leading-snug">
-                      Sos socio APACG. Activá tu membresía al pagar
+                      Tenés precio socio si ponés al día la anualidad
                       {' '}
                       (<strong>+Gs. {memberStatus.suggested_total.toLocaleString('es-PY')}</strong>)
                       {' '}y obtené precio socio en esta compra.
@@ -615,7 +618,8 @@ const EventDetail = () => {
                   )}
                   {!isCheckingPricing && memberPricing && !memberStatus?.is_apacg_member && buyerCi.trim().length >= 5 && (
                     <p className="text-xs text-muted-foreground">
-                      No encontramos un socio con ese CI. Continuás con precio general.
+                      No encontramos precio socio para esa cédula. Seguís con precio general;
+                      si creés que te corresponde, escribinos.
                     </p>
                   )}
                 </div>

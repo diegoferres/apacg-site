@@ -212,23 +212,27 @@ const Checkout = () => {
       setFormData(prev => ({ ...prev, cedula: eventData.prefilledCi! }));
     }
     
-    // Luego precargar datos del usuario autenticado (miembro o admin)
+    // Luego precargar datos del usuario autenticado (miembro o admin).
+    //
+    // La cédula sale de su ficha de socio. Antes se ponía '12345678' fijo "por ahora", y eso
+    // quedaba guardado en customer_data de cada compra: 54 órdenes de 36 personas distintas
+    // terminaron con esa cédula inventada, y con ella salían sus entradas y su comprobante.
+    // Si no la tiene cargada se deja vacía para que la escriba, nunca un valor de relleno.
     if (user) {
       if (user.member) {
-        // Usuario con datos de miembro
         setFormData({
           name: `${user.member.first_name || ''} ${user.member.last_name || ''}`.trim() || user.name || '',
           email: user.email || '',
           phone: user.member.phone || '',
-          cedula: '12345678' // Valor temporal por ahora
+          cedula: user.member.document_number || ''
         });
       } else {
-        // Usuario sin datos de miembro (ej: admin)
+        // Usuario sin ficha de socio (por ejemplo un admin): sólo lo que se sabe de él.
         setFormData({
           name: user.name || '',
           email: user.email || '',
           phone: '',
-          cedula: '12345678' // Valor temporal por ahora
+          cedula: ''
         });
       }
     }

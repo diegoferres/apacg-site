@@ -13,6 +13,7 @@ interface User {
     id: number;
     status: string;
     member_number: string;
+    document_number?: string | null;
     phone: string;
     payment_date: string;
     first_name: string;
