@@ -275,10 +275,30 @@ const PaymentPage = () => {
       const response = await api.post('/api/client/sales/create-order', requestData);
 
       if (response.data.success) {
-        const { checkout_data, order, payment_id } = response.data.data;
+        const { checkout_data, order, payment_id, free } = response.data.data;
+
+        // Orden gratuita (total Gs 0): el backend ya la completó, emitió las
+        // entradas y despachó el correo. No hay pasarela que abrir, así que
+        // vamos directo a la confirmación.
+        if (free) {
+          navigate(
+            `/pago-exitoso?order_id=${order.id}&payment_id=${payment_id}`,
+            { replace: true }
+          );
+          return;
+        }
+
+        // Sin datos de Bancard no se puede continuar. Antes esto reventaba con
+        // "cannot read process_id of undefined" y dejaba el loader colgado sin
+        // decirle nada al comprador.
+        if (!checkout_data?.process_id || !checkout_data?.script_url) {
+          setError('No pudimos iniciar el procesador de pagos. Intentá nuevamente en unos minutos.');
+          return;
+        }
+
         setBancardData(checkout_data);
         setOrderId(order.id);
-        
+
         // Guardar datos para el callback
         localStorage.setItem('current_payment', JSON.stringify({
           order_id: order.id,

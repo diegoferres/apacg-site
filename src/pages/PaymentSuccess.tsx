@@ -1,14 +1,29 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useSearchParams, Link } from 'react-router-dom';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Download, Mail, Home, Loader2, CreditCard, Calendar, Hash, Receipt, MapPin } from 'lucide-react';
+import {
+  CheckCircle2, Mail, Home, Loader2, Calendar, MapPin, Ticket, ShoppingBag,
+  GraduationCap, User, ChevronDown, Sparkles,
+} from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { formatPrice, formatDate, toNumber } from '@/lib/utils';
 import { useStore } from '@/stores/store';
 import api from '@/services/api';
 import analytics from '@/services/analytics';
+
+/** Tipos de `orderable_type` que puede traer una orden. */
+const T = {
+  TICKET: 'App\\Models\\EventTicketType',
+  EXTRA: 'App\\Models\\EventExtra',
+  RAFFLE: 'App\\Models\\Raffle',
+  PRODUCT: 'App\\Models\\Product',
+  VARIANT: 'App\\Models\\ProductVariant',
+  COURSE: 'App\\Models\\Course',
+  COURSE_GROUP: 'App\\Models\\CourseGroup',
+  ANNUAL: 'App\\Models\\StudentAnnualPayment',
+} as const;
 
 interface PaymentDetails {
   id: number;
@@ -22,7 +37,22 @@ interface PaymentDetails {
   processed_at: string;
   order: {
     id: number;
+    order_number?: string;
+    status?: string;
     total_amount: number;
+    customer_data?: {
+      name?: string;
+      email?: string;
+      phone?: string;
+      cedula?: string;
+    } | null;
+    /** Fecha, hora y lugar del evento, cuando la orden tiene entradas o extras. */
+    event?: {
+      title?: string;
+      date?: string;
+      time?: string;
+      location?: string;
+    } | null;
     applied_coupon?: {
       coupon_id: number;
       coupon_code: string;
@@ -41,12 +71,15 @@ interface PaymentDetails {
       unit_price: number;
       total_price: number;
       details?: any;
+      item_details?: any;
+      /** Números asignados, sólo en ítems de rifa. */
+      raffle_numbers?: Array<string | number>;
+      orderable?: { id: number; title?: string; type?: string };
     }>;
   };
 }
 
 const PaymentSuccess = () => {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -59,11 +92,10 @@ const PaymentSuccess = () => {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    
+
     if (orderId && paymentId) {
       fetchPaymentDetails();
     } else {
-      // Si no hay IDs, mostrar página básica y limpiar datos
       localStorage.removeItem('checkout_form_data');
       localStorage.removeItem('payment_data');
       localStorage.removeItem('checkout_data');
@@ -74,100 +106,70 @@ const PaymentSuccess = () => {
   const fetchPaymentDetails = async () => {
     try {
       setIsLoading(true);
-      
-      // Construir URL base
+
       let url = `/api/client/payments/${paymentId}/details`;
       let email = null;
-      
-      console.log('PaymentSuccess Debug:', {
-        isLoggedIn,
-        paymentId,
-        hasCheckoutData: !!localStorage.getItem('checkout_data'),
-        hasPaymentData: !!localStorage.getItem('payment_data')
-      });
-      
-      // Siempre intentar obtener email de localStorage (tanto para guests como para usuarios con token expirado)
-      // Buscar en payment_data primero (datos más recientes del checkout)
+
+      // El email valida el acceso cuando la compra fue como invitado.
       const paymentData = localStorage.getItem('payment_data');
       if (paymentData) {
         try {
-          const parsedPaymentData = JSON.parse(paymentData);
-          // Corregir estructura: en checkout se guarda como customerData (camelCase)
-          email = parsedPaymentData.customerData?.email || parsedPaymentData.customer_data?.email;
-          console.log('Email found in payment_data:', email);
+          const parsed = JSON.parse(paymentData);
+          email = parsed.customerData?.email || parsed.customer_data?.email;
         } catch (e) {
           console.warn('Could not parse payment_data for email');
         }
       }
-      
-      // Si no encontramos en payment_data, buscar en checkout_data (fallback)
+
       if (!email) {
         const checkoutData = localStorage.getItem('checkout_data');
         if (checkoutData) {
           try {
-            const parsedData = JSON.parse(checkoutData);
-            // Buscar en todas las posibles estructuras
-            email = parsedData.customerData?.email ||      // Checkout structure
-                    parsedData.customer_data?.email ||     // API structure  
-                    parsedData.customerEmail ||            // Alternative structure
-                    parsedData.email;                      // Direct email
-            console.log('Email found in checkout_data:', email);
+            const parsed = JSON.parse(checkoutData);
+            email = parsed.customerData?.email || parsed.customer_data?.email ||
+              parsed.customerEmail || parsed.email;
           } catch (e) {
             console.warn('Could not parse checkout_data for email');
           }
         }
       }
-      
-      // Si no encontramos email en localStorage, intentar obtenerlo de searchParams
-      if (!email) {
-        email = searchParams.get('email');
-        console.log('Email found in searchParams:', email);
-      }
-      
-      // Si tenemos email, agregarlo como parámetro (tanto para guests como para posibles tokens expirados)
-      if (email) {
-        url += `?email=${encodeURIComponent(email)}`;
-        console.log('Final URL with email:', url);
-      } else {
-        console.log('No email found, URL without email:', url);
-      }
-      
+
+      if (!email) email = searchParams.get('email');
+      if (email) url += `?email=${encodeURIComponent(email)}`;
+
       const response = await api.get(url);
-      
+
       if (response.data.success) {
         setPaymentDetails(response.data.data);
-        
-        // Track compra completada en GA4
+
         const payment = response.data.data;
-        const items = [];
-        
-        if (payment.order && payment.order.items) {
+        const gaItems = [];
+
+        if (payment.order?.items) {
           payment.order.items.forEach((item: any) => {
             const itemType = item.orderable_type?.toLowerCase() || '';
             let category = 'other';
-            
             if (itemType.includes('ticket')) category = 'event_ticket';
             else if (itemType.includes('course')) category = 'course';
             else if (itemType.includes('raffle')) category = 'raffle';
-            
-            items.push({
+
+            gaItems.push({
               item_id: `${item.orderable_type}_${item.orderable_id}`,
               item_name: item.details?.name || 'Item',
               item_category: category,
               price: item.unit_price,
               quantity: item.quantity,
-              currency: 'PYG'
+              currency: 'PYG',
             });
           });
         }
-        
+
         analytics.trackPurchase(
           payment.ticket_number || payment.id.toString(),
           payment.amount,
-          items
+          gaItems,
         );
-        
-        // Limpiar datos del localStorage solo DESPUÉS de obtener exitosamente los detalles
+
         localStorage.removeItem('checkout_form_data');
         localStorage.removeItem('payment_data');
         localStorage.removeItem('checkout_data');
@@ -176,53 +178,37 @@ const PaymentSuccess = () => {
       }
     } catch (error: any) {
       console.error('Error fetching payment details:', error);
-      
-      // Si obtenemos 401 Unauthorized y no habíamos incluido email, intentar como guest
+
       if (error.response?.status === 401 && !location.search.includes('email=')) {
-        console.log('Got 401, trying to fetch email for guest access...');
-        
-        // Repetir la lógica de búsqueda de email más exhaustiva
         let fallbackEmail = null;
-        
-        // Buscar en todos los posibles lugares
         const sources = [
           localStorage.getItem('payment_data'),
           localStorage.getItem('checkout_data'),
-          searchParams.get('email')
+          searchParams.get('email'),
         ];
-        
+
         for (const source of sources) {
           if (typeof source === 'string') {
             if (source.includes('@') && !source.includes('{')) {
-              // Es directamente un email
               fallbackEmail = source;
               break;
             } else if (source.includes('{')) {
-              // Es JSON
               try {
                 const parsed = JSON.parse(source);
-                // Buscar en todas las posibles estructuras
-                fallbackEmail = parsed.customerData?.email ||     // Checkout structure
-                               parsed.customer_data?.email ||    // API structure
-                               parsed.customerEmail ||           // Alternative structure
-                               parsed.email;                     // Direct email
+                fallbackEmail = parsed.customerData?.email || parsed.customer_data?.email ||
+                  parsed.customerEmail || parsed.email;
                 if (fallbackEmail) break;
-              } catch (e) {
-                // Ignorar errores de parsing
-              }
+              } catch (e) { /* ignorar */ }
             }
           }
         }
-        
+
         if (fallbackEmail) {
-          console.log('Retrying with fallback email:', fallbackEmail);
           const retryUrl = `/api/client/payments/${paymentId}/details?email=${encodeURIComponent(fallbackEmail)}`;
           try {
             const retryResponse = await api.get(retryUrl);
             if (retryResponse.data.success) {
               setPaymentDetails(retryResponse.data.data);
-              
-              // Limpiar datos del localStorage también en el retry exitoso
               localStorage.removeItem('checkout_form_data');
               localStorage.removeItem('payment_data');
               localStorage.removeItem('checkout_data');
@@ -233,8 +219,7 @@ const PaymentSuccess = () => {
           }
         }
       }
-      
-      // Manejar errores específicos para guests
+
       if (error.response?.status === 400 && error.response?.data?.error === 'EMAIL_REQUIRED') {
         setError('Se requiere validación de email para ver los detalles del pago');
       } else if (error.response?.status === 403) {
@@ -249,101 +234,162 @@ const PaymentSuccess = () => {
     }
   };
 
+  // ─────────────────────────── Derivados de la orden ───────────────────────────
+  const items = paymentDetails?.order.items ?? [];
+  const detailsOf = (item: any) => item.details || item.item_details || {};
+  const countOf = (type: string) =>
+    items.filter((i) => i.orderable_type === type).reduce((sum, i) => sum + i.quantity, 0);
+
+  const ticketCount = countOf(T.TICKET);
+  const extraCount = countOf(T.EXTRA);
+  const hasRaffle = items.some((i) => i.orderable_type === T.RAFFLE);
+  const hasCourse = items.some((i) => i.orderable_type === T.COURSE || i.orderable_type === T.COURSE_GROUP);
+  const hasProducts = items.some((i) => i.orderable_type === T.PRODUCT || i.orderable_type === T.VARIANT);
+  const hasMembership = items.some((i) => i.orderable_type === T.ANNUAL);
+  const isFree = paymentDetails?.payment_method === 'free' || toNumber(paymentDetails?.amount ?? 0) === 0;
+
+  const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
+
+  /** El encabezado nombra el acto, no siempre un "pago". */
+  const heroTitle = (() => {
+    if (!paymentDetails) return '¡Listo!';
+    if (isFree) return '¡Reserva confirmada!';
+    if (hasCourse && !ticketCount && !hasProducts) return '¡Inscripción confirmada!';
+    if (hasProducts && !ticketCount && !hasCourse) return '¡Pedido confirmado!';
+    if (hasRaffle && !ticketCount && !hasProducts && !hasCourse) return '¡Ya estás participando!';
+    return '¡Pago confirmado!';
+  })();
+
+  /**
+   * Contexto del evento. El backend lo manda en `order.event` (fecha, hora y lugar
+   * leídos en vivo); si no viniera, se cae al título y fecha congelados en item_details.
+   */
+  const eventCtx = (() => {
+    const fromApi = paymentDetails?.order.event;
+    if (fromApi?.title) return fromApi;
+
+    const it = items.find((i) => i.orderable_type === T.TICKET || i.orderable_type === T.EXTRA);
+    if (!it) return null;
+    const d = detailsOf(it);
+    if (!d.event_title) return null;
+    return { title: d.event_title as string, date: d.event_date as string | undefined };
+  })();
+
+  /** Números de rifa asignados a la orden (vienen por ítem desde el backend). */
+  const raffleNumbers: string[] = items
+    .filter((i) => i.orderable_type === T.RAFFLE)
+    .flatMap((i) => i.raffle_numbers ?? [])
+    .map(String);
+
+  /** Todo lo que llega en el mismo correo va listado en una sola tarjeta. */
+  const mailItems: Array<{ what: string; how: string }> = [];
+  if (ticketCount > 0) {
+    mailItems.push({
+      what: `${ticketCount} ${plural(ticketCount, 'entrada', 'entradas')} con código QR`,
+      how: `${plural(ticketCount, 'Presentala', 'Presentalas')} en el ingreso, desde el celular o ${plural(ticketCount, 'impresa', 'impresas')}.`,
+    });
+  }
+  if (extraCount > 0) {
+    mailItems.push({
+      what: `${extraCount} ${plural(extraCount, 'voucher', 'vouchers')} de consumición`,
+      how: `Se ${plural(extraCount, 'canjea', 'canjean')} en el puesto del evento.`,
+    });
+  }
+  if (hasRaffle) {
+    mailItems.push({
+      what: 'el comprobante con tus números',
+      how: 'Guardalo: esos son los números que participan del sorteo.',
+    });
+  }
+  if (hasCourse) {
+    mailItems.push({
+      what: 'el comprobante de inscripción',
+      how: 'Te contactamos con los datos del grupo antes del inicio.',
+    });
+  }
+  if (mailItems.length === 0 && paymentDetails) {
+    mailItems.push({
+      what: 'el comprobante de tu compra',
+      how: 'Guardalo por cualquier consulta.',
+    });
+  }
+
+  const customer = paymentDetails?.order.customer_data ?? null;
+  const email = customer?.email ?? null;
+
+  const headLabel = hasProducts ? 'Tu pedido'
+    : hasCourse ? 'Tu inscripción'
+    : hasRaffle && !ticketCount ? 'Tus números'
+    : ticketCount > 0 && isFree ? 'Tu entrada'
+    : 'Tu compra';
+
+  const HeadIcon = hasProducts ? ShoppingBag
+    : hasCourse ? GraduationCap
+    : hasRaffle && !ticketCount ? Sparkles
+    : Ticket;
+
+  const primaryCta = isLoggedIn
+    ? { label: 'Ver mis compras', to: '/perfil' }
+    : hasProducts ? { label: 'Seguir comprando', to: '/tienda' }
+    : hasCourse ? { label: 'Ver cursos', to: '/cursos' }
+    : hasRaffle && !ticketCount ? { label: 'Ver más rifas', to: '/rifas' }
+    : { label: 'Ver más eventos', to: '/eventos' };
 
   const getDetailedItemDescription = (item: any) => {
     const type = item.orderable_type;
-    const details = item.details || item.item_details || {};
-    
+    const d = detailsOf(item);
+
     switch (type) {
       case 'App\\Models\\Event':
         return 'Evento';
-      case 'App\\Models\\EventTicketType':
-        return 'Entrada';
-      case 'App\\Models\\Raffle':
-        return 'Rifa';
+      case T.TICKET:
+        return d.ticket_type_name || 'Entrada';
+      case T.EXTRA:
+        return d.extra_name || d.name || 'Extra del evento';
+      case T.RAFFLE:
+        return d.raffle_title || 'Números de rifa';
+      case T.ANNUAL:
+        return d.student_name ? `Anualidad · ${d.student_name}` : 'Anualidad';
       case 'App\\Models\\Course':
-      case 'App\\Models\\CourseGroup':
-        // Construir descripción detallada para cursos
+      case T.COURSE_GROUP: {
         let description = 'Inscripción a curso';
-
-        // Agregar nombre del curso si está disponible
-        if (details.course_title) {
-          description = `Inscripción a ${details.course_title}`;
+        if (d.course_title) description = `Inscripción a ${d.course_title}`;
+        if (d.course_group_name) description += ` - ${d.course_group_name}`;
+        else if (d.group_name) description += ` - ${d.group_name}`;
+        if (d.student_data?.name || d.student_name) {
+          description += ` (Estudiante: ${d.student_data?.name || d.student_name})`;
         }
-
-        // Agregar grupo si está disponible
-        if (details.course_group_name) {
-          description += ` - ${details.course_group_name}`;
-        } else if (details.group_name) {
-          description += ` - ${details.group_name}`;
-        }
-
-        // Agregar estudiante si está disponible
-        if (details.student_data?.name || details.student_name) {
-          const studentName = details.student_data?.name || details.student_name;
-          description += ` (Estudiante: ${studentName})`;
-        }
-
         return description;
-      case 'App\\Models\\Product':
-      case 'App\\Models\\ProductVariant': {
-        const productName = details.product_name || 'Producto';
-        return details.variant_name ? `${productName} · ${details.variant_name}` : productName;
+      }
+      case T.PRODUCT:
+      case T.VARIANT: {
+        const productName = d.product_name || 'Producto';
+        return d.variant_name ? `${productName} · ${d.variant_name}` : productName;
       }
       default:
-        return 'Item';
+        return item.orderable?.title || 'Item';
     }
   };
 
-  // ¿La orden contiene al menos un producto físico? Lo usamos para mostrar el callout
-  // de "Retiro en APACG" solo en órdenes de tienda (no en eventos/cursos/rifas).
-  const hasProductItems = paymentDetails?.order.items.some(
-    (item) =>
-      item.orderable_type === 'App\\Models\\Product' ||
-      item.orderable_type === 'App\\Models\\ProductVariant',
-  ) ?? false;
-
   const getItemBreakdown = (item: any) => {
-    const details = item.details || item.item_details || {};
-    
-    if ((item.orderable_type === 'App\\Models\\Course' || item.orderable_type === 'App\\Models\\CourseGroup') && 
-        (details.payment_breakdown || details.enrollment_fee || details.monthly_fee)) {
-      const items = [];
-      
-      // Si hay payment_breakdown, usarlo
-      if (details.payment_breakdown) {
-        const breakdown = details.payment_breakdown;
-        if (breakdown.enrollment_fee && breakdown.enrollment_fee > 0) {
-          items.push({
-            name: 'Matrícula',
-            amount: breakdown.enrollment_fee
-          });
-        }
-        if (breakdown.monthly_fee && breakdown.monthly_fee > 0) {
-          items.push({
-            name: 'Mensualidad',
-            amount: breakdown.monthly_fee
-          });
-        }
+    const d = detailsOf(item);
+
+    if ((item.orderable_type === 'App\\Models\\Course' || item.orderable_type === T.COURSE_GROUP) &&
+      (d.payment_breakdown || d.enrollment_fee || d.monthly_fee)) {
+      const rows = [];
+      const b = d.payment_breakdown;
+
+      if (b) {
+        if (b.enrollment_fee > 0) rows.push({ name: 'Matrícula', amount: b.enrollment_fee });
+        if (b.monthly_fee > 0) rows.push({ name: 'Mensualidad', amount: b.monthly_fee });
       } else {
-        // Si no hay payment_breakdown, usar los campos directos
-        if (details.enrollment_fee && toNumber(details.enrollment_fee) > 0) {
-          items.push({
-            name: 'Matrícula',
-            amount: toNumber(details.enrollment_fee)
-          });
-        }
-        if (details.monthly_fee && toNumber(details.monthly_fee) > 0) {
-          items.push({
-            name: 'Mensualidad',
-            amount: toNumber(details.monthly_fee)
-          });
-        }
+        if (toNumber(d.enrollment_fee) > 0) rows.push({ name: 'Matrícula', amount: toNumber(d.enrollment_fee) });
+        if (toNumber(d.monthly_fee) > 0) rows.push({ name: 'Mensualidad', amount: toNumber(d.monthly_fee) });
       }
-      
-      return items.length > 0 ? items : null;
+
+      return rows.length > 0 ? rows : null;
     }
-    
+
     return null;
   };
 
@@ -354,7 +400,7 @@ const PaymentSuccess = () => {
         <div className="page-top pb-12 flex items-center justify-center">
           <div className="text-center">
             <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-            <p>Cargando detalles del pago...</p>
+            <p>Cargando detalles de tu compra...</p>
           </div>
         </div>
         <Footer />
@@ -365,248 +411,326 @@ const PaymentSuccess = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       <div className="page-top pb-12">
-        <div className="container mx-auto px-4 md:px-6 max-w-4xl">
-          <Card className="text-center">
-            <CardHeader className="pb-4">
-              <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
-                <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
+        <div className="container mx-auto px-4 md:px-6 max-w-2xl">
+          <div className="flex flex-col gap-4">
+
+            {/* ── Confirmación ── */}
+            <header className="flex flex-col items-center text-center gap-2">
+              <div className="h-12 w-12 rounded-full bg-green-100 dark:bg-green-900/25 grid place-items-center">
+                <CheckCircle2 className="h-6 w-6 text-green-700 dark:text-green-400" />
               </div>
-              <CardTitle className="text-2xl md:text-3xl text-green-600 dark:text-green-400">
-                ¡Pago Exitoso!
-              </CardTitle>
-              <p className="text-muted-foreground mt-2">
-                Su compra ha sido procesada correctamente
-              </p>
-            </CardHeader>
-            
-            <CardContent className="space-y-6">
-              {/* Detalles del pago */}
-              {paymentDetails && !error ? (
-                <div className="bg-muted/30 rounded-lg p-6 space-y-6">
-                  <h3 className="font-semibold text-lg text-left">Detalles del Pago</h3>
-                  
-                  <div className="grid md:grid-cols-2 gap-4 text-left">
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3">
-                        <Hash className="h-5 w-5 text-primary" />
-                        <div>
-                          <p className="font-medium">Número de Autorización</p>
-                          <p className="text-sm text-muted-foreground font-mono">
-                            {paymentDetails.authorization_number}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-3">
-                        <Receipt className="h-5 w-5 text-primary" />
-                        <div>
-                          <p className="font-medium">Número de Ticket</p>
-                          <p className="text-sm text-muted-foreground font-mono">
-                            {paymentDetails.ticket_number}
-                          </p>
-                        </div>
-                      </div>
+              <h1 className="text-xl md:text-2xl font-bold tracking-tight text-balance">
+                {heroTitle}
+              </h1>
+              {paymentDetails && (
+                <p className="text-sm text-muted-foreground">
+                  {[
+                    ticketCount > 0 && `${ticketCount} ${plural(ticketCount, 'entrada', 'entradas')}`,
+                    extraCount > 0 && `${extraCount} ${plural(extraCount, 'voucher', 'vouchers')}`,
+                    hasProducts && `${items.filter((i) => i.orderable_type === T.PRODUCT || i.orderable_type === T.VARIANT).reduce((s, i) => s + i.quantity, 0)} productos`,
+                    eventCtx?.date && formatDate(eventCtx.date, { format: 'long' }),
+                  ].filter(Boolean).join(' · ')}
+                </p>
+              )}
+            </header>
+
+            {paymentDetails && !error ? (
+              <>
+                {/* ── Resumen ── */}
+                <Card>
+                  <CardContent className="p-4 flex flex-col gap-3">
+                    <div className="flex items-center gap-2 text-[11.5px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      <HeadIcon className="h-3.5 w-3.5" />
+                      {headLabel}
                     </div>
-                    
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3">
-                        <CreditCard className="h-5 w-5 text-primary" />
+
+                    {eventCtx && (
+                      <>
                         <div>
-                          <p className="font-medium">Monto Pagado</p>
-                          <p className="text-sm text-muted-foreground">
-                            {formatPrice(toNumber(paymentDetails.amount))}
-                          </p>
+                          <h2 className="text-base font-semibold leading-snug text-balance">{eventCtx.title}</h2>
                         </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-3">
-                        <Calendar className="h-5 w-5 text-primary" />
-                        <div>
-                          <p className="font-medium">Fecha y Hora</p>
-                          <p className="text-sm text-muted-foreground">
-                            {formatDate(paymentDetails.processed_at, { includeTime: true })}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Resumen de compra */}
-                  <div className="border-t pt-4">
-                    <h4 className="font-medium mb-3 text-left">Resumen de Compra</h4>
-                    <div className="space-y-3">
-                      {paymentDetails.order.items.map((item, index) => {
-                        const breakdown = getItemBreakdown(item);
-                        return (
-                          <div key={index} className="space-y-2">
-                            <div className="flex justify-between items-start text-sm">
-                              <div className="text-left flex-1">
-                                <div className="font-medium">
-                                  {getDetailedItemDescription(item)}
-                                </div>
-                                {item.quantity > 1 && (
-                                  <div className="text-muted-foreground">
-                                    Cantidad: {item.quantity}
-                                  </div>
-                                )}
-                              </div>
-                              <span className="font-medium ml-4">
-                                {formatPrice(toNumber(item.total_price))}
+                        <div className="flex flex-col gap-2">
+                          {eventCtx.date && (
+                            <div className="flex items-start gap-2 text-sm">
+                              <Calendar className="h-4 w-4 mt-0.5 flex-none text-muted-foreground" />
+                              <span>
+                                {formatDate(eventCtx.date, { format: 'long' })}
+                                {eventCtx.time && <><br /><span className="text-muted-foreground">{eventCtx.time}</span></>}
                               </span>
                             </div>
-                            
-                            {/* Mostrar desglose para cursos */}
-                            {breakdown && breakdown.length > 0 && (
-                              <div className="ml-4 space-y-1 text-xs text-muted-foreground border-l-2 border-muted pl-3">
-                                {breakdown.map((breakdownItem, breakdownIndex) => (
-                                  <div key={breakdownIndex} className="flex justify-between">
-                                    <span>• {breakdownItem.name}:</span>
-                                    <span>{formatPrice(breakdownItem.amount)}</span>
+                          )}
+                          {eventCtx.location && (
+                            <div className="flex items-start gap-2 text-sm">
+                              <MapPin className="h-4 w-4 mt-0.5 flex-none text-muted-foreground" />
+                              <span>{eventCtx.location}</span>
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
+
+                    {/* Números de rifa: con más de 8 se colapsa el resto. */}
+                    {raffleNumbers.length > 0 && (
+                      <>
+                        <div className="h-px bg-border" />
+                        <div className="flex flex-wrap gap-1.5">
+                          {raffleNumbers.slice(0, 8).map((n) => (
+                            <span key={n} className="px-2.5 py-1.5 rounded-lg bg-muted border text-sm font-semibold tabular-nums">
+                              {n}
+                            </span>
+                          ))}
+                        </div>
+                        {raffleNumbers.length > 8 && (
+                          <details className="group">
+                            <summary className="cursor-pointer list-none flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground">
+                              Ver los {raffleNumbers.length - 8} restantes
+                              <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
+                            </summary>
+                            <div className="flex flex-wrap gap-1.5 mt-1.5 max-h-40 overflow-y-auto">
+                              {raffleNumbers.slice(8).map((n) => (
+                                <span key={n} className="px-2.5 py-1.5 rounded-lg bg-muted border text-sm font-semibold tabular-nums">
+                                  {n}
+                                </span>
+                              ))}
+                            </div>
+                          </details>
+                        )}
+                      </>
+                    )}
+
+                    <div className="h-px bg-border" />
+
+                    <div className="flex flex-col gap-3">
+                      {items.map((item) => {
+                        const breakdown = getItemBreakdown(item);
+                        const d = detailsOf(item);
+
+                        return (
+                          <div key={item.id} className="flex flex-col gap-1.5">
+                            <div className="flex items-center justify-between gap-3 text-sm">
+                              <span className="font-medium min-w-0">
+                                {getDetailedItemDescription(item)}
+                                {item.quantity > 1 && (
+                                  <span className="block text-[13px] font-normal text-muted-foreground mt-0.5">
+                                    {item.quantity} unidades
+                                  </span>
+                                )}
+                              </span>
+                              {isFree ? (
+                                <span className="flex-none inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-800 border border-green-200 dark:bg-green-900/25 dark:text-green-300 dark:border-green-800">
+                                  <CheckCircle2 className="h-3 w-3" />
+                                  Cortesía
+                                </span>
+                              ) : (
+                                <span className="font-semibold tabular-nums whitespace-nowrap">
+                                  {formatPrice(toNumber(item.total_price))}
+                                </span>
+                              )}
+                            </div>
+
+                            {breakdown && (
+                              <div className="flex flex-col gap-1 ml-0.5 pl-3 border-l-2">
+                                {breakdown.map((b, i) => (
+                                  <div key={i} className="flex justify-between gap-2 text-xs text-muted-foreground tabular-nums">
+                                    <span>{b.name}</span>
+                                    <span>{formatPrice(b.amount)}</span>
                                   </div>
                                 ))}
                               </div>
                             )}
 
-                            {/* Chip de pre-venta + fecha estimada para productos */}
-                            {(item.details || item.item_details)?.is_pre_order && (
-                              <div className="ml-0 inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded bg-amber-50 border border-amber-200 text-amber-800">
+                            {d?.is_pre_order && (
+                              <span className="self-start inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
                                 <Calendar className="h-3 w-3" />
-                                <span>
-                                  Pre-venta
-                                  {(item.details || item.item_details)?.estimated_delivery_date && (
-                                    <>
-                                      {' · Entrega estimada: '}
-                                      <strong>
-                                        {formatDate(
-                                          (item.details || item.item_details).estimated_delivery_date,
-                                          { format: 'medium' },
-                                        )}
-                                      </strong>
-                                    </>
-                                  )}
-                                </span>
-                              </div>
+                                Pre-venta
+                                {d.estimated_delivery_date && (
+                                  <> · entrega estimada {formatDate(d.estimated_delivery_date, { format: 'medium' })}</>
+                                )}
+                              </span>
                             )}
                           </div>
                         );
                       })}
-                      
-                      {/* Mostrar información del cupón si se aplicó */}
-                      {paymentDetails.order.applied_coupon && (
-                        <div className="border-t pt-3 pb-2 space-y-2">
-                          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-sm font-medium text-green-800">Cupón aplicado</span>
-                              <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
-                                {paymentDetails.order.applied_coupon.coupon_code}
-                              </span>
-                            </div>
-                            <div className="text-sm text-green-700 mb-1">
-                              {paymentDetails.order.applied_coupon.coupon_name}
-                            </div>
-                            <div className="flex justify-between text-sm">
-                              <span className="text-green-600">Subtotal original:</span>
-                              <span className="line-through text-gray-400">
-                                {formatPrice(paymentDetails.order.applied_coupon.original_amount)}
-                              </span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                              <span className="text-green-600">Descuento ({paymentDetails.order.applied_coupon.discount_type === 'fixed' 
-                                ? `Gs. ${paymentDetails.order.applied_coupon.discount_value.toLocaleString()}`
-                                : `${paymentDetails.order.applied_coupon.discount_value}%`
-                              }):</span>
-                              <span className="text-green-700 font-medium">
-                                -Gs. {paymentDetails.order.applied_coupon.discount_amount.toLocaleString()}
-                              </span>
-                            </div>
-                          </div>
+                    </div>
+
+                    {paymentDetails.order.applied_coupon && (
+                      <div className="flex flex-col gap-1.5 p-3 rounded-lg bg-green-50 border border-green-200 text-green-800 text-xs dark:bg-green-900/20 dark:border-green-800 dark:text-green-300">
+                        <div className="flex justify-between gap-2">
+                          <span>Cupón <span className="font-bold">{paymentDetails.order.applied_coupon.coupon_code}</span></span>
+                          <span>{paymentDetails.order.applied_coupon.coupon_name}</span>
                         </div>
-                      )}
-
-                      <div className="border-t pt-2 flex justify-between items-center font-semibold">
-                        <span>Total Pagado</span>
-                        <span>{formatPrice(toNumber(paymentDetails.order.total_amount))}</span>
+                        <div className="flex justify-between gap-2 tabular-nums">
+                          <span>Subtotal</span>
+                          <span>{formatPrice(toNumber(paymentDetails.order.applied_coupon.original_amount))}</span>
+                        </div>
+                        <div className="flex justify-between gap-2 tabular-nums font-medium">
+                          <span>Descuento</span>
+                          <span>-{formatPrice(toNumber(paymentDetails.order.applied_coupon.discount_amount))}</span>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                </div>
-              ) : error ? (
-                <div className="bg-muted/30 rounded-lg p-6">
-                  <p className="text-muted-foreground">{error}</p>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Su pago fue procesado correctamente, pero no pudimos cargar los detalles.
-                  </p>
-                </div>
-              ) : (
-                <div className="bg-muted/30 rounded-lg p-6">
-                  <p className="text-muted-foreground">
-                    Su compra de <strong>{fallbackTitle}</strong> ha sido procesada correctamente
-                  </p>
-                </div>
-              )}
+                    )}
 
-              {/* Callout específico para productos físicos: solo retiro en APACG */}
-              {hasProductItems && (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-5 text-left">
-                  <div className="flex items-start gap-3">
-                    <MapPin className="h-6 w-6 text-amber-700 mt-0.5 flex-shrink-0" />
+                    {/* En una cortesía el precio es el dato menos relevante: lo dice el chip. */}
+                    {!isFree && (
+                      <>
+                        <div className="h-px bg-border" />
+                        <div className="flex items-baseline justify-between gap-3 font-bold">
+                          <span>Total pagado</span>
+                          <span className="tabular-nums">{formatPrice(toNumber(paymentDetails.order.total_amount))}</span>
+                        </div>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* ── Qué sigue: un correo, aunque lleve varias cosas ── */}
+                <Card>
+                  <CardContent className="p-4 flex gap-3">
+                    <Mail className="h-5 w-5 mt-0.5 flex-none text-green-700 dark:text-green-400" />
+                    <div className="min-w-0">
+                      {mailItems.length === 1 ? (
+                        <>
+                          <p className="text-sm leading-snug">
+                            Enviamos <strong>{mailItems[0].what}</strong>
+                            {email && <> a<span className="block font-semibold break-words">{email}</span></>}
+                          </p>
+                          <p className="mt-1.5 text-xs text-muted-foreground leading-snug">
+                            {mailItems[0].how} Si no llega en unos minutos, revisá spam.
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-sm leading-snug">
+                            Enviamos{email && <> a<span className="block font-semibold break-words">{email}</span></>}
+                          </p>
+                          <ul className="mt-2 flex flex-col gap-2 list-none p-0">
+                            {mailItems.map((m, i) => (
+                              <li key={i} className="relative pl-4 text-[13.5px] leading-snug">
+                                <span className="absolute left-0.5 top-[7px] h-1.5 w-1.5 rounded-full bg-green-600 dark:bg-green-400" />
+                                <strong>{m.what}</strong>
+                                <span className="block text-xs text-muted-foreground mt-0.5">{m.how}</span>
+                              </li>
+                            ))}
+                          </ul>
+                          <p className="mt-2 text-xs text-muted-foreground">
+                            Si no llegan en unos minutos, revisá spam.
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Lo que NO llega por correo va aparte, porque no es lo mismo. */}
+                {hasProducts && (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 flex gap-3 text-amber-900 dark:bg-amber-950/40 dark:border-amber-900 dark:text-amber-200">
+                    <MapPin className="h-5 w-5 mt-0.5 flex-none" />
                     <div>
-                      <p className="font-semibold text-amber-900">Solo retiro en APACG</p>
-                      <p className="text-sm text-amber-800 mt-1">
-                        No realizamos envíos a domicilio. Te avisaremos por email cuando tu pedido esté listo para retirar.
+                      <p className="text-sm leading-snug">
+                        <strong>Solo retiro en APACG.</strong> No hacemos envíos a domicilio.
+                      </p>
+                      <p className="mt-1.5 text-xs leading-snug opacity-90">
+                        Te avisamos por correo cuando tu pedido esté listo para retirar.
                       </p>
                     </div>
                   </div>
-                </div>
-              )}
-
-              {/* Próximos pasos */}
-              <div className="bg-muted/30 rounded-lg p-6 space-y-4">
-                <h3 className="font-semibold text-lg">¿Qué sigue ahora?</h3>
-
-                <div className="space-y-3 text-left">
-                  <div className="flex items-start gap-3">
-                    <Mail className="h-5 w-5 text-primary mt-0.5" />
-                    <div>
-                      <p className="font-medium">Confirmación por correo</p>
-                      <p className="text-sm text-muted-foreground">
-                        Recibirá un correo electrónico con los detalles de su compra y las instrucciones correspondientes.
-                      </p>
-                    </div>
-                  </div>
-
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                {isLoggedIn && (
-                  <Button asChild className="w-full" size="lg">
-                    <Link to="/perfil">
-                      Ver Mis Compras
-                    </Link>
-                  </Button>
                 )}
-                
-                <Button variant="outline" asChild className="w-full">
-                  <Link to="/">
-                    <Home className="h-4 w-4 mr-2" />
-                    Volver al Inicio
-                  </Link>
-                </Button>
-              </div>
 
-              <div className="pt-4 border-t text-sm text-muted-foreground">
-                <p>
-                  Si tiene alguna pregunta sobre su compra, no dude en contactarnos.
+                {hasMembership && (
+                  <Card>
+                    <CardContent className="p-4 flex gap-3">
+                      <User className="h-5 w-5 mt-0.5 flex-none text-green-700 dark:text-green-400" />
+                      <div>
+                        <p className="text-sm leading-snug">La <strong>membresía</strong> quedó activa.</p>
+                        <p className="mt-1.5 text-xs text-muted-foreground leading-snug">
+                          Ya podés usar los beneficios de socio.
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* ── Referencias: una línea, no una tarjeta de siete filas ── */}
+                <p className="flex flex-wrap gap-x-3 gap-y-1 px-0.5 text-xs text-muted-foreground tabular-nums">
+                  {paymentDetails.order.order_number && (
+                    <span>Orden <b className="font-semibold text-foreground">{paymentDetails.order.order_number}</b></span>
+                  )}
+                  {customer?.cedula && (
+                    <span>CI <b className="font-semibold text-foreground">{customer.cedula}</b></span>
+                  )}
                 </p>
-              </div>
-            </CardContent>
-          </Card>
+              </>
+            ) : error ? (
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-sm text-muted-foreground">{error}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Tu compra se procesó correctamente, pero no pudimos cargar los detalles.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-sm text-muted-foreground">
+                    Tu compra de <strong>{fallbackTitle}</strong> se procesó correctamente.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* ── Acciones ── */}
+            <div className="flex flex-col gap-2">
+              <Button asChild size="lg" className="w-full h-12 text-[15px]">
+                <Link to={primaryCta.to}>{primaryCta.label}</Link>
+              </Button>
+              <Button asChild variant="outline" className="w-full h-12 text-[15px]">
+                <Link to="/">
+                  <Home className="h-4 w-4 mr-2" />
+                  Volver al inicio
+                </Link>
+              </Button>
+            </div>
+
+            {/* ── Datos del checkout, plegados: se muestran los que sirven ── */}
+            {customer && (
+              <details className="group border-t pt-3">
+                <summary className="cursor-pointer list-none flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground">
+                  Ver datos de la compra
+                  <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
+                </summary>
+                <dl className="flex flex-col mt-2.5">
+                  {[
+                    ['Nombre', customer.name],
+                    ['Cédula', customer.cedula],
+                    ['Correo', customer.email],
+                    ['Teléfono', customer.phone],
+                    ['N.º de orden', paymentDetails?.order.order_number],
+                    ['Medio', isFree ? 'Cortesía' : paymentDetails?.payment_method],
+                    ['Confirmado', paymentDetails?.processed_at
+                      ? formatDate(paymentDetails.processed_at, { includeTime: true })
+                      : null],
+                  ]
+                    .filter(([, value]) => Boolean(value))
+                    .map(([label, value]) => (
+                      <div key={label as string} className="flex items-baseline justify-between gap-4 py-2 text-[13.5px] border-b last:border-b-0 last:pb-0">
+                        <dt className="flex-none text-muted-foreground">{label}</dt>
+                        <dd className="m-0 text-right font-medium min-w-0 break-words">{value}</dd>
+                      </div>
+                    ))}
+                </dl>
+              </details>
+            )}
+
+            <p className="text-center text-xs text-muted-foreground leading-relaxed">
+              ¿Algún problema con tu compra? Escribinos.
+            </p>
+          </div>
         </div>
       </div>
-      
+
       <Footer />
     </div>
   );
