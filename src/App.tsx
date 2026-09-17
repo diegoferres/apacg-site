@@ -1,4 +1,5 @@
 
+import { socioSinHijos } from '@/lib/socio';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -131,7 +132,7 @@ const App = () => {
 
     // Socios externos: no tienen hijos que cargar ni membresia que pagar (estan exonerados).
     // El splash depende solo de si ya completaron el setup (email/telefono/contraseña).
-    if (user.member_origin === 'external') {
+    if (socioSinHijos(user.member_origin)) {
       setShowStudentSplash(!user.setup_completed);
       return;
     }

@@ -1,3 +1,4 @@
+import { socioSinHijos } from '@/lib/socio';
 import { useEffect, useRef, useState } from "react";
 import logoImg from '/logo.png';
 import addToGoogleWalletBadge from "@/assets/add-to-google-wallet-es419.svg";
@@ -102,7 +103,7 @@ const Profile = () => {
   // Socios externos (member_origin === 'external') no tienen hijos matriculados: la cuota
   // les viene exonerada de entrada y no hay anualidades que pagar. El resto de los socios
   // (origen null en produccion) sigue exactamente el camino de siempre.
-  const isExternal = user?.member_origin === 'external';
+  const isExternal = socioSinHijos(user?.member_origin);
 
   // Validate password match in real time
   useEffect(() => {

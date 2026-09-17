@@ -1,3 +1,4 @@
+import { socioSinHijos } from '@/lib/socio';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -31,7 +32,7 @@ export const StudentDataSplash = ({ isOpen, onDataComplete, membershipStatus, on
   // cartel "No tienes estudiantes asociados", que para el es justo lo contrario
   // de lo que le queremos decir.
   const [currentStep, setCurrentStep] = useState<'contacto' | 'students' | 'membership' | 'password'>(
-    useStore.getState().user?.member_origin === 'external' ? 'contacto' : 'students'
+    socioSinHijos(useStore.getState().user?.member_origin) ? 'contacto' : 'students'
   );
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -48,7 +49,7 @@ export const StudentDataSplash = ({ isOpen, onDataComplete, membershipStatus, on
 
   // Socios externos no tienen hijos ni membresia que pagar (estan exonerados): su unica
   // secuencia es contacto -> password, sin pasar por students ni membership.
-  const isExternal = user?.member_origin === 'external';
+  const isExternal = socioSinHijos(user?.member_origin);
   const yaTeniamosDatos = Boolean(user?.email || user?.member?.phone);
 
   // El paso del externo se fija una sola vez. No alcanza con el estado inicial porque en

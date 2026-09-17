@@ -1,3 +1,4 @@
+import { socioSinHijos } from '@/lib/socio';
 import { useStore } from "@/stores/store";
 import { Navigate } from "react-router-dom";
 import { useEffect } from "react";
@@ -26,7 +27,7 @@ const ProtectedWithStudentsRequired = ({ children }: Props) => {
     !!user &&
     !isAdmin &&
     !!user.member &&
-    user.member_origin !== 'external' &&
+    !socioSinHijos(user.member_origin) &&
     (students.length === 0 || students.some((s: any) => !s.ci || s.ci.trim() === ''));
 
   // El aviso va en un efecto, no en el render: `toast` actualiza estado y llamarlo mientras se
