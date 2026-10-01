@@ -480,6 +480,8 @@ const EventDetail = () => {
     navigate('/checkout');
   };
 
+  const tieneEntradas = event.ticket_types.length > 0;
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -637,6 +639,11 @@ const EventDetail = () => {
 
               {/* Ticket Selection - Simplified */}
               <div className="mt-8">
+                {/* Un evento puede venderse sólo por sus extras —un almuerzo a beneficio, donde
+                    se compran porciones— y entonces no tiene entradas: sin esto quedaba el
+                    título «Entradas» con la lista vacía arriba de lo que sí se vende. */}
+                {tieneEntradas && (
+                <>
                 <h3 className="text-xl font-bold mb-4">Entradas</h3>
                 {event.allow_extras_only && !event.is_informational && (event.extras?.length ?? 0) > 0 && (
                   <p className="text-sm text-muted-foreground mb-3">
@@ -743,11 +750,17 @@ const EventDetail = () => {
                     );
                   })}
                 </div>
+                </>
+                )}
 
                 {/* Sección Extras (comida, bebida, etc) — compacta para densidad mobile */}
                 {event.extras && event.extras.length > 0 && !event.is_informational && (
-                  <div className="mt-8">
-                    <h3 className="text-xl font-bold mb-1">Extras del evento</h3>
+                  <div className={tieneEntradas ? 'mt-8' : ''}>
+                    {/* Sin entradas, los extras son todo lo que se vende: llamarlos «extras» no
+                        tiene sentido para quien compra. */}
+                    <h3 className="text-xl font-bold mb-1">
+                      {tieneEntradas ? 'Extras del evento' : 'Elegí tu pedido'}
+                    </h3>
                     {event.extras_description && (
                       <p className="text-sm text-muted-foreground mb-3 whitespace-pre-line">
                         {event.extras_description}
